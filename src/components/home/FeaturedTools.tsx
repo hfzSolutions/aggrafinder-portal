@@ -1,20 +1,16 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { aiTools } from "@/data/toolsData";
 import { useScrollAnimation } from "@/utils/animations";
 import { ToolCard } from "@/components/tools/ToolCard";
+import { useSupabaseTools } from "@/hooks/useSupabaseTools";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const FeaturedTools = () => {
   const [ref, isVisible] = useScrollAnimation(0.1);
-  const [featuredTools, setFeaturedTools] = useState([]);
-
-  useEffect(() => {
-    // Filter to get featured tools
-    setFeaturedTools(aiTools.filter(tool => tool.featured).slice(0, 4));
-  }, []);
+  const { tools: featuredTools, loading, error } = useSupabaseTools({ featured: true, limit: 4 });
   
   return (
     <section 
@@ -60,20 +56,41 @@ const FeaturedTools = () => {
           </Button>
         </div>
         
+        {error && (
+          <div className="text-center py-10">
+            <p className="text-red-500">Error loading tools: {error.message}</p>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {featuredTools.map((tool, index) => (
-            <div 
-              key={tool.id}
-              className={`transition-all duration-700 ${
-                isVisible 
-                  ? "opacity-100 translate-y-0" 
-                  : "opacity-0 translate-y-12"
-              }`}
-              style={{ transitionDelay: `${300 + index * 100}ms` }}
-            >
-              <ToolCard tool={tool} />
-            </div>
-          ))}
+          {loading ? (
+            // Loading skeletons
+            Array(4).fill(0).map((_, index) => (
+              <div key={`skeleton-${index}`} className="space-y-3">
+                <Skeleton className="h-48 w-full rounded-lg" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-16 w-full" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+              </div>
+            ))
+          ) : (
+            featuredTools.map((tool, index) => (
+              <div 
+                key={tool.id}
+                className={`transition-all duration-700 ${
+                  isVisible 
+                    ? "opacity-100 translate-y-0" 
+                    : "opacity-0 translate-y-12"
+                }`}
+                style={{ transitionDelay: `${300 + index * 100}ms` }}
+              >
+                <ToolCard tool={tool} />
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>
