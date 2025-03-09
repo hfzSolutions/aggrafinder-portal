@@ -9,6 +9,7 @@ interface FilterButtonProps {
   selectedOption: string;
   onChange: (option: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 const FilterButton = ({ 
@@ -16,12 +17,17 @@ const FilterButton = ({
   options, 
   selectedOption, 
   onChange,
-  className = ""
+  className = "",
+  disabled = false
 }: FilterButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
   
-  const toggleDropdown = () => setIsOpen(!isOpen);
+  const toggleDropdown = () => {
+    if (!disabled) {
+      setIsOpen(!isOpen);
+    }
+  };
   
   const handleOptionSelect = (option: string) => {
     onChange(option);
@@ -50,10 +56,11 @@ const FilterButton = ({
         type="button"
         className={`flex items-center justify-between gap-2 px-4 py-2 rounded-lg text-sm border border-border/50 bg-background hover:bg-secondary/50 transition-all duration-200 ${
           isOpen ? "ring-2 ring-primary/20" : ""
-        }`}
+        } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
         onClick={toggleDropdown}
         aria-haspopup="true"
         aria-expanded={isOpen}
+        disabled={disabled}
       >
         <span className="text-muted-foreground mr-1">{label}:</span>
         <span className="font-medium">{selectedOption}</span>
@@ -64,7 +71,7 @@ const FilterButton = ({
         />
       </button>
       
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-10 mt-2 w-full min-w-[140px] max-h-60 overflow-auto rounded-lg bg-background border border-border shadow-lg animate-scale-in py-1">
           {options.map((option) => (
             <button
