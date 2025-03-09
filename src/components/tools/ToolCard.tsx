@@ -1,7 +1,8 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
-import { AITool } from "@/data/toolsData";
+import { AITool } from "@/types/tools";
 import { cn } from "@/lib/utils";
 
 interface ToolCardProps {
@@ -10,6 +11,7 @@ interface ToolCardProps {
 
 export const ToolCard = ({ tool }: ToolCardProps) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const navigate = useNavigate();
   
   const getPricingColor = (pricing: string) => {
     switch (pricing) {
@@ -21,8 +23,19 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
     }
   };
   
+  const handleCardClick = () => {
+    navigate(`/tools/${tool.id}`);
+  };
+  
+  const handleLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click when clicking on the link
+  };
+  
   return (
-    <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
+    <div 
+      className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* Image container with aspect ratio */}
       <div className="relative pt-[56.25%] w-full overflow-hidden bg-secondary/30">
         {!isImageLoaded && (
@@ -77,6 +90,7 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            onClick={handleLinkClick}
           >
             Visit website
             <ExternalLink className="ml-1 h-3.5 w-3.5" />
