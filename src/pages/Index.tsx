@@ -1,13 +1,29 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { Helmet } from "react-helmet";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import Hero from "@/components/home/Hero";
+import FeaturedTools from "@/components/home/FeaturedTools";
+import Newsletter from "@/components/home/Newsletter";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <>
+      <Helmet>
+        <title>AI Aggregator | Find the Best AI Tools</title>
+        <meta name="description" content="Discover and compare the best AI tools for your needs. Our curated collection helps you navigate the AI landscape with ease." />
+      </Helmet>
+      
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow">
+          <Hero />
+          <FeaturedTools />
+          <Newsletter />
+        </main>
+        <Footer />
       </div>
-    </div>
+    </>
   );
 };
 
