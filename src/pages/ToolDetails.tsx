@@ -1,8 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { ArrowLeft, ExternalLink, Tag, CheckCircle, DollarSign, Clock, Star } from "lucide-react";
+import { ArrowLeft, ExternalLink, Tag, CheckCircle, DollarSign, Clock, Star, ArrowLeftCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -129,6 +128,11 @@ const ToolDetails = () => {
     }));
   };
 
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/tools');
+  };
+
   return (
     <>
       <Helmet>
@@ -142,27 +146,37 @@ const ToolDetails = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         
-        <main className="flex-grow pt-20">
+        <main className="flex-grow pt-20 pb-16 bg-gradient-to-b from-background to-muted/30">
           <div className="container px-4 md:px-8 mx-auto py-8">
-            <div className="mb-6">
+            <div className="mb-8">
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="sm" 
-                className="text-muted-foreground mb-4"
-                onClick={() => navigate(-1)}
+                className="mb-6 group transition-all duration-300 hover:translate-x-[-5px]"
+                onClick={handleBackClick}
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 mr-2 transition-transform group-hover:scale-110" />
                 Back to tools
               </Button>
               
               {loading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-10 w-1/3" />
-                  <Skeleton className="h-6 w-2/3" />
-                  <Skeleton className="h-96 w-full rounded-lg" />
+                <div className="space-y-6">
+                  <div className="animate-pulse space-y-3">
+                    <Skeleton className="h-12 w-2/3 max-w-md" />
+                    <Skeleton className="h-6 w-full max-w-2xl" />
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-8">
+                      <Skeleton className="h-64 w-full rounded-xl" />
+                      <Skeleton className="h-48 w-full rounded-lg" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-96 w-full rounded-xl" />
+                    </div>
+                  </div>
                 </div>
               ) : error ? (
-                <Card className="p-6 text-center">
+                <Card className="p-6 text-center border border-red-200 bg-red-50/50 dark:bg-red-900/10">
                   <h2 className="text-xl font-medium mb-2 text-red-500">Error loading tool details</h2>
                   <p className="text-muted-foreground mb-4">{error.message}</p>
                   <Button onClick={() => navigate("/tools")}>Return to Tools</Button>
@@ -171,36 +185,58 @@ const ToolDetails = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Main content - Tool details */}
                   <div className="lg:col-span-2 space-y-8">
-                    <div>
-                      <h1 className="text-3xl font-medium mb-2">{tool.name}</h1>
-                      <p className="text-lg text-muted-foreground">{tool.description}</p>
+                    <div className="space-y-4">
+                      <div className="inline-flex gap-2 items-center">
+                        {tool.featured && (
+                          <span className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-xs px-2 py-1 rounded-full font-medium">
+                            Featured
+                          </span>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {tool.category.map((cat, idx) => (
+                            <Link 
+                              key={idx} 
+                              to={`/tools?category=${encodeURIComponent(cat)}`}
+                              className="text-xs font-medium px-2 py-1 rounded-full bg-secondary/70 hover:bg-secondary text-secondary-foreground transition-colors"
+                            >
+                              {cat}
+                            </Link>
+                          ))}
+                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(tool.pricing)}`}>
+                            {tool.pricing}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{tool.name}</h1>
+                        <p className="text-lg text-muted-foreground">{tool.description}</p>
+                      </div>
+                      
+                      <div className="pt-2">
+                        <Button 
+                          size="lg"
+                          className="transition-all hover:translate-y-[-2px] shadow-sm hover:shadow"
+                          onClick={() => window.open(tool.url, "_blank")}
+                        >
+                          Visit Website
+                          <ExternalLink className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-2">
-                      {tool.category.map((cat, idx) => (
-                        <Link 
-                          key={idx} 
-                          to={`/tools?category=${encodeURIComponent(cat)}`}
-                          className="text-sm px-3 py-1 rounded-full bg-secondary/70 hover:bg-secondary text-secondary-foreground"
-                        >
-                          {cat}
-                        </Link>
-                      ))}
-                      <span className={`text-sm px-3 py-1 rounded-full ${getPricingColor(tool.pricing)}`}>
-                        {tool.pricing}
-                      </span>
-                    </div>
+                    <Separator className="my-8" />
                     
                     {/* Feature breakdown section */}
-                    <Card className="border border-border/40">
-                      <CardHeader>
+                    <Card className="border border-border/40 overflow-hidden shadow-sm hover:shadow transition-all">
+                      <CardHeader className="bg-secondary/30">
                         <CardTitle className="text-xl">Feature Highlights</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {getFeatureHighlights(tool.tags).map((feature, idx) => (
-                            <div key={idx} className="flex items-start space-x-2">
-                              <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
+                            <div key={idx} className="flex items-start space-x-3 p-3 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
+                              <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                               <div>
                                 <h3 className="font-medium">{feature.title}</h3>
                                 <p className="text-sm text-muted-foreground">{feature.description}</p>
@@ -212,15 +248,15 @@ const ToolDetails = () => {
                     </Card>
                     
                     {/* Pricing details */}
-                    <Card className="border border-border/40">
-                      <CardHeader>
+                    <Card className="border border-border/40 overflow-hidden shadow-sm hover:shadow transition-all">
+                      <CardHeader className="bg-secondary/30">
                         <CardTitle className="text-xl">Pricing Details</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="flex items-start space-x-3">
+                      <CardContent className="p-6">
+                        <div className="flex items-start space-x-3 p-4 rounded-lg bg-secondary/20">
                           {getPricingDetails(tool.pricing).icon}
                           <div>
-                            <h3 className="font-medium">{getPricingDetails(tool.pricing).title}</h3>
+                            <h3 className="font-medium text-lg">{getPricingDetails(tool.pricing).title}</h3>
                             <p className="text-muted-foreground">{getPricingDetails(tool.pricing).description}</p>
                           </div>
                         </div>
@@ -229,87 +265,121 @@ const ToolDetails = () => {
                     
                     {/* All tags */}
                     <div>
-                      <h3 className="text-lg font-medium mb-3">All Tags</h3>
+                      <h3 className="text-lg font-medium mb-4">All Tags</h3>
                       <div className="flex flex-wrap gap-2">
                         {tool.tags.map((tag, idx) => (
                           <div 
                             key={idx} 
-                            className="flex items-center text-sm px-3 py-1 rounded-full bg-secondary/50 text-secondary-foreground"
+                            className="flex items-center text-xs px-3 py-1.5 rounded-full bg-secondary/50 text-secondary-foreground hover:bg-secondary/80 transition-colors cursor-default"
                           >
-                            <Tag className="h-3.5 w-3.5 mr-1" />
+                            <Tag className="h-3 w-3 mr-1.5" />
                             {tag}
                           </div>
                         ))}
                       </div>
                     </div>
-                    
-                    <div>
-                      <Button 
-                        className="w-full sm:w-auto"
-                        onClick={() => window.open(tool.url, "_blank")}
-                      >
-                        Visit Website
-                        <ExternalLink className="h-4 w-4 ml-1" />
-                      </Button>
-                    </div>
                   </div>
                   
                   {/* Sidebar */}
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     {/* Image container */}
-                    <div className="rounded-xl overflow-hidden border border-border/40 bg-secondary/10">
-                      {!isImageLoaded && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
-                          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                    <Card className="overflow-hidden border border-border/40 hover:shadow-md transition-all">
+                      <CardContent className="p-4">
+                        <div className="relative rounded-lg overflow-hidden bg-secondary/10 aspect-video">
+                          {!isImageLoaded && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                            </div>
+                          )}
+                          <img
+                            src={tool.imageUrl}
+                            alt={tool.name}
+                            className={cn(
+                              "w-full h-full object-cover",
+                              isImageLoaded ? "opacity-100" : "opacity-0"
+                            )}
+                            onLoad={() => setIsImageLoaded(true)}
+                          />
                         </div>
-                      )}
-                      <img
-                        src={tool.imageUrl}
-                        alt={tool.name}
-                        className={cn(
-                          "w-full h-auto object-cover rounded-xl",
-                          isImageLoaded ? "opacity-100" : "opacity-0"
-                        )}
-                        onLoad={() => setIsImageLoaded(true)}
-                      />
-                    </div>
+                      </CardContent>
+                    </Card>
                     
                     {/* Related tools section */}
-                    <Card className="border border-border/40">
-                      <CardHeader>
+                    <Card className="border border-border/40 hover:shadow-md transition-all">
+                      <CardHeader className="bg-secondary/30">
                         <CardTitle className="text-lg">Related Tools</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="p-4">
                         {relatedLoading ? (
-                          <div className="space-y-3">
-                            <Skeleton className="h-16 w-full" />
-                            <Skeleton className="h-16 w-full" />
-                            <Skeleton className="h-16 w-full" />
+                          <div className="space-y-4">
+                            <Skeleton className="h-20 w-full" />
+                            <Skeleton className="h-20 w-full" />
+                            <Skeleton className="h-20 w-full" />
                           </div>
                         ) : filteredRelatedTools.length > 0 ? (
-                          filteredRelatedTools.map((relatedTool) => (
-                            <div key={relatedTool.id} className="group">
-                              <Link to={`/tools/${relatedTool.id}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-secondary/30 transition-colors">
-                                <div className="h-12 w-12 rounded overflow-hidden bg-secondary/20 flex-shrink-0">
-                                  <img 
-                                    src={relatedTool.imageUrl} 
-                                    alt={relatedTool.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </div>
-                                <div>
-                                  <h3 className="font-medium group-hover:text-primary transition-colors">{relatedTool.name}</h3>
-                                  <p className="text-xs text-muted-foreground line-clamp-2">{relatedTool.description}</p>
-                                </div>
-                              </Link>
-                              {filteredRelatedTools.indexOf(relatedTool) < filteredRelatedTools.length - 1 && (
-                                <Separator className="my-2" />
-                              )}
-                            </div>
-                          ))
+                          <div className="space-y-2">
+                            {filteredRelatedTools.map((relatedTool) => (
+                              <div key={relatedTool.id} className="group">
+                                <Link 
+                                  to={`/tools/${relatedTool.id}`} 
+                                  className="flex items-start space-x-3 p-3 rounded-md hover:bg-secondary/30 transition-colors border border-transparent hover:border-border/40"
+                                >
+                                  <div className="h-14 w-14 rounded-md overflow-hidden bg-secondary/20 flex-shrink-0">
+                                    <img 
+                                      src={relatedTool.imageUrl} 
+                                      alt={relatedTool.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-medium group-hover:text-primary transition-colors">{relatedTool.name}</h3>
+                                    <p className="text-xs text-muted-foreground line-clamp-2">{relatedTool.description}</p>
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      {relatedTool.category.slice(0, 2).map((cat, idx) => (
+                                        <span key={idx} className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary/50 text-secondary-foreground">
+                                          {cat}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </Link>
+                                {filteredRelatedTools.indexOf(relatedTool) < filteredRelatedTools.length - 1 && (
+                                  <Separator className="my-2" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground">No related tools found</p>
+                          <div className="p-4 text-center bg-secondary/10 rounded-lg">
+                            <p className="text-sm text-muted-foreground">No related tools found</p>
+                          </div>
                         )}
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Quick actions card */}
+                    <Card className="border border-border/40 hover:shadow-md transition-all">
+                      <CardHeader className="bg-secondary/30 pb-4">
+                        <CardTitle className="text-lg">Quick Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 space-y-3">
+                        <Button 
+                          variant="secondary" 
+                          className="w-full justify-start"
+                          onClick={() => window.open(tool.url, "_blank")}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Visit Website
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={handleBackClick}
+                        >
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          Back to tools
+                        </Button>
                       </CardContent>
                     </Card>
                   </div>
