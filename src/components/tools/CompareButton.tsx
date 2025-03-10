@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface CompareButtonProps {
   isActive?: boolean;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;  // Updated to accept the event parameter
   className?: string;
   buttonText?: string;
 }
