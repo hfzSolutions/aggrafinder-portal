@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { ArrowLeft, ExternalLink, Tag, CheckCircle, DollarSign, Clock, Star, ArrowLeftCircle } from "lucide-react";
+import { ArrowLeft, ExternalLink, Tag, CheckCircle, DollarSign, Clock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import { useSupabaseTools } from "@/hooks/useSupabaseTools";
 import { AITool } from "@/types/tools";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { VoteButtons } from "@/components/tools/VoteButtons";
 
 const ToolDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -221,7 +222,8 @@ const ToolDetails = () => {
                         <p className="text-lg text-muted-foreground">{tool.description}</p>
                       </div>
                       
-                      <div className="pt-2">
+                      {/* Voting and website visit buttons */}
+                      <div className="flex flex-wrap items-center gap-4 pt-2">
                         <Button 
                           size="lg"
                           className="transition-all hover:translate-y-[-2px] shadow-sm hover:shadow"
@@ -230,6 +232,14 @@ const ToolDetails = () => {
                           Visit Website
                           <ExternalLink className="h-4 w-4 ml-1" />
                         </Button>
+                        
+                        {/* Vote buttons */}
+                        <div 
+                          className="py-2 px-2 rounded-md border border-border/40 bg-background shadow-sm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <VoteButtons toolId={tool.id} />
+                        </div>
                       </div>
                     </div>
                     

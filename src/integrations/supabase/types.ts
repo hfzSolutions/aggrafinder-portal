@@ -63,9 +63,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tool_votes: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string
+          tool_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address: string
+          tool_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string
+          tool_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_votes_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      tool_vote_counts: {
+        Row: {
+          downvotes: number | null
+          tool_id: string | null
+          upvotes: number | null
+          vote_score: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_votes_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
@@ -5,6 +6,7 @@ import { AITool } from "@/types/tools";
 import { cn } from "@/lib/utils";
 import { CompareButton } from "./CompareButton";
 import { useToolsCompare } from "@/hooks/useToolsCompare";
+import { VoteButtons } from "./VoteButtons";
 
 interface ToolCardProps {
   tool: AITool;
@@ -100,17 +102,28 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             ))}
           </div>
           
-          {/* Visit link */}
-          <a
-            href={tool.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-            onClick={handleLinkClick}
-          >
-            Visit website
-            <ExternalLink className="ml-1 h-3.5 w-3.5" />
-          </a>
+          {/* Vote and Visit buttons row */}
+          <div className="flex items-center justify-between">
+            {/* Voting */}
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0"
+            >
+              <VoteButtons toolId={tool.id} variant="compact" />
+            </div>
+            
+            {/* Visit link */}
+            <a
+              href={tool.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+              onClick={handleLinkClick}
+            >
+              Visit website
+              <ExternalLink className="ml-1 h-3.5 w-3.5" />
+            </a>
+          </div>
         </div>
       </div>
       
