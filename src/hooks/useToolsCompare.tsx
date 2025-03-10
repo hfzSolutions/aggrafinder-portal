@@ -11,6 +11,7 @@ interface ToolsCompareContextType {
   clearSelectedTools: () => void;
   compareTools: () => void;
   canCompare: boolean;
+  removeToolFromComparison: (tool: AITool) => void;
 }
 
 const ToolsCompareContext = createContext<ToolsCompareContextType | undefined>(undefined);
@@ -53,8 +54,22 @@ export const ToolsCompareProvider = ({ children }: { children: React.ReactNode }
     }
   };
 
+  const removeToolFromComparison = (tool: AITool) => {
+    setSelectedTools(prev => prev.filter(t => t.id !== tool.id));
+    toast({
+      title: "Tool removed",
+      description: `${tool.name} has been removed from comparison.`,
+      variant: "default",
+    });
+  };
+
   const clearSelectedTools = () => {
     setSelectedTools([]);
+    toast({
+      title: "Comparison cleared",
+      description: "All tools have been removed from comparison.",
+      variant: "default",
+    });
   };
 
   const compareTools = () => {
@@ -97,6 +112,7 @@ export const ToolsCompareProvider = ({ children }: { children: React.ReactNode }
         clearSelectedTools,
         compareTools,
         canCompare,
+        removeToolFromComparison,
       }}
     >
       {children}

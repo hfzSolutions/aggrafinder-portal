@@ -1,13 +1,13 @@
 
 import { useState } from "react";
-import { X, ArrowRightLeft } from "lucide-react";
+import { X, ArrowRightLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToolsCompare } from "@/hooks/useToolsCompare";
 import { cn } from "@/lib/utils";
 
 export const CompareToolsBar = () => {
   const [isImageLoadedMap, setIsImageLoadedMap] = useState<Record<string, boolean>>({});
-  const { selectedTools, clearSelectedTools, compareTools, canCompare } = useToolsCompare();
+  const { selectedTools, clearSelectedTools, compareTools, canCompare, removeToolFromComparison } = useToolsCompare();
   
   const handleImageLoaded = (id: string) => {
     setIsImageLoadedMap(prev => ({ ...prev, [id]: true }));
@@ -41,7 +41,7 @@ export const CompareToolsBar = () => {
               {selectedTools.map(tool => (
                 <div 
                   key={tool.id}
-                  className="relative h-10 w-10 rounded-md overflow-hidden bg-secondary/20 border border-border/40"
+                  className="relative h-10 w-10 rounded-md overflow-hidden bg-secondary/20 border border-border/40 group"
                 >
                   <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
                     {!isImageLoadedMap[tool.id] && (
@@ -57,10 +57,13 @@ export const CompareToolsBar = () => {
                     )}
                     onLoad={() => handleImageLoaded(tool.id)}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/60 transition-opacity">
-                    <span className="sr-only">Remove {tool.name}</span>
+                  <button 
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/60 transition-opacity cursor-pointer"
+                    onClick={() => removeToolFromComparison(tool)}
+                    aria-label={`Remove ${tool.name} from comparison`}
+                  >
                     <X className="h-4 w-4 text-white" />
-                  </div>
+                  </button>
                 </div>
               ))}
             </div>
@@ -70,7 +73,9 @@ export const CompareToolsBar = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={clearSelectedTools}
+                className="gap-1.5"
               >
+                <Trash2 className="h-3.5 w-3.5" />
                 Clear
               </Button>
               
@@ -78,10 +83,10 @@ export const CompareToolsBar = () => {
                 onClick={compareTools}
                 disabled={!canCompare}
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
               >
                 <ArrowRightLeft className="h-4 w-4" />
-                Compare
+                Compare Now
               </Button>
             </div>
           </div>
