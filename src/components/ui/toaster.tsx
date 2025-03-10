@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
@@ -27,7 +28,7 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport />
+      <ToastViewport className="bottom-20 sm:bottom-0" /> {/* Adjusted to avoid overlapping with CompareToolsBar */}
     </ToastProvider>
   )
 }

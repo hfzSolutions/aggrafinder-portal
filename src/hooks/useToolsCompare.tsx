@@ -34,6 +34,7 @@ export const ToolsCompareProvider = ({ children }: { children: React.ReactNode }
         title: "Tool removed from comparison",
         description: `${tool.name} has been removed from comparison.`,
         variant: "default",
+        duration: 2000, // Short duration to prevent blocking the compare button
       });
     } else {
       if (selectedTools.length >= MAX_COMPARE_TOOLS) {
@@ -41,6 +42,7 @@ export const ToolsCompareProvider = ({ children }: { children: React.ReactNode }
           title: "Maximum tools reached",
           description: `You can compare up to ${MAX_COMPARE_TOOLS} tools at once.`,
           variant: "destructive",
+          duration: 3000,
         });
         return;
       }
@@ -50,6 +52,7 @@ export const ToolsCompareProvider = ({ children }: { children: React.ReactNode }
         title: "Tool added to comparison",
         description: `${tool.name} has been added for comparison.`,
         variant: "default",
+        duration: 2000, // Short duration to prevent blocking the compare button
       });
     }
   };
@@ -60,6 +63,7 @@ export const ToolsCompareProvider = ({ children }: { children: React.ReactNode }
       title: "Tool removed",
       description: `${tool.name} has been removed from comparison.`,
       variant: "default",
+      duration: 2000,
     });
   };
 
@@ -69,6 +73,7 @@ export const ToolsCompareProvider = ({ children }: { children: React.ReactNode }
       title: "Comparison cleared",
       description: "All tools have been removed from comparison.",
       variant: "default",
+      duration: 2000,
     });
   };
 
@@ -78,6 +83,7 @@ export const ToolsCompareProvider = ({ children }: { children: React.ReactNode }
         title: "Select at least 2 tools",
         description: "You need to select at least 2 tools to compare.",
         variant: "destructive",
+        duration: 3000,
       });
       return;
     }
