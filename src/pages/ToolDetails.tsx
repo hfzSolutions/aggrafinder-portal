@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
@@ -12,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseTools } from "@/hooks/useSupabaseTools";
 import { AITool } from "@/types/tools";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const ToolDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -128,9 +130,13 @@ const ToolDetails = () => {
     }));
   };
 
-  const handleBackClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleBackClick = () => {
     navigate('/tools');
+  };
+
+  const handleVisitWebsite = (url: string) => {
+    window.open(url, "_blank");
+    toast.success("Opening website in a new tab");
   };
 
   return (
@@ -179,7 +185,7 @@ const ToolDetails = () => {
                 <Card className="p-6 text-center border border-red-200 bg-red-50/50 dark:bg-red-900/10">
                   <h2 className="text-xl font-medium mb-2 text-red-500">Error loading tool details</h2>
                   <p className="text-muted-foreground mb-4">{error.message}</p>
-                  <Button onClick={() => navigate("/tools")}>Return to Tools</Button>
+                  <Button onClick={handleBackClick}>Return to Tools</Button>
                 </Card>
               ) : tool ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -188,7 +194,8 @@ const ToolDetails = () => {
                     <div className="space-y-4">
                       <div className="inline-flex gap-2 items-center">
                         {tool.featured && (
-                          <span className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-xs px-2 py-1 rounded-full font-medium">
+                          <span className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                            <Star className="h-3 w-3 mr-1" />
                             Featured
                           </span>
                         )}
@@ -197,12 +204,13 @@ const ToolDetails = () => {
                             <Link 
                               key={idx} 
                               to={`/tools?category=${encodeURIComponent(cat)}`}
-                              className="text-xs font-medium px-2 py-1 rounded-full bg-secondary/70 hover:bg-secondary text-secondary-foreground transition-colors"
+                              className="text-xs font-medium px-2 py-1 rounded-full bg-secondary/70 hover:bg-secondary text-secondary-foreground transition-colors flex items-center"
                             >
                               {cat}
                             </Link>
                           ))}
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(tool.pricing)}`}>
+                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(tool.pricing)} flex items-center`}>
+                            <DollarSign className="h-3 w-3 mr-1" />
                             {tool.pricing}
                           </span>
                         </div>
@@ -217,7 +225,7 @@ const ToolDetails = () => {
                         <Button 
                           size="lg"
                           className="transition-all hover:translate-y-[-2px] shadow-sm hover:shadow"
-                          onClick={() => window.open(tool.url, "_blank")}
+                          onClick={() => handleVisitWebsite(tool.url)}
                         >
                           Visit Website
                           <ExternalLink className="h-4 w-4 ml-1" />
@@ -235,7 +243,7 @@ const ToolDetails = () => {
                       <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {getFeatureHighlights(tool.tags).map((feature, idx) => (
-                            <div key={idx} className="flex items-start space-x-3 p-3 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
+                            <div key={idx} className="flex items-start space-x-3 p-4 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
                               <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                               <div>
                                 <h3 className="font-medium">{feature.title}</h3>
@@ -366,7 +374,7 @@ const ToolDetails = () => {
                         <Button 
                           variant="secondary" 
                           className="w-full justify-start"
-                          onClick={() => window.open(tool.url, "_blank")}
+                          onClick={() => handleVisitWebsite(tool.url)}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Visit Website
@@ -388,7 +396,7 @@ const ToolDetails = () => {
                 <Card className="p-6 text-center">
                   <h2 className="text-xl font-medium mb-2">Tool not found</h2>
                   <p className="text-muted-foreground mb-4">The requested AI tool could not be found.</p>
-                  <Button onClick={() => navigate("/tools")}>Browse All Tools</Button>
+                  <Button onClick={handleBackClick}>Browse All Tools</Button>
                 </Card>
               )}
             </div>
