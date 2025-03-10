@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
 import { AITool } from "@/types/tools";
 import { cn } from "@/lib/utils";
+import { CompareButton } from "./CompareButton";
+import { useToolsCompare } from "@/hooks/useToolsCompare";
 
 interface ToolCardProps {
   tool: AITool;
@@ -12,6 +14,7 @@ interface ToolCardProps {
 export const ToolCard = ({ tool }: ToolCardProps) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const navigate = useNavigate();
+  const { isToolSelected, toggleToolSelection } = useToolsCompare();
   
   const getPricingColor = (pricing: string) => {
     switch (pricing) {
@@ -29,6 +32,11 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
   
   const handleLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click when clicking on the link
+  };
+  
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click when clicking compare
+    toggleToolSelection(tool);
   };
   
   return (
@@ -59,6 +67,15 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
           <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(tool.pricing)}`}>
             {tool.pricing}
           </span>
+        </div>
+        
+        {/* Compare button */}
+        <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <CompareButton 
+            isActive={isToolSelected(tool.id)} 
+            onClick={handleCompareClick}
+            buttonText="Compare"
+          />
         </div>
       </div>
       

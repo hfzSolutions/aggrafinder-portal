@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
@@ -14,6 +13,7 @@ import { useSupabaseTools } from "@/hooks/useSupabaseTools";
 import { useSupabaseCategories } from "@/hooks/useSupabaseCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 import { pricingOptions } from "@/data/toolsData";
+import { CompareToolsBar } from "@/components/tools/CompareToolsBar";
 
 const Tools = () => {
   const location = useLocation();
@@ -28,10 +28,7 @@ const Tools = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
   
-  // Fetch categories from Supabase
   const { categories, loading: categoriesLoading } = useSupabaseCategories();
-  
-  // Fetch tools from Supabase with filters
   const { tools: filteredTools, loading: toolsLoading, error } = useSupabaseTools({
     category: activeCategory !== "All" ? activeCategory : undefined,
     search: searchTerm,
@@ -39,7 +36,6 @@ const Tools = () => {
   });
   
   useEffect(() => {
-    // Update URL with filters
     const params = new URLSearchParams();
     if (searchTerm) params.set("search", searchTerm);
     if (activeCategory !== "All") params.set("category", activeCategory);
@@ -72,8 +68,7 @@ const Tools = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         
-        <main className="flex-grow pt-20">
-          {/* Hero section */}
+        <main className="flex-grow pt-20 pb-20">
           <div className="bg-secondary/30 border-b border-border/20">
             <div className="container px-4 md:px-8 mx-auto py-12 md:py-16">
               <div className="max-w-3xl mx-auto text-center">
@@ -95,9 +90,7 @@ const Tools = () => {
             </div>
           </div>
           
-          {/* Filters and tools */}
           <div className="container px-4 md:px-8 mx-auto py-8">
-            {/* Mobile filter toggle */}
             <div className="md:hidden mb-4">
               <Button 
                 variant="outline" 
@@ -114,7 +107,6 @@ const Tools = () => {
               </Button>
             </div>
             
-            {/* Filters */}
             <div 
               className={`mb-6 p-4 rounded-lg border border-border/50 bg-background/50 md:flex space-y-4 md:space-y-0 md:space-x-4 items-center justify-between ${
                 isFilterOpen ? "block" : "hidden md:flex"
@@ -169,7 +161,6 @@ const Tools = () => {
               </div>
             </div>
             
-            {/* Results */}
             <div className="mb-8">
               {searchTerm && (
                 <div className="mb-4 flex items-center">
@@ -191,7 +182,6 @@ const Tools = () => {
                 </div>
               )}
               
-              {/* Error state */}
               {error && (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-medium mb-2 text-red-500">Error loading tools</h3>
@@ -207,7 +197,6 @@ const Tools = () => {
                 </div>
               )}
               
-              {/* Loading state */}
               {isLoading && (
                 <div 
                   className={
@@ -230,7 +219,6 @@ const Tools = () => {
                 </div>
               )}
               
-              {/* Empty state */}
               {!isLoading && filteredTools.length === 0 && !error && (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-medium mb-2">No tools found</h3>
@@ -250,7 +238,6 @@ const Tools = () => {
                 </div>
               )}
               
-              {/* Tools grid/list */}
               {!isLoading && filteredTools.length > 0 && !error && (
                 <div 
                   className={
@@ -270,6 +257,7 @@ const Tools = () => {
           </div>
         </main>
         
+        <CompareToolsBar />
         <Footer />
       </div>
     </>

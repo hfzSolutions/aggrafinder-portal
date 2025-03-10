@@ -8,8 +8,10 @@ import { Helmet } from "react-helmet";
 import Index from "./pages/Index";
 import Tools from "./pages/Tools";
 import ToolDetails from "./pages/ToolDetails";
+import CompareTools from "./pages/CompareTools";
 import Resources from "./pages/Resources";
 import NotFound from "./pages/NotFound";
+import { ToolsCompareProvider } from "./hooks/useToolsCompare";
 
 const queryClient = new QueryClient();
 
@@ -25,14 +27,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/tools" element={<Tools />} />
-          <Route path="/tools/:id" element={<ToolDetails />} />
-          <Route path="/resources" element={<Resources />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <ToolsCompareProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/tools" element={<Tools />} />
+            <Route path="/tools/:id" element={<ToolDetails />} />
+            <Route path="/tools/compare/:ids" element={<CompareTools />} />
+            <Route path="/resources" element={<Resources />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ToolsCompareProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
