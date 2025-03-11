@@ -63,6 +63,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tool_requests: {
+        Row: {
+          category: string[]
+          created_at: string
+          description: string
+          id: string
+          name: string
+          pricing: string | null
+          status: string
+          submitter_email: string | null
+          submitter_name: string | null
+          url: string
+        }
+        Insert: {
+          category: string[]
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+          pricing?: string | null
+          status?: string
+          submitter_email?: string | null
+          submitter_name?: string | null
+          url: string
+        }
+        Update: {
+          category?: string[]
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          pricing?: string | null
+          status?: string
+          submitter_email?: string | null
+          submitter_name?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       tool_votes: {
         Row: {
           created_at: string

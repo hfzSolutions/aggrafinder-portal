@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
@@ -8,7 +9,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SearchBar from "@/components/ui/SearchBar";
 import FilterButton from "@/components/ui/FilterButton";
-import { ArrowLeft, Sliders } from "lucide-react";
+import { ArrowLeft, Sliders, Plus } from "lucide-react";
 import { useSupabaseTools } from "@/hooks/useSupabaseTools";
 import { useSupabaseCategories } from "@/hooks/useSupabaseCategories";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,6 +86,17 @@ const Tools = () => {
                     placeholder="Search AI tools..."
                     className="max-w-xl mx-auto"
                   />
+                </div>
+                
+                <div className="mt-6 flex justify-center">
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-2"
+                    onClick={() => navigate("/request-tool")}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Request a new tool</span>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -225,16 +237,23 @@ const Tools = () => {
                   <p className="text-muted-foreground">
                     Try adjusting your filters or search term to find what you're looking for.
                   </p>
-                  <Button 
-                    className="mt-4"
-                    onClick={() => {
-                      setSearchTerm("");
-                      setActiveCategory("All");
-                      setSelectedPricing("All");
-                    }}
-                  >
-                    Reset filters
-                  </Button>
+                  <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button 
+                      onClick={() => {
+                        setSearchTerm("");
+                        setActiveCategory("All");
+                        setSelectedPricing("All");
+                      }}
+                    >
+                      Reset filters
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/request-tool")}
+                    >
+                      Request a new tool
+                    </Button>
+                  </div>
                 </div>
               )}
               

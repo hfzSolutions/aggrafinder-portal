@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
@@ -76,7 +76,13 @@ const Header = () => {
           <NavLink to="/">Home</NavLink>
           <NavLink to="/tools">AI Tools</NavLink>
           <NavLink to="/resources">Resources</NavLink>
-          <div className="ml-4">
+          <div className="ml-4 flex items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="flex items-center gap-1">
+              <Link to="/request-tool">
+                <Plus className="h-3.5 w-3.5" />
+                <span>Request Tool</span>
+              </Link>
+            </Button>
             <Button asChild variant="ghost" size="sm" className="rounded-full">
               <a 
                 href="https://github.com" 
@@ -103,7 +109,7 @@ const Header = () => {
       <div 
         className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
           isMenuOpen 
-            ? "max-h-60 opacity-100" 
+            ? "max-h-[280px] opacity-100" 
             : "max-h-0 opacity-0"
         }`}
       >
@@ -111,6 +117,10 @@ const Header = () => {
           <Link to="/" className="px-4 py-3 hover:bg-secondary/50 rounded-md">Home</Link>
           <Link to="/tools" className="px-4 py-3 hover:bg-secondary/50 rounded-md">AI Tools</Link>
           <Link to="/resources" className="px-4 py-3 hover:bg-secondary/50 rounded-md">Resources</Link>
+          <Link to="/request-tool" className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            <span>Request Tool</span>
+          </Link>
           <a 
             href="https://github.com" 
             target="_blank" 

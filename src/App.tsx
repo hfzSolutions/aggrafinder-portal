@@ -10,6 +10,7 @@ import Tools from "./pages/Tools";
 import ToolDetails from "./pages/ToolDetails";
 import CompareTools from "./pages/CompareTools";
 import Resources from "./pages/Resources";
+import RequestTool from "./pages/RequestTool";
 import NotFound from "./pages/NotFound";
 import { ToolsCompareProvider } from "./hooks/useToolsCompare";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/tools/:id" element={<ToolDetails />} />
             <Route path="/tools/compare/:ids" element={<CompareTools />} />
             <Route path="/resources" element={<Resources />} />
+            <Route path="/request-tool" element={<RequestTool />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
