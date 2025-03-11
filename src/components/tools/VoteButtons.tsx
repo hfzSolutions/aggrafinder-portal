@@ -22,7 +22,10 @@ export const VoteButtons = ({ toolId, variant = "default", className }: VoteButt
       setProcessingVote(voteType);
       await vote(voteType);
     } finally {
-      setProcessingVote(null);
+      // Use a small delay before resetting processing state to prevent rapid clicks
+      setTimeout(() => {
+        setProcessingVote(null);
+      }, 500);
     }
   };
   
