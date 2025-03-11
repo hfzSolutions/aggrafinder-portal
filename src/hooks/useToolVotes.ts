@@ -119,22 +119,6 @@ export const useToolVotes = (toolId: string) => {
       } 
       // User is adding a new vote or changing vote type
       else {
-        // First, ensure any existing vote is removed to avoid constraint errors
-        if (userVote !== null) {
-          // Delete existing vote first
-          const { error: deleteError } = await supabase
-            .from('tool_votes')
-            .delete()
-            .eq('tool_id', toolId)
-            .eq('ip_address', userId);
-            
-          if (deleteError) {
-            console.error("Error removing previous vote:", deleteError);
-            toast.error("Failed to update your vote. Please try again.");
-            return;
-          }
-        }
-        
         // Calculate the new vote state for optimistic update
         let newVoteCount;
         if (userVote === null) {
@@ -157,20 +141,17 @@ export const useToolVotes = (toolId: string) => {
         setUserVote(voteType);
         setVoteCount(newVoteCount);
         
-        // Short delay to ensure previous delete operation completes
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Now insert the new vote
-        const { error: insertError } = await supabase
+        // Update in database
+        const { error } = await supabase
           .from('tool_votes')
-          .insert({
+          .upsert({
             tool_id: toolId,
             ip_address: userId,
             vote_type: voteType
           });
         
-        if (insertError) {
-          console.error("Error recording vote:", insertError);
+        if (error) {
+          console.error("Error recording vote:", error);
           // Revert UI on error
           setUserVote(originalVote);
           setVoteCount(originalCounts);
