@@ -16,7 +16,7 @@ export const useToolVotes = (toolId: string) => {
     score: 0
   });
   const [userVote, setUserVote] = useState<'upvote' | 'downvote' | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Fetch vote counts and user's vote
   useEffect(() => {
@@ -37,29 +37,39 @@ export const useToolVotes = (toolId: string) => {
         }
         
         // Get user's IP address to check their vote
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
-        const { ip } = await ipResponse.json();
-        
-        // Check if user has already voted
-        const { data: userVoteData, error: voteError } = await supabase
-          .from('tool_votes')
-          .select('vote_type')
-          .eq('tool_id', toolId)
-          .eq('ip_address', ip)
-          .maybeSingle();
-        
-        if (voteError) {
-          console.error("Error fetching user vote:", voteError);
+        try {
+          const ipResponse = await fetch('https://api.ipify.org?format=json');
+          const { ip } = await ipResponse.json();
+          
+          // Check if user has already voted
+          const { data: userVoteData, error: voteError } = await supabase
+            .from('tool_votes')
+            .select('vote_type')
+            .eq('tool_id', toolId)
+            .eq('ip_address', ip)
+            .maybeSingle();
+          
+          if (voteError) {
+            console.error("Error fetching user vote:", voteError);
+          }
+          
+          // Update state
+          setVoteCount({
+            upvotes: voteCounts?.upvotes || 0,
+            downvotes: voteCounts?.downvotes || 0,
+            score: voteCounts?.vote_score || 0
+          });
+          
+          setUserVote(userVoteData?.vote_type as 'upvote' | 'downvote' | null || null);
+        } catch (ipErr) {
+          console.error("Error getting IP address:", ipErr);
+          // Still update vote counts even if we can't get the IP
+          setVoteCount({
+            upvotes: voteCounts?.upvotes || 0,
+            downvotes: voteCounts?.downvotes || 0,
+            score: voteCounts?.vote_score || 0
+          });
         }
-        
-        // Update state
-        setVoteCount({
-          upvotes: voteCounts?.upvotes || 0,
-          downvotes: voteCounts?.downvotes || 0,
-          score: voteCounts?.vote_score || 0
-        });
-        
-        setUserVote(userVoteData?.vote_type as 'upvote' | 'downvote' | null || null);
       } catch (err) {
         console.error("Error in useToolVotes hook:", err);
       } finally {
@@ -76,8 +86,16 @@ export const useToolVotes = (toolId: string) => {
       setLoading(true);
       
       // Get user's IP address
-      const ipResponse = await fetch('https://api.ipify.org?format=json');
-      const { ip } = await ipResponse.json();
+      let ip;
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        ip = ipData.ip;
+      } catch (ipErr) {
+        console.error("Error getting IP address:", ipErr);
+        toast.error("Unable to get your IP address to record vote");
+        return;
+      }
       
       // Check if user is changing their vote
       let method = 'insert';

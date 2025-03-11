@@ -3,6 +3,7 @@ import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToolVotes } from "@/hooks/useToolVotes";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface VoteButtonsProps {
   toolId: string;
@@ -12,10 +13,16 @@ interface VoteButtonsProps {
 
 export const VoteButtons = ({ toolId, variant = "default", className }: VoteButtonsProps) => {
   const { voteCount, userVote, loading, vote } = useToolVotes(toolId);
+  const [isVoting, setIsVoting] = useState(false);
   
-  const handleVote = (voteType: 'upvote' | 'downvote') => {
-    if (!loading) {
-      vote(voteType);
+  const handleVote = async (voteType: 'upvote' | 'downvote') => {
+    if (isVoting) return;
+    
+    try {
+      setIsVoting(true);
+      await vote(voteType);
+    } finally {
+      setIsVoting(false);
     }
   };
   
@@ -35,7 +42,7 @@ export const VoteButtons = ({ toolId, variant = "default", className }: VoteButt
           userVote === 'upvote' ? "text-green-600 hover:text-green-700" : "text-muted-foreground hover:text-foreground"
         )}
         onClick={() => handleVote('upvote')}
-        disabled={loading}
+        disabled={isVoting}
       >
         <ThumbsUp className={cn(
           "h-4 w-4",
@@ -52,7 +59,7 @@ export const VoteButtons = ({ toolId, variant = "default", className }: VoteButt
           userVote === 'downvote' ? "text-red-600 hover:text-red-700" : "text-muted-foreground hover:text-foreground"
         )}
         onClick={() => handleVote('downvote')}
-        disabled={loading}
+        disabled={isVoting}
       >
         <ThumbsDown className={cn(
           "h-4 w-4",
