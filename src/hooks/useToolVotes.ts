@@ -85,70 +85,85 @@ export const useToolVotes = (toolId: string) => {
       // Get unique ID for this user/browser
       const userId = getUserId();
       
-      // Check if user is changing their vote
-      let method = 'insert';
-      if (userVote) {
-        if (userVote === voteType) {
-          // User is trying to vote the same way again - treat as removing vote
-          const { error } = await supabase
-            .from('tool_votes')
-            .delete()
-            .eq('tool_id', toolId)
-            .eq('ip_address', userId);
-          
-          if (error) throw error;
-          
-          // Update local state
-          setUserVote(null);
-          setVoteCount(prev => ({
-            upvotes: voteType === 'upvote' ? prev.upvotes - 1 : prev.upvotes,
-            downvotes: voteType === 'downvote' ? prev.downvotes - 1 : prev.downvotes,
-            score: voteType === 'upvote' ? prev.score - 1 : prev.score + 1
-          }));
-          
-          toast.success("Vote removed");
+      // Optimistic UI update - Record original vote state in case of error
+      const originalVote = userVote;
+      const originalCounts = { ...voteCount };
+      
+      // Check if user is removing a previous vote of the same type
+      if (userVote === voteType) {
+        // Optimistically update UI
+        setUserVote(null);
+        setVoteCount(prev => ({
+          upvotes: voteType === 'upvote' ? Math.max(0, prev.upvotes - 1) : prev.upvotes,
+          downvotes: voteType === 'downvote' ? Math.max(0, prev.downvotes - 1) : prev.downvotes,
+          score: voteType === 'upvote' ? prev.score - 1 : prev.score + 1
+        }));
+        
+        // Delete the vote from database
+        const { error } = await supabase
+          .from('tool_votes')
+          .delete()
+          .eq('tool_id', toolId)
+          .eq('ip_address', userId);
+        
+        if (error) {
+          console.error("Error removing vote:", error);
+          // Revert UI on error
+          setUserVote(originalVote);
+          setVoteCount(originalCounts);
+          toast.error("Failed to remove vote. Please try again.");
           return;
-        } else {
-          // User is changing vote from up to down or vice versa
-          method = 'upsert';
         }
+        
+        toast.success("Vote removed");
+      } 
+      // User is adding a new vote or changing vote type
+      else {
+        // Calculate the new vote state for optimistic update
+        let newVoteCount;
+        if (userVote === null) {
+          // Adding new vote
+          newVoteCount = {
+            upvotes: voteType === 'upvote' ? voteCount.upvotes + 1 : voteCount.upvotes,
+            downvotes: voteType === 'downvote' ? voteCount.downvotes + 1 : voteCount.downvotes,
+            score: voteType === 'upvote' ? voteCount.score + 1 : voteCount.score - 1
+          };
+        } else {
+          // Changing vote type (e.g., from upvote to downvote)
+          newVoteCount = {
+            upvotes: voteType === 'upvote' ? voteCount.upvotes + 1 : voteCount.upvotes - 1,
+            downvotes: voteType === 'downvote' ? voteCount.downvotes + 1 : voteCount.downvotes - 1,
+            score: voteType === 'upvote' ? voteCount.score + 2 : voteCount.score - 2
+          };
+        }
+        
+        // Optimistically update UI
+        setUserVote(voteType);
+        setVoteCount(newVoteCount);
+        
+        // Update in database
+        const { error } = await supabase
+          .from('tool_votes')
+          .upsert({
+            tool_id: toolId,
+            ip_address: userId,
+            vote_type: voteType
+          });
+        
+        if (error) {
+          console.error("Error recording vote:", error);
+          // Revert UI on error
+          setUserVote(originalVote);
+          setVoteCount(originalCounts);
+          toast.error("Failed to record vote. Please try again.");
+          return;
+        }
+        
+        toast.success(`Vote ${userVote ? 'changed' : 'recorded'}`);
       }
-      
-      // Insert or update vote
-      const { error } = await supabase
-        .from('tool_votes')
-        .upsert({
-          tool_id: toolId,
-          ip_address: userId,
-          vote_type: voteType
-        });
-      
-      if (error) throw error;
-      
-      // Update local state
-      const oldVote = userVote;
-      setUserVote(voteType);
-      
-      if (oldVote) {
-        // Switching vote type
-        setVoteCount(prev => ({
-          upvotes: voteType === 'upvote' ? prev.upvotes + 1 : prev.upvotes - 1,
-          downvotes: voteType === 'upvote' ? prev.downvotes - 1 : prev.downvotes + 1,
-          score: voteType === 'upvote' ? prev.score + 2 : prev.score - 2
-        }));
-      } else {
-        // New vote
-        setVoteCount(prev => ({
-          upvotes: voteType === 'upvote' ? prev.upvotes + 1 : prev.upvotes,
-          downvotes: voteType === 'downvote' ? prev.downvotes + 1 : prev.downvotes,
-          score: voteType === 'upvote' ? prev.score + 1 : prev.score - 1
-        }));
-      }
-      
-      toast.success(`Vote ${method === 'insert' ? 'recorded' : 'updated'}`);
     } catch (err) {
       console.error("Error voting:", err);
-      toast.error("Failed to record vote. Please try again.");
+      toast.error("Failed to process your vote. Please try again.");
     } finally {
       setLoading(false);
     }
