@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
@@ -88,16 +87,7 @@ const Tools = () => {
                   />
                 </div>
                 
-                <div className="mt-6 flex justify-center">
-                  <Button 
-                    variant="outline" 
-                    className="flex items-center gap-2"
-                    onClick={() => navigate("/request-tool")}
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Request a new tool</span>
-                  </Button>
-                </div>
+                {/* Removed the "Request a new tool" button that was here */}
               </div>
             </div>
           </div>

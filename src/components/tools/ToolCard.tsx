@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ImageOff } from "lucide-react";
 import { AITool } from "@/types/tools";
 import { cn } from "@/lib/utils";
 import { CompareButton } from "./CompareButton";
@@ -14,6 +14,7 @@ interface ToolCardProps {
 
 export const ToolCard = ({ tool }: ToolCardProps) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isImageError, setIsImageError] = useState(false);
   const navigate = useNavigate();
   const { isToolSelected, toggleToolSelection } = useToolsCompare();
   
@@ -39,6 +40,11 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
     e.stopPropagation(); // Prevent card click when clicking compare
     toggleToolSelection(tool);
   };
+
+  const handleImageError = () => {
+    setIsImageError(true);
+    setIsImageLoaded(true); // We consider it "loaded" to stop the loading spinner
+  };
   
   return (
     <div 
@@ -52,15 +58,25 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
           </div>
         )}
-        <img
-          src={tool.imageUrl}
-          alt={tool.name}
-          className={cn(
-            "absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105",
-            isImageLoaded ? "opacity-100" : "opacity-0"
-          )}
-          onLoad={() => setIsImageLoaded(true)}
-        />
+        
+        {isImageError ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/20 text-muted-foreground">
+            <ImageOff className="h-10 w-10 mb-2 opacity-70" />
+            <span className="text-xs">Image unavailable</span>
+          </div>
+        ) : (
+          <img
+            src={tool.imageUrl}
+            alt={tool.name}
+            className={cn(
+              "absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105",
+              isImageLoaded ? "opacity-100" : "opacity-0"
+            )}
+            onLoad={() => setIsImageLoaded(true)}
+            onError={handleImageError}
+          />
+        )}
+        
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         
         {/* Pricing badge */}
