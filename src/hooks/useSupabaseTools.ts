@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AITool } from "@/types/tools";
@@ -10,6 +11,7 @@ interface UseSupabaseToolsOptions {
   limit?: number;
   page?: number;
   loadMore?: boolean;
+  excludeId?: string; // Add this to exclude specific tools (useful for related tools)
 }
 
 export const useSupabaseTools = ({
@@ -19,7 +21,8 @@ export const useSupabaseTools = ({
   pricing,
   limit = 12,
   page = 0,
-  loadMore = false
+  loadMore = false,
+  excludeId
 }: UseSupabaseToolsOptions = {}) => {
   const [tools, setTools] = useState<AITool[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +34,8 @@ export const useSupabaseTools = ({
     featured,
     category,
     search,
-    pricing
+    pricing,
+    excludeId
   });
 
   useEffect(() => {
@@ -39,7 +43,8 @@ export const useSupabaseTools = ({
       prevFiltersRef.current.featured !== featured ||
       prevFiltersRef.current.category !== category ||
       prevFiltersRef.current.search !== search ||
-      prevFiltersRef.current.pricing !== pricing;
+      prevFiltersRef.current.pricing !== pricing ||
+      prevFiltersRef.current.excludeId !== excludeId;
     
     if (filtersChanged && loadMore) {
       setTools([]);
@@ -51,7 +56,8 @@ export const useSupabaseTools = ({
       featured,
       category,
       search,
-      pricing
+      pricing,
+      excludeId
     };
     
     const fetchTools = async () => {
@@ -72,6 +78,10 @@ export const useSupabaseTools = ({
         
         if (pricing && pricing !== 'All') {
           query = query.eq('pricing', pricing);
+        }
+        
+        if (excludeId) {
+          query = query.neq('id', excludeId);
         }
         
         if (search) {
@@ -118,7 +128,7 @@ export const useSupabaseTools = ({
     };
 
     fetchTools();
-  }, [featured, category, search, pricing, limit, currentPage, page, loadMore]);
+  }, [featured, category, search, pricing, limit, currentPage, page, loadMore, excludeId]);
 
   const loadNextPage = () => {
     if (!loading && hasMore) {

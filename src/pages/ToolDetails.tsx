@@ -2,18 +2,19 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { ArrowLeft, ExternalLink, Tag, CheckCircle, DollarSign, Clock, Star, ImageOff } from "lucide-react";
+import { ArrowLeft, ExternalLink, Tag, CheckCircle, DollarSign, Clock, Star, ImageOff, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseTools } from "@/hooks/useSupabaseTools";
 import { AITool } from "@/types/tools";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { VoteButtons } from "@/components/tools/VoteButtons";
 
 const ToolDetails = () => {
@@ -23,6 +24,7 @@ const ToolDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isImageError, setIsImageError] = useState(false);
   
   // Fetch related tools based on the current tool's category
   const { tools: relatedTools, loading: relatedLoading } = useSupabaseTools({
@@ -81,11 +83,11 @@ const ToolDetails = () => {
 
   const getPricingColor = (pricing: string) => {
     switch (pricing) {
-      case "Free": return "bg-green-100 text-green-800";
-      case "Freemium": return "bg-blue-100 text-blue-800";
-      case "Paid": return "bg-purple-100 text-purple-800";
-      case "Free Trial": return "bg-amber-100 text-amber-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Free": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+      case "Freemium": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+      case "Paid": return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300";
+      case "Free Trial": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300";
     }
   };
 
@@ -93,31 +95,31 @@ const ToolDetails = () => {
     switch (pricing) {
       case "Free": 
         return {
-          icon: <DollarSign className="h-5 w-5 text-green-600" />,
+          icon: <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />,
           title: "Free Forever",
           description: "This tool is completely free to use with no hidden costs or limitations."
         };
       case "Freemium": 
         return {
-          icon: <Star className="h-5 w-5 text-blue-600" />,
+          icon: <Star className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
           title: "Free Basic Plan",
           description: "Start with a free plan and upgrade for advanced features and higher usage limits."
         };
       case "Paid": 
         return {
-          icon: <DollarSign className="h-5 w-5 text-purple-600" />,
+          icon: <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />,
           title: "Paid Subscription",
           description: "This tool requires a paid subscription to access its features."
         };
       case "Free Trial": 
         return {
-          icon: <Clock className="h-5 w-5 text-amber-600" />,
+          icon: <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
           title: "Free Trial Available",
           description: "Try before you buy with a limited-time free trial period."
         };
       default: 
         return {
-          icon: <DollarSign className="h-5 w-5 text-gray-600" />,
+          icon: <DollarSign className="h-5 w-5 text-gray-600 dark:text-gray-400" />,
           title: "Pricing",
           description: "Check the website for detailed pricing information."
         };
@@ -138,6 +140,23 @@ const ToolDetails = () => {
   const handleVisitWebsite = (url: string) => {
     window.open(url, "_blank");
     toast.success("Opening website in a new tab");
+  };
+
+  const handleShareTool = () => {
+    if (navigator.share && tool) {
+      navigator.share({
+        title: `${tool.name} - AI Tool`,
+        text: tool.description,
+        url: window.location.href,
+      })
+      .then(() => toast.success("Shared successfully"))
+      .catch((error) => console.error("Error sharing:", error));
+    } else {
+      // Fallback for browsers that don't support navigator.share
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => toast.success("Link copied to clipboard"))
+        .catch(() => toast.error("Failed to copy link"));
+    }
   };
 
   return (
@@ -192,13 +211,13 @@ const ToolDetails = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Main content - Tool details */}
                   <div className="lg:col-span-2 space-y-8">
-                    <div className="space-y-4">
-                      <div className="inline-flex gap-2 items-center">
+                    <div className="space-y-6">
+                      <div className="flex flex-wrap gap-2 items-center">
                         {tool.featured && (
-                          <span className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                          <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 font-medium flex items-center px-2 py-1">
                             <Star className="h-3 w-3 mr-1" />
                             Featured
-                          </span>
+                          </Badge>
                         )}
                         <div className="flex flex-wrap gap-2">
                           {tool.category.map((cat, idx) => (
@@ -217,25 +236,36 @@ const ToolDetails = () => {
                         </div>
                       </div>
                       
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{tool.name}</h1>
-                        <p className="text-lg text-muted-foreground">{tool.description}</p>
+                        <p className="text-lg text-muted-foreground leading-relaxed">{tool.description}</p>
                       </div>
                       
                       {/* Voting and website visit buttons */}
-                      <div className="flex flex-wrap items-center gap-4 pt-2">
+                      <div className="flex flex-wrap items-center gap-4 pt-3">
                         <Button 
                           size="lg"
-                          className="transition-all hover:translate-y-[-2px] shadow-sm hover:shadow"
+                          className="transition-all hover:translate-y-[-2px] shadow-sm hover:shadow flex items-center gap-2"
                           onClick={() => handleVisitWebsite(tool.url)}
                         >
                           Visit Website
-                          <ExternalLink className="h-4 w-4 ml-1" />
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Share button */}
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                          className="transition-all hover:bg-secondary"
+                          onClick={handleShareTool}
+                        >
+                          <Share2 className="h-4 w-4 mr-1" />
+                          Share
                         </Button>
                         
                         {/* Vote buttons */}
                         <div 
-                          className="py-2 px-2 rounded-md border border-border/40 bg-background shadow-sm"
+                          className="py-2 px-3 rounded-md border border-border/40 bg-background shadow-sm hover:shadow-md transition-all"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <VoteButtons toolId={tool.id} />
@@ -247,13 +277,19 @@ const ToolDetails = () => {
                     
                     {/* Feature breakdown section */}
                     <Card className="border border-border/40 overflow-hidden shadow-sm hover:shadow transition-all">
-                      <CardHeader className="bg-secondary/30">
-                        <CardTitle className="text-xl">Feature Highlights</CardTitle>
+                      <CardHeader className="bg-primary/5 dark:bg-primary/10 border-b border-border/30">
+                        <CardTitle className="text-xl flex items-center gap-2">
+                          <Star className="h-5 w-5 text-primary" />
+                          Feature Highlights
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {getFeatureHighlights(tool.tags).map((feature, idx) => (
-                            <div key={idx} className="flex items-start space-x-3 p-4 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
+                            <div 
+                              key={idx} 
+                              className="flex items-start space-x-3 p-4 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors hover-scale-animation"
+                            >
                               <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                               <div>
                                 <h3 className="font-medium">{feature.title}</h3>
@@ -267,11 +303,14 @@ const ToolDetails = () => {
                     
                     {/* Pricing details */}
                     <Card className="border border-border/40 overflow-hidden shadow-sm hover:shadow transition-all">
-                      <CardHeader className="bg-secondary/30">
-                        <CardTitle className="text-xl">Pricing Details</CardTitle>
+                      <CardHeader className="bg-primary/5 dark:bg-primary/10 border-b border-border/30">
+                        <CardTitle className="text-xl flex items-center gap-2">
+                          <DollarSign className="h-5 w-5 text-primary" />
+                          Pricing Details
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="p-6">
-                        <div className="flex items-start space-x-3 p-4 rounded-lg bg-secondary/20">
+                        <div className="flex items-start space-x-3 p-5 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
                           {getPricingDetails(tool.pricing).icon}
                           <div>
                             <h3 className="font-medium text-lg">{getPricingDetails(tool.pricing).title}</h3>
@@ -283,16 +322,20 @@ const ToolDetails = () => {
                     
                     {/* All tags */}
                     <div>
-                      <h3 className="text-lg font-medium mb-4">All Tags</h3>
+                      <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-primary" />
+                        All Tags
+                      </h3>
                       <div className="flex flex-wrap gap-2">
                         {tool.tags.map((tag, idx) => (
-                          <div 
+                          <Badge 
                             key={idx} 
-                            className="flex items-center text-xs px-3 py-1.5 rounded-full bg-secondary/50 text-secondary-foreground hover:bg-secondary/80 transition-colors cursor-default"
+                            variant="secondary"
+                            className="flex items-center text-xs px-3 py-1.5 hover:bg-secondary/80 transition-colors cursor-default"
                           >
                             <Tag className="h-3 w-3 mr-1.5" />
                             {tag}
-                          </div>
+                          </Badge>
                         ))}
                       </div>
                     </div>
@@ -304,28 +347,78 @@ const ToolDetails = () => {
                     <Card className="overflow-hidden border border-border/40 hover:shadow-md transition-all">
                       <CardContent className="p-4">
                         <div className="relative rounded-lg overflow-hidden bg-secondary/10 aspect-video">
-                          {!isImageLoaded && (
+                          {!isImageLoaded && !isImageError && (
                             <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
                               <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
                             </div>
                           )}
-                          <img
-                            src={tool.imageUrl}
-                            alt={tool.name}
-                            className={cn(
-                              "w-full h-full object-cover",
-                              isImageLoaded ? "opacity-100" : "opacity-0"
-                            )}
-                            onLoad={() => setIsImageLoaded(true)}
-                          />
+                          
+                          {isImageError ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/30 text-muted-foreground">
+                              <ImageOff className="h-10 w-10 mb-2 opacity-70" />
+                              <p className="text-sm">Image not available</p>
+                            </div>
+                          ) : (
+                            <img
+                              src={tool.imageUrl}
+                              alt={tool.name}
+                              className={cn(
+                                "w-full h-full object-cover transition-opacity duration-300",
+                                isImageLoaded ? "opacity-100" : "opacity-0"
+                              )}
+                              onLoad={() => setIsImageLoaded(true)}
+                              onError={() => {
+                                setIsImageError(true);
+                                setIsImageLoaded(true);
+                              }}
+                            />
+                          )}
                         </div>
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Quick actions card */}
+                    <Card className="border border-border/40 hover:shadow-md transition-all">
+                      <CardHeader className="bg-primary/5 dark:bg-primary/10 border-b border-border/30 pb-4">
+                        <CardTitle className="text-lg">Quick Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 space-y-3">
+                        <Button 
+                          variant="default" 
+                          className="w-full justify-start"
+                          onClick={() => handleVisitWebsite(tool.url)}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Visit Website
+                        </Button>
+                        
+                        <Button 
+                          variant="secondary" 
+                          className="w-full justify-start"
+                          onClick={handleShareTool}
+                        >
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share Tool
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={handleBackClick}
+                        >
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          Back to all tools
+                        </Button>
                       </CardContent>
                     </Card>
                     
                     {/* Related tools section */}
                     <Card className="border border-border/40 hover:shadow-md transition-all">
-                      <CardHeader className="bg-secondary/30">
-                        <CardTitle className="text-lg">Related Tools</CardTitle>
+                      <CardHeader className="bg-primary/5 dark:bg-primary/10 border-b border-border/30">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-primary" />
+                          Related Tools
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="p-4">
                         {relatedLoading ? (
@@ -340,13 +433,23 @@ const ToolDetails = () => {
                               <div key={relatedTool.id} className="group">
                                 <Link 
                                   to={`/tools/${relatedTool.id}`} 
-                                  className="flex items-start space-x-3 p-3 rounded-md hover:bg-secondary/30 transition-colors border border-transparent hover:border-border/40"
+                                  className="flex items-start space-x-3 p-3 rounded-md hover:bg-secondary/30 transition-colors border border-transparent hover:border-border/40 hover-scale-animation"
                                 >
                                   <div className="h-14 w-14 rounded-md overflow-hidden bg-secondary/20 flex-shrink-0">
                                     <img 
                                       src={relatedTool.imageUrl} 
                                       alt={relatedTool.name}
                                       className="h-full w-full object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                        const parent = (e.target as HTMLImageElement).parentElement;
+                                        if (parent) {
+                                          const fallback = document.createElement('div');
+                                          fallback.className = 'h-full w-full flex items-center justify-center bg-secondary/40';
+                                          fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                                          parent.appendChild(fallback);
+                                        }
+                                      }}
                                     />
                                   </div>
                                   <div>
@@ -372,32 +475,6 @@ const ToolDetails = () => {
                             <p className="text-sm text-muted-foreground">No related tools found</p>
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Quick actions card */}
-                    <Card className="border border-border/40 hover:shadow-md transition-all">
-                      <CardHeader className="bg-secondary/30 pb-4">
-                        <CardTitle className="text-lg">Quick Actions</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 space-y-3">
-                        <Button 
-                          variant="secondary" 
-                          className="w-full justify-start"
-                          onClick={() => handleVisitWebsite(tool.url)}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Visit Website
-                        </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start"
-                          onClick={handleBackClick}
-                        >
-                          <ArrowLeft className="h-4 w-4 mr-2" />
-                          Back to tools
-                        </Button>
                       </CardContent>
                     </Card>
                   </div>
