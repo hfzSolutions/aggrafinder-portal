@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
@@ -29,11 +30,42 @@ const Tools = () => {
   const [view, setView] = useState<"grid" | "list">("grid");
   
   const { categories, loading: categoriesLoading } = useSupabaseCategories();
-  const { tools: filteredTools, loading: toolsLoading, error } = useSupabaseTools({
+  const { 
+    tools: filteredTools, 
+    loading: toolsLoading, 
+    error,
+    hasMore,
+    loadNextPage
+  } = useSupabaseTools({
     category: activeCategory !== "All" ? activeCategory : undefined,
     search: searchTerm,
-    pricing: selectedPricing !== "All" ? selectedPricing : undefined
+    pricing: selectedPricing !== "All" ? selectedPricing : undefined,
+    loadMore: true
   });
+
+  // Reference to the observer element at the bottom of the list
+  const observer = useRef<IntersectionObserver | null>(null);
+  
+  // Last element ref callback function
+  const lastToolElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (toolsLoading) return;
+    
+    // Disconnect the previous observer if it exists
+    if (observer.current) observer.current.disconnect();
+    
+    // Create a new observer
+    observer.current = new IntersectionObserver(entries => {
+      // If the last element is visible and we have more items to load
+      if (entries[0].isIntersecting && hasMore) {
+        loadNextPage();
+      }
+    }, { 
+      rootMargin: '100px' // Load more when we're 100px away from the bottom
+    });
+    
+    // Observe the last element
+    if (node) observer.current.observe(node);
+  }, [toolsLoading, hasMore, loadNextPage]);
   
   useEffect(() => {
     const params = new URLSearchParams();
@@ -56,7 +88,7 @@ const Tools = () => {
     setSelectedPricing(pricing);
   };
   
-  const isLoading = categoriesLoading || toolsLoading;
+  const isLoading = categoriesLoading || toolsLoading && filteredTools.length === 0;
   
   return (
     <>
@@ -86,8 +118,6 @@ const Tools = () => {
                     className="max-w-xl mx-auto"
                   />
                 </div>
-                
-                {/* Removed the "Request a new tool" button that was here */}
               </div>
             </div>
           </div>
@@ -255,11 +285,29 @@ const Tools = () => {
                       : "grid grid-cols-1 gap-4"
                   }
                 >
-                  {filteredTools.map((tool) => (
-                    <div key={tool.id} className="animate-fade-in">
+                  {filteredTools.map((tool, index) => (
+                    <div 
+                      key={tool.id} 
+                      ref={index === filteredTools.length - 1 ? lastToolElementRef : null}
+                      className="animate-fade-in"
+                    >
                       <ToolCard tool={tool} />
                     </div>
                   ))}
+                  
+                  {/* Loading indicator at the bottom */}
+                  {toolsLoading && filteredTools.length > 0 && (
+                    <div 
+                      className={`col-span-full flex justify-center py-4 ${
+                        view === "grid" ? "mt-4" : "mt-2"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                        <span className="text-sm text-muted-foreground">Loading more tools...</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
