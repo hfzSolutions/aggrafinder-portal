@@ -1,12 +1,14 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ExternalLink, ImageOff } from "lucide-react";
+import { ExternalLink, ImageOff, Star, Users, Calendar } from "lucide-react";
 import { AITool } from "@/types/tools";
 import { cn } from "@/lib/utils";
 import { CompareButton } from "./CompareButton";
 import { useToolsCompare } from "@/hooks/useToolsCompare";
 import { VoteButtons } from "./VoteButtons";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ToolCardProps {
   tool: AITool;
@@ -15,6 +17,7 @@ interface ToolCardProps {
 export const ToolCard = ({ tool }: ToolCardProps) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
   const { isToolSelected, toggleToolSelection } = useToolsCompare();
   
@@ -45,12 +48,26 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
     setIsImageError(true);
     setIsImageLoaded(true); // We consider it "loaded" to stop the loading spinner
   };
+
+  // Format the release date if it exists (fictional data for illustration)
+  const formatReleaseDate = () => {
+    // Placeholder for potential future release date field
+    return "2023";
+  };
   
   return (
     <div 
-      className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col cursor-pointer"
+      className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col cursor-pointer"
       onClick={handleCardClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Decorative gradient corners */}
+      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent rounded-tl-xl"></div>
+        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-primary/20 to-transparent rounded-br-xl"></div>
+      </div>
+      
       {/* Image container with aspect ratio */}
       <div className="relative pt-[56.25%] w-full overflow-hidden bg-secondary/30">
         {!isImageLoaded && (
@@ -79,6 +96,15 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
         
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         
+        {/* Featured badge */}
+        {tool.featured && (
+          <div className="absolute top-3 left-3 z-10">
+            <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border border-yellow-200">
+              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" /> Featured
+            </Badge>
+          </div>
+        )}
+        
         {/* Pricing badge */}
         <div className="absolute top-3 right-3 z-10">
           <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(tool.pricing)}`}>
@@ -87,7 +113,10 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
         </div>
         
         {/* Compare button */}
-        <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className={cn(
+          "absolute bottom-3 left-3 z-10 transition-all duration-300",
+          isHovered || isToolSelected(tool.id) ? "opacity-100" : "opacity-0"
+        )}>
           <CompareButton 
             isActive={isToolSelected(tool.id)} 
             onClick={handleCompareClick}
@@ -101,9 +130,43 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
         <h3 className="text-lg font-medium mb-2 group-hover:text-primary transition-colors duration-300">
           {tool.name}
         </h3>
-        <p className="text-sm text-muted-foreground mb-4 flex-grow">
+        <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-3">
           {tool.description}
         </p>
+        
+        {/* Categories */}
+        <div className="mb-3">
+          <div className="flex flex-wrap gap-1.5">
+            {tool.category && tool.category.slice(0, 2).map((category, index) => (
+              <Badge 
+                key={index} 
+                variant="outline"
+                className="text-xs bg-secondary/40 hover:bg-secondary"
+              >
+                {category}
+              </Badge>
+            ))}
+            {tool.category && tool.category.length > 2 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge 
+                      variant="outline"
+                      className="text-xs bg-secondary/40 hover:bg-secondary cursor-help"
+                    >
+                      +{tool.category.length - 2}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs">
+                      {tool.category.slice(2).join(', ')}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        </div>
         
         {/* Tags */}
         <div className="mt-auto">
@@ -116,9 +179,27 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
                 {tag}
               </span>
             ))}
+            {tool.tags.length > 3 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span 
+                      className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground cursor-help"
+                    >
+                      +{tool.tags.length - 3}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs">
+                      {tool.tags.slice(3).join(', ')}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
           
-          {/* Vote and Visit buttons row */}
+          {/* Action row with fictional data indicators */}
           <div className="flex items-center justify-between">
             {/* Voting */}
             <div 
