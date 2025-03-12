@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -138,6 +139,35 @@
   
   .shimmer-effect {
     @apply bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%] animate-bg-shimmer;
+  }
+  
+  /* New UI Components for ToolDetails page */
+  .soft-shadow {
+    @apply shadow-[0_4px_20px_-2px_rgba(0,0,0,0.1)];
+  }
+
+  .tool-card {
+    @apply rounded-xl border border-border/40 bg-card/90 backdrop-blur-sm transition-all duration-300 hover:shadow-md overflow-hidden;
+  }
+  
+  .tool-card-header {
+    @apply bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 p-6 border-b border-border/30;
+  }
+  
+  .tool-card-content {
+    @apply p-6;
+  }
+  
+  .feature-item {
+    @apply flex items-start space-x-3 p-4 rounded-xl bg-secondary/20 hover:bg-secondary/30 transition-all duration-300 hover:scale-[1.01] border border-transparent hover:border-border/20;
+  }
+  
+  .tool-img-container {
+    @apply relative rounded-xl overflow-hidden bg-gradient-to-br from-secondary/30 to-secondary/10 aspect-video;
+  }
+  
+  .action-button {
+    @apply w-full justify-start transition-all duration-200 hover:translate-x-1;
   }
 }
 
