@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, ChevronDown, Plus } from "lucide-react";
+import { Menu, X, ChevronDown, Plus, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
@@ -76,6 +76,7 @@ const Header = () => {
           <NavLink to="/">Home</NavLink>
           <NavLink to="/tools">AI Tools</NavLink>
           <NavLink to="/resources">Resources</NavLink>
+          <NavLink to="/outcomes">AI Showcase</NavLink>
           <div className="ml-4 flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className="flex items-center gap-1">
               <Link to="/request-tool">
@@ -117,6 +118,10 @@ const Header = () => {
           <Link to="/" className="px-4 py-3 hover:bg-secondary/50 rounded-md">Home</Link>
           <Link to="/tools" className="px-4 py-3 hover:bg-secondary/50 rounded-md">AI Tools</Link>
           <Link to="/resources" className="px-4 py-3 hover:bg-secondary/50 rounded-md">Resources</Link>
+          <Link to="/outcomes" className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2">
+            <Image className="h-4 w-4" />
+            <span>AI Showcase</span>
+          </Link>
           <Link to="/request-tool" className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2">
             <Plus className="h-4 w-4" />
             <span>Request Tool</span>
