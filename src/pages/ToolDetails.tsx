@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import { ArrowLeft, ExternalLink, Tag, CheckCircle, DollarSign, Clock, Star, ImageOff, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { VoteButtons } from "@/components/tools/VoteButtons";
 const ToolDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tool, setTool] = useState<AITool | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -139,7 +140,13 @@ const ToolDetails = () => {
   };
 
   const handleBackClick = () => {
-    navigate('/tools');
+    // If we came from inside the app, go back to preserve scroll position and filters
+    if (location.key !== 'default') {
+      navigate(-1);
+    } else {
+      // Fallback to tools page if there's no history
+      navigate('/tools');
+    }
   };
 
   const handleVisitWebsite = (url: string) => {
