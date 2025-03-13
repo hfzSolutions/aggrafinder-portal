@@ -26,6 +26,11 @@ const ToolDetails = () => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
   
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+  
   // Fetch related tools based on the current tool's category
   const { tools: relatedTools, loading: relatedLoading } = useSupabaseTools({
     category: tool?.category?.[0],
