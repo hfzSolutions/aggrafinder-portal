@@ -9,6 +9,47 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_outcomes: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          image_url: string
+          submitter_email: string | null
+          submitter_name: string
+          title: string
+          tool_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          image_url: string
+          submitter_email?: string | null
+          submitter_name: string
+          title: string
+          tool_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string
+          submitter_email?: string | null
+          submitter_name?: string
+          title?: string
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_outcomes_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_tools: {
         Row: {
           category: string[]

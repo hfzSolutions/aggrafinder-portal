@@ -1,15 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { PlusCircle, ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { AIOucome } from "@/types/outcomes";
 import OutcomeSubmissionForm from "@/components/outcomes/OutcomeSubmissionForm";
 
@@ -18,7 +15,6 @@ const Outcomes = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchOutcomes = async () => {
