@@ -1,8 +1,7 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { PlusCircle, ImageIcon, Loader2, Search, ArrowLeft, Sliders } from "lucide-react";
+import { PlusCircle, ImageIcon, Loader2, ArrowLeft, Sliders } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,7 +13,6 @@ import OutcomeSubmissionForm from "@/components/outcomes/OutcomeSubmissionForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import SearchBar from "@/components/ui/SearchBar";
 import FilterButton from "@/components/ui/FilterButton";
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
 import Header from "@/components/layout/Header";
 
 const Outcomes = () => {
@@ -189,24 +187,6 @@ const Outcomes = () => {
       <div className="min-h-screen flex flex-col pb-20">
         <Header />
         <main className="flex-grow pt-20">
-          {/* Navigation Header */}
-          <div className="border-b">
-            <div className="container flex h-16 items-center px-4 sm:px-8">
-              <NavigationMenu>
-                <NavigationMenuList>
-                  <NavigationMenuItem>
-                    <NavigationMenuLink 
-                      href="#" 
-                      className={navigationMenuTriggerStyle()}
-                    >
-                      Showcase
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
-            </div>
-          </div>
-
           <div className="bg-secondary/30 border-b border-border/20">
             <div className="container px-4 md:px-8 mx-auto py-12 md:py-16">
               <div className="max-w-3xl mx-auto text-center">
@@ -246,7 +226,7 @@ const Outcomes = () => {
               </div>
               
               <div 
-                className={`p-4 rounded-lg border border-border/50 bg-background/50 w-full md:w-auto md:flex space-y-4 md:space-y-0 md:space-x-4 items-center ${
+                className={`p-4 rounded-lg border border-border/50 bg-background/50 w-full md:w-auto md:flex md:justify-between md:items-center ${
                   isFilterOpen ? "block" : "hidden md:flex"
                 }`}
               >
@@ -266,8 +246,8 @@ const Outcomes = () => {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
+                <div className="flex items-center justify-between mt-4 sm:mt-0">
+                  <div className="text-sm text-muted-foreground mr-4">
                     {isInitialLoading ? (
                       <Skeleton className="h-4 w-20" />
                     ) : (
@@ -276,25 +256,25 @@ const Outcomes = () => {
                       </>
                     )}
                   </div>
+                  
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="lg" className="whitespace-nowrap ml-auto">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Share Your Creation
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>Share Your AI Creation</DialogTitle>
+                        <DialogDescription>
+                          Showcase your amazing AI-generated content with the community.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <OutcomeSubmissionForm onSuccess={handleSubmitSuccess} />
+                    </DialogContent>
+                  </Dialog>
                 </div>
-                
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="lg" className="w-full md:w-auto whitespace-nowrap ml-auto">
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Share Your Creation
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                      <DialogTitle>Share Your AI Creation</DialogTitle>
-                      <DialogDescription>
-                        Showcase your amazing AI-generated content with the community.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <OutcomeSubmissionForm onSuccess={handleSubmitSuccess} />
-                  </DialogContent>
-                </Dialog>
               </div>
             </div>
 
