@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSupabaseTools } from "@/hooks/useSupabaseTools";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AIOucome } from "@/types/outcomes";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(100, "Title must be less than 100 characters"),
@@ -26,21 +27,38 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface OutcomeSubmissionFormProps {
   onSuccess: () => void;
+  initialData?: AIOucome;
+  userId?: string;
 }
 
-const OutcomeSubmissionForm = ({ onSuccess }: OutcomeSubmissionFormProps) => {
+const OutcomeSubmissionForm = ({ onSuccess, initialData, userId }: OutcomeSubmissionFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { tools, loading: toolsLoading } = useSupabaseTools();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  // Fetch current user if not provided
+  useEffect(() => {
+    const getUserDetails = async () => {
+      if (userId) return;
+      
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setCurrentUser(data.user);
+      }
+    };
+    
+    getUserDetails();
+  }, [userId]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      toolId: "",
-      imageUrl: "",
-      submitterName: "",
-      submitterEmail: "",
+      title: initialData?.title || "",
+      description: initialData?.description || "",
+      toolId: initialData?.toolId || "",
+      imageUrl: initialData?.imageUrl || "",
+      submitterName: initialData?.submitterName || "",
+      submitterEmail: initialData?.submitterEmail || "",
     },
   });
 
@@ -48,20 +66,53 @@ const OutcomeSubmissionForm = ({ onSuccess }: OutcomeSubmissionFormProps) => {
     try {
       setIsSubmitting(true);
       
-      // Insert the new outcome into Supabase
-      const { error } = await supabase
-        .from('ai_outcomes')
-        .insert({
-          title: values.title,
-          description: values.description,
-          tool_id: values.toolId,
-          image_url: values.imageUrl,
-          submitter_name: values.submitterName,
-          submitter_email: values.submitterEmail,
-        });
+      // Check if user is logged in
+      const activeUserId = userId || currentUser?.id;
+      
+      if (!activeUserId) {
+        toast.error("You must be logged in to submit content. Please sign in.");
+        return;
+      }
+      
+      if (initialData) {
+        // Update existing outcome
+        const { error } = await supabase
+          .from('ai_outcomes')
+          .update({
+            title: values.title,
+            description: values.description,
+            tool_id: values.toolId,
+            image_url: values.imageUrl,
+            submitter_name: values.submitterName,
+            submitter_email: values.submitterEmail,
+            user_id: activeUserId
+          })
+          .eq('id', initialData.id);
 
-      if (error) {
-        throw new Error(error.message);
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        toast.success("Your AI creation has been updated!");
+      } else {
+        // Insert the new outcome
+        const { error } = await supabase
+          .from('ai_outcomes')
+          .insert({
+            title: values.title,
+            description: values.description,
+            tool_id: values.toolId,
+            image_url: values.imageUrl,
+            submitter_name: values.submitterName,
+            submitter_email: values.submitterEmail,
+            user_id: activeUserId
+          });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        toast.success("Your AI creation has been submitted successfully!");
       }
       
       onSuccess();
@@ -116,7 +167,7 @@ const OutcomeSubmissionForm = ({ onSuccess }: OutcomeSubmissionFormProps) => {
               <FormLabel>AI Tool Used</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
-                defaultValue={field.value}
+                value={field.value}
                 disabled={toolsLoading}
               >
                 <FormControl>
@@ -182,7 +233,7 @@ const OutcomeSubmissionForm = ({ onSuccess }: OutcomeSubmissionFormProps) => {
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Submit
+            {initialData ? "Update" : "Submit"}
           </Button>
         </div>
       </form>

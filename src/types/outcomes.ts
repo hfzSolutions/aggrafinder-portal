@@ -9,4 +9,5 @@ export interface AIOucome {
   createdAt: string;
   submitterName: string;
   submitterEmail?: string;
+  userId?: string;
 }

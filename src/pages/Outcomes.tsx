@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { PlusCircle, ImageIcon, Loader2, ArrowLeft, Sliders } from "lucide-react";
+import { PlusCircle, ImageIcon, Loader2, ArrowLeft, Sliders, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -33,6 +34,7 @@ const Outcomes = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const [user, setUser] = useState<any>(null);
   const limit = 12;
 
   // Observer for infinite scrolling
@@ -58,6 +60,27 @@ const Outcomes = () => {
     // Observe the last element
     if (node) observer.current.observe(node);
   }, [loading, hasMore]);
+
+  // Check for authenticated user
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data?.user || null);
+    };
+    
+    checkUser();
+    
+    // Set up auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_, session) => {
+        setUser(session?.user || null);
+      }
+    );
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchTools = async () => {
@@ -121,6 +144,7 @@ const Outcomes = () => {
           createdAt: item.created_at,
           submitterName: item.submitter_name,
           submitterEmail: item.submitter_email,
+          userId: item.user_id
         }));
 
         setHasMore(transformedData.length === limit);
@@ -173,6 +197,16 @@ const Outcomes = () => {
     setCurrentPage(0);
     setOutcomes([]);
     setHasMore(true);
+  };
+
+  const handleCreateClick = () => {
+    if (!user) {
+      toast.info("Please sign in to share your creations");
+      navigate("/auth");
+      return;
+    }
+    
+    setIsDialogOpen(true);
   };
 
   const isInitialLoading = loading && currentPage === 0;
@@ -257,23 +291,30 @@ const Outcomes = () => {
                     )}
                   </div>
                   
-                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="lg" className="whitespace-nowrap ml-auto">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Share Your Creation
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px]">
-                      <DialogHeader>
-                        <DialogTitle>Share Your AI Creation</DialogTitle>
-                        <DialogDescription>
-                          Showcase your amazing AI-generated content with the community.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <OutcomeSubmissionForm onSuccess={handleSubmitSuccess} />
-                    </DialogContent>
-                  </Dialog>
+                  {user ? (
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="lg" className="whitespace-nowrap ml-auto">
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Share Your Creation
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[600px]">
+                        <DialogHeader>
+                          <DialogTitle>Share Your AI Creation</DialogTitle>
+                          <DialogDescription>
+                            Showcase your amazing AI-generated content with the community.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <OutcomeSubmissionForm onSuccess={handleSubmitSuccess} userId={user.id} />
+                      </DialogContent>
+                    </Dialog>
+                  ) : (
+                    <Button size="lg" className="whitespace-nowrap ml-auto" onClick={() => navigate("/auth")}>
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Sign In to Share
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -329,7 +370,7 @@ const Outcomes = () => {
                 <p className="text-muted-foreground mb-6">
                   Be the first to share your amazing AI-generated content!
                 </p>
-                <Button onClick={() => setIsDialogOpen(true)}>
+                <Button onClick={handleCreateClick}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Share Your Creation
                 </Button>
@@ -351,8 +392,8 @@ const Outcomes = () => {
                               className="w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
-                              <ImageIcon className="w-12 h-12 text-primary/40" />
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500">
+                              <ImageIcon className="w-12 h-12 text-white/70" />
                             </div>
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
