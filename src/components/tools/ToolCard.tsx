@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ExternalLink, ImageOff, Star, Users, Calendar } from "lucide-react";
@@ -49,7 +48,26 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
     setIsImageLoaded(true); // We consider it "loaded" to stop the loading spinner
   };
 
-  // Format the release date if it exists (fictional data for illustration)
+  const getGradientForTool = () => {
+    const sumChars = tool.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const gradientIndex = sumChars % 5; // 5 different gradients
+    
+    switch (gradientIndex) {
+      case 0:
+        return "bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20";
+      case 1:
+        return "bg-gradient-to-br from-green-100 to-teal-100 dark:from-green-900/20 dark:to-teal-900/20";
+      case 2:
+        return "bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20";
+      case 3:
+        return "bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-900/20 dark:to-pink-900/20";
+      case 4:
+        return "bg-gradient-to-br from-indigo-100 to-cyan-100 dark:from-indigo-900/20 dark:to-cyan-900/20";
+      default:
+        return "bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20";
+    }
+  };
+
   const formatReleaseDate = () => {
     // Placeholder for potential future release date field
     return "2023";
@@ -62,13 +80,11 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Decorative gradient corners */}
       <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent rounded-tl-xl"></div>
         <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-primary/20 to-transparent rounded-br-xl"></div>
       </div>
       
-      {/* Image container with aspect ratio */}
       <div className="relative pt-[56.25%] w-full overflow-hidden bg-secondary/30">
         {!isImageLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
@@ -77,9 +93,9 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
         )}
         
         {isImageError ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/20 text-muted-foreground">
-            <ImageOff className="h-10 w-10 mb-2 opacity-70" />
-            <span className="text-xs">Image unavailable</span>
+          <div className={`absolute inset-0 flex flex-col items-center justify-center ${getGradientForTool()}`}>
+            <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
+            <span className="text-xs text-primary/60 font-medium">Preview not available</span>
           </div>
         ) : (
           <img
@@ -96,7 +112,6 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
         
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         
-        {/* Featured badge */}
         {tool.featured && (
           <div className="absolute top-3 left-3 z-10">
             <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border border-yellow-200">
@@ -105,14 +120,12 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
           </div>
         )}
         
-        {/* Pricing badge */}
         <div className="absolute top-3 right-3 z-10">
           <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(tool.pricing)}`}>
             {tool.pricing}
           </span>
         </div>
         
-        {/* Compare button */}
         <div className={cn(
           "absolute bottom-3 left-3 z-10 transition-all duration-300",
           isHovered || isToolSelected(tool.id) ? "opacity-100" : "opacity-0"
@@ -125,7 +138,6 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
         </div>
       </div>
       
-      {/* Content */}
       <div className="flex-1 p-5 flex flex-col">
         <h3 className="text-lg font-medium mb-2 group-hover:text-primary transition-colors duration-300">
           {tool.name}
@@ -134,7 +146,6 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
           {tool.description}
         </p>
         
-        {/* Categories */}
         <div className="mb-3">
           <div className="flex flex-wrap gap-1.5">
             {tool.category && tool.category.slice(0, 2).map((category, index) => (
@@ -168,7 +179,6 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
           </div>
         </div>
         
-        {/* Tags */}
         <div className="mt-auto">
           <div className="flex flex-wrap gap-1 mb-4">
             {tool.tags.slice(0, 3).map((tag, index) => (
@@ -199,9 +209,7 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             )}
           </div>
           
-          {/* Action row with fictional data indicators */}
           <div className="flex items-center justify-between">
-            {/* Voting */}
             <div 
               onClick={(e) => e.stopPropagation()}
               className="flex-shrink-0"
@@ -209,7 +217,6 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
               <VoteButtons toolId={tool.id} variant="compact" />
             </div>
             
-            {/* Visit link */}
             <a
               href={tool.url}
               target="_blank"
@@ -224,7 +231,6 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
         </div>
       </div>
       
-      {/* Hover effect overlay */}
       <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/10 rounded-xl pointer-events-none transition-all duration-300"></div>
     </div>
   );

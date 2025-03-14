@@ -189,7 +189,7 @@ const Outcomes = () => {
       <div className="min-h-screen flex flex-col pb-20">
         <Header />
         <main className="flex-grow pt-20">
-          {/* Add Navigation Header, similar to other pages */}
+          {/* Navigation Header */}
           <div className="border-b">
             <div className="container flex h-16 items-center px-4 sm:px-8">
               <NavigationMenu>
@@ -277,25 +277,25 @@ const Outcomes = () => {
                     )}
                   </div>
                 </div>
+                
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="lg" className="w-full md:w-auto whitespace-nowrap ml-auto">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Share Your Creation
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Share Your AI Creation</DialogTitle>
+                      <DialogDescription>
+                        Showcase your amazing AI-generated content with the community.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <OutcomeSubmissionForm onSuccess={handleSubmitSuccess} />
+                  </DialogContent>
+                </Dialog>
               </div>
-
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="lg" className="w-full md:w-auto whitespace-nowrap">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Share Your Creation
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
-                  <DialogHeader>
-                    <DialogTitle>Share Your AI Creation</DialogTitle>
-                    <DialogDescription>
-                      Showcase your amazing AI-generated content with the community.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <OutcomeSubmissionForm onSuccess={handleSubmitSuccess} />
-                </DialogContent>
-              </Dialog>
             </div>
 
             {searchTerm && (
@@ -371,8 +371,8 @@ const Outcomes = () => {
                               className="w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="w-12 h-12 text-muted-foreground/50" />
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
+                              <ImageIcon className="w-12 h-12 text-primary/40" />
                             </div>
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
