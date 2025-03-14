@@ -14,6 +14,8 @@ import OutcomeSubmissionForm from "@/components/outcomes/OutcomeSubmissionForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import SearchBar from "@/components/ui/SearchBar";
 import FilterButton from "@/components/ui/FilterButton";
+import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
+import Header from "@/components/layout/Header";
 
 const Outcomes = () => {
   const location = useLocation();
@@ -185,7 +187,26 @@ const Outcomes = () => {
       </Helmet>
 
       <div className="min-h-screen flex flex-col pb-20">
+        <Header />
         <main className="flex-grow pt-20">
+          {/* Add Navigation Header, similar to other pages */}
+          <div className="border-b">
+            <div className="container flex h-16 items-center px-4 sm:px-8">
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink 
+                      href="#" 
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      Showcase
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
+          </div>
+
           <div className="bg-secondary/30 border-b border-border/20">
             <div className="container px-4 md:px-8 mx-auto py-12 md:py-16">
               <div className="max-w-3xl mx-auto text-center">
@@ -207,7 +228,7 @@ const Outcomes = () => {
           </div>
 
           <div className="container px-4 md:px-8 mx-auto py-8">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
               <div className="md:hidden mb-4 w-full">
                 <Button 
                   variant="outline" 
@@ -225,7 +246,7 @@ const Outcomes = () => {
               </div>
               
               <div 
-                className={`mb-6 p-4 rounded-lg border border-border/50 bg-background/50 w-full md:flex space-y-4 md:space-y-0 md:space-x-4 items-center justify-between ${
+                className={`p-4 rounded-lg border border-border/50 bg-background/50 w-full md:w-auto md:flex space-y-4 md:space-y-0 md:space-x-4 items-center ${
                   isFilterOpen ? "block" : "hidden md:flex"
                 }`}
               >
@@ -260,7 +281,7 @@ const Outcomes = () => {
 
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button size="lg" className="ml-auto">
+                  <Button size="lg" className="w-full md:w-auto whitespace-nowrap">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Share Your Creation
                   </Button>
