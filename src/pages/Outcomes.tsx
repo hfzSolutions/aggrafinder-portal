@@ -1,27 +1,46 @@
-
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet";
-import { PlusCircle, ImageIcon, Loader2, ArrowLeft, Sliders, LogIn } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Link } from "react-router-dom";
-import { AIOucome } from "@/types/outcomes";
-import OutcomeSubmissionForm from "@/components/outcomes/OutcomeSubmissionForm";
-import { Skeleton } from "@/components/ui/skeleton";
-import SearchBar from "@/components/ui/SearchBar";
-import FilterButton from "@/components/ui/FilterButton";
-import Header from "@/components/layout/Header";
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
+import {
+  PlusCircle,
+  ImageIcon,
+  Loader2,
+  ArrowLeft,
+  Sliders,
+  LogIn,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { AIOucome } from '@/types/outcomes';
+import OutcomeSubmissionForm from '@/components/outcomes/OutcomeSubmissionForm';
+import { Skeleton } from '@/components/ui/skeleton';
+import SearchBar from '@/components/ui/SearchBar';
+import FilterButton from '@/components/ui/FilterButton';
+import Header from '@/components/layout/Header';
 
 const Outcomes = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
-  const initialSearch = searchParams.get("search") || "";
-  const initialToolFilter = searchParams.get("tool") || "All";
+  const initialSearch = searchParams.get('search') || '';
+  const initialToolFilter = searchParams.get('tool') || 'All';
 
   const [outcomes, setOutcomes] = useState<AIOucome[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +48,7 @@ const Outcomes = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedTool, setSelectedTool] = useState(initialToolFilter);
-  const [tools, setTools] = useState<{id: string, name: string}[]>([]);
+  const [tools, setTools] = useState<{ id: string; name: string }[]>([]);
   const [toolsLoading, setToolsLoading] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -39,27 +58,33 @@ const Outcomes = () => {
 
   // Observer for infinite scrolling
   const observer = useRef<IntersectionObserver | null>(null);
-  
+
   // Last element ref callback function
-  const lastOutcomeElementRef = useCallback((node: HTMLDivElement | null) => {
-    if (loading) return;
-    
-    // Disconnect the previous observer if it exists
-    if (observer.current) observer.current.disconnect();
-    
-    // Create a new observer
-    observer.current = new IntersectionObserver(entries => {
-      // If the last element is visible and we have more items to load
-      if (entries[0].isIntersecting && hasMore) {
-        setCurrentPage(prev => prev + 1);
-      }
-    }, { 
-      rootMargin: '100px' // Load more when we're 100px away from the bottom
-    });
-    
-    // Observe the last element
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
+  const lastOutcomeElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (loading) return;
+
+      // Disconnect the previous observer if it exists
+      if (observer.current) observer.current.disconnect();
+
+      // Create a new observer
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          // If the last element is visible and we have more items to load
+          if (entries[0].isIntersecting && hasMore) {
+            setCurrentPage((prev) => prev + 1);
+          }
+        },
+        {
+          rootMargin: '100px', // Load more when we're 100px away from the bottom
+        }
+      );
+
+      // Observe the last element
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
 
   // Check for authenticated user
   useEffect(() => {
@@ -67,16 +92,16 @@ const Outcomes = () => {
       const { data } = await supabase.auth.getUser();
       setUser(data?.user || null);
     };
-    
+
     checkUser();
-    
+
     // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_, session) => {
         setUser(session?.user || null);
       }
     );
-    
+
     return () => {
       authListener.subscription.unsubscribe();
     };
@@ -90,15 +115,15 @@ const Outcomes = () => {
           .from('ai_tools')
           .select('id, name')
           .order('name');
-          
+
         if (toolError) {
           throw new Error(toolError.message);
         }
-        
-        setTools([{id: 'All', name: 'All Tools'}, ...data]);
+
+        setTools([{ id: 'All', name: 'All Tools' }, ...data]);
       } catch (err) {
-        console.error("Error fetching tools:", err);
-        toast.error("Failed to load AI tools");
+        console.error('Error fetching tools:', err);
+        toast.error('Failed to load AI tools');
       } finally {
         setToolsLoading(false);
       }
@@ -116,48 +141,53 @@ const Outcomes = () => {
           .select('*, ai_tools(name)')
           .order('created_at', { ascending: false });
 
-        if (selectedTool !== "All") {
+        if (selectedTool !== 'All') {
           query = query.eq('tool_id', selectedTool);
         }
 
         if (searchTerm) {
           const searchLower = searchTerm.toLowerCase();
-          query = query.or(`title.ilike.%${searchLower}%,description.ilike.%${searchLower}%`);
+          query = query.or(
+            `title.ilike.%${searchLower}%,description.ilike.%${searchLower}%`
+          );
         }
 
         // Pagination
-        query = query.range(currentPage * limit, (currentPage * limit) + limit - 1);
-          
+        query = query.range(
+          currentPage * limit,
+          currentPage * limit + limit - 1
+        );
+
         const { data, error: supabaseError } = await query;
 
         if (supabaseError) {
           throw new Error(supabaseError.message);
         }
 
-        const transformedData: AIOucome[] = data.map(item => ({
+        const transformedData: AIOucome[] = data.map((item) => ({
           id: item.id,
           title: item.title,
           description: item.description,
           imageUrl: item.image_url,
           toolId: item.tool_id,
-          toolName: item.ai_tools?.name || "Unknown Tool",
+          toolName: item.ai_tools?.name || 'Unknown Tool',
           createdAt: item.created_at,
           submitterName: item.submitter_name,
           submitterEmail: item.submitter_email,
-          userId: item.user_id
+          userId: item.user_id,
         }));
 
         setHasMore(transformedData.length === limit);
-        
+
         if (currentPage === 0) {
           setOutcomes(transformedData);
         } else {
-          setOutcomes(prev => [...prev, ...transformedData]);
+          setOutcomes((prev) => [...prev, ...transformedData]);
         }
       } catch (err) {
-        console.error("Error fetching outcomes:", err);
+        console.error('Error fetching outcomes:', err);
         setError(err instanceof Error ? err : new Error(String(err)));
-        toast.error("Failed to load AI outcomes");
+        toast.error('Failed to load AI outcomes');
       } finally {
         setLoading(false);
       }
@@ -175,10 +205,12 @@ const Outcomes = () => {
 
   useEffect(() => {
     const params = new URLSearchParams();
-    if (searchTerm) params.set("search", searchTerm);
-    if (selectedTool !== "All") params.set("tool", selectedTool);
-    
-    const newUrl = `${location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    if (searchTerm) params.set('search', searchTerm);
+    if (selectedTool !== 'All') params.set('tool', selectedTool);
+
+    const newUrl = `${location.pathname}${
+      params.toString() ? '?' + params.toString() : ''
+    }`;
     navigate(newUrl, { replace: true });
   }, [searchTerm, selectedTool, navigate, location.pathname]);
 
@@ -192,7 +224,7 @@ const Outcomes = () => {
 
   const handleSubmitSuccess = () => {
     setIsDialogOpen(false);
-    toast.success("Your AI outcome has been submitted successfully!");
+    toast.success('Your AI outcome has been submitted successfully!');
     // Refresh the outcomes list
     setCurrentPage(0);
     setOutcomes([]);
@@ -201,11 +233,11 @@ const Outcomes = () => {
 
   const handleCreateClick = () => {
     if (!user) {
-      toast.info("Please sign in to share your creations");
-      navigate("/auth");
+      toast.info('Please sign in to share your creations');
+      navigate('/auth');
       return;
     }
-    
+
     setIsDialogOpen(true);
   };
 
@@ -215,7 +247,10 @@ const Outcomes = () => {
     <>
       <Helmet>
         <title>AI Showcase | Community AI Outcomes</title>
-        <meta name="description" content="Explore stunning AI-generated outcomes created using various AI tools" />
+        <meta
+          name="description"
+          content="Explore stunning AI-generated outcomes created using various AI tools"
+        />
       </Helmet>
 
       <div className="min-h-screen flex flex-col pb-20">
@@ -224,13 +259,16 @@ const Outcomes = () => {
           <div className="bg-secondary/30 border-b border-border/20">
             <div className="container px-4 md:px-8 mx-auto py-12 md:py-16">
               <div className="max-w-3xl mx-auto text-center">
-                <h1 className="text-3xl md:text-4xl font-medium mb-4 animate-fade-in">AI Showcase</h1>
+                <h1 className="text-3xl md:text-4xl font-medium mb-4 animate-fade-in">
+                  AI Showcase
+                </h1>
                 <p className="text-muted-foreground mb-8 animate-fade-in">
-                  Explore amazing outcomes created with AI tools by our community
+                  Explore amazing outcomes created with AI tools by our
+                  community
                 </p>
-                
+
                 <div className="animate-slide-up">
-                  <SearchBar 
+                  <SearchBar
                     initialValue={searchTerm}
                     onSearch={handleSearch}
                     placeholder="Search AI creations..."
@@ -244,8 +282,8 @@ const Outcomes = () => {
           <div className="container px-4 md:px-8 mx-auto py-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
               <div className="md:hidden mb-4 w-full">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
                   className="w-full justify-between"
                 >
@@ -258,39 +296,46 @@ const Outcomes = () => {
                   </span>
                 </Button>
               </div>
-              
-              <div 
-                className={`p-4 rounded-lg border border-border/50 bg-background/50 w-full md:w-auto md:flex md:justify-between md:items-center ${
-                  isFilterOpen ? "block" : "hidden md:flex"
+
+              <div
+                className={`p-4 rounded-lg border border-border/50 bg-background/50 w-full md:flex md:justify-between md:items-center ${
+                  isFilterOpen ? 'block' : 'hidden md:flex'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <FilterButton 
+                  <FilterButton
                     label="Tools"
-                    options={toolsLoading ? ["Loading..."] : tools.map(tool => tool.name)}
+                    options={
+                      toolsLoading
+                        ? ['Loading...']
+                        : tools.map((tool) => tool.name)
+                    }
                     selectedOption={
-                      selectedTool === "All" ? "All Tools" : 
-                      tools.find(t => t.id === selectedTool)?.name || "All Tools"
+                      selectedTool === 'All'
+                        ? 'All Tools'
+                        : tools.find((t) => t.id === selectedTool)?.name ||
+                          'All Tools'
                     }
                     onChange={(toolName) => {
-                      const tool = tools.find(t => t.name === toolName);
-                      handleToolChange(tool ? tool.id : "All");
+                      const tool = tools.find((t) => t.name === toolName);
+                      handleToolChange(tool ? tool.id : 'All');
                     }}
                     disabled={toolsLoading}
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between mt-4 sm:mt-0">
                   <div className="text-sm text-muted-foreground mr-4">
                     {isInitialLoading ? (
                       <Skeleton className="h-4 w-20" />
                     ) : (
                       <>
-                        {outcomes.length} {outcomes.length === 1 ? "creation" : "creations"} found
+                        {outcomes.length}{' '}
+                        {outcomes.length === 1 ? 'creation' : 'creations'} found
                       </>
                     )}
                   </div>
-                  
+
                   {user ? (
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
@@ -303,14 +348,22 @@ const Outcomes = () => {
                         <DialogHeader>
                           <DialogTitle>Share Your AI Creation</DialogTitle>
                           <DialogDescription>
-                            Showcase your amazing AI-generated content with the community.
+                            Showcase your amazing AI-generated content with the
+                            community.
                           </DialogDescription>
                         </DialogHeader>
-                        <OutcomeSubmissionForm onSuccess={handleSubmitSuccess} userId={user.id} />
+                        <OutcomeSubmissionForm
+                          onSuccess={handleSubmitSuccess}
+                          userId={user.id}
+                        />
                       </DialogContent>
                     </Dialog>
                   ) : (
-                    <Button size="lg" className="whitespace-nowrap ml-auto" onClick={() => navigate("/auth")}>
+                    <Button
+                      size="lg"
+                      className="whitespace-nowrap ml-auto"
+                      onClick={() => navigate('/auth')}
+                    >
                       <LogIn className="mr-2 h-4 w-4" />
                       Sign In to Share
                     </Button>
@@ -321,47 +374,52 @@ const Outcomes = () => {
 
             {searchTerm && (
               <div className="mb-4 flex items-center">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="text-muted-foreground"
                   onClick={() => {
-                    setSearchTerm("");
+                    setSearchTerm('');
                   }}
                 >
                   <ArrowLeft className="h-4 w-4 mr-1" />
                   Clear search
                 </Button>
                 <span className="ml-2 text-sm">
-                  Results for "<span className="font-medium">{searchTerm}</span>"
+                  Results for "<span className="font-medium">{searchTerm}</span>
+                  "
                 </span>
               </div>
             )}
 
             {isInitialLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array(6).fill(0).map((_, index) => (
-                  <Card key={`skeleton-${index}`} className="overflow-hidden">
-                    <div className="aspect-video">
-                      <Skeleton className="h-full w-full" />
-                    </div>
-                    <CardHeader>
-                      <Skeleton className="h-6 w-3/4" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-4 w-full mb-2" />
-                      <Skeleton className="h-4 w-2/3" />
-                    </CardContent>
-                    <CardFooter className="flex justify-between border-t pt-4">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-28" />
-                    </CardFooter>
-                  </Card>
-                ))}
+                {Array(6)
+                  .fill(0)
+                  .map((_, index) => (
+                    <Card key={`skeleton-${index}`} className="overflow-hidden">
+                      <div className="aspect-video">
+                        <Skeleton className="h-full w-full" />
+                      </div>
+                      <CardHeader>
+                        <Skeleton className="h-6 w-3/4" />
+                      </CardHeader>
+                      <CardContent>
+                        <Skeleton className="h-4 w-full mb-2" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </CardContent>
+                      <CardFooter className="flex justify-between border-t pt-4">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-28" />
+                      </CardFooter>
+                    </Card>
+                  ))}
               </div>
             ) : error ? (
               <div className="text-center p-8 border rounded-lg">
-                <p className="text-destructive">Error loading outcomes. Please try again later.</p>
+                <p className="text-destructive">
+                  Error loading outcomes. Please try again later.
+                </p>
               </div>
             ) : outcomes.length === 0 ? (
               <div className="text-center p-12 border border-dashed rounded-lg">
@@ -379,9 +437,13 @@ const Outcomes = () => {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {outcomes.map((outcome, index) => (
-                    <div 
-                      key={outcome.id} 
-                      ref={index === outcomes.length - 1 ? lastOutcomeElementRef : null}
+                    <div
+                      key={outcome.id}
+                      ref={
+                        index === outcomes.length - 1
+                          ? lastOutcomeElementRef
+                          : null
+                      }
                     >
                       <Card className="overflow-hidden flex flex-col h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-border/40 hover:border-primary/20">
                         <div className="aspect-video overflow-hidden bg-muted relative group">
@@ -399,17 +461,21 @@ const Outcomes = () => {
                           <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </div>
                         <CardHeader>
-                          <CardTitle className="text-xl group-hover:text-primary transition-colors duration-300">{outcome.title}</CardTitle>
+                          <CardTitle className="text-xl group-hover:text-primary transition-colors duration-300">
+                            {outcome.title}
+                          </CardTitle>
                         </CardHeader>
                         <CardContent className="flex-grow">
-                          <p className="text-muted-foreground line-clamp-3">{outcome.description}</p>
+                          <p className="text-muted-foreground line-clamp-3">
+                            {outcome.description}
+                          </p>
                         </CardContent>
                         <CardFooter className="flex justify-between border-t pt-4 text-sm">
                           <div className="text-muted-foreground">
                             By {outcome.submitterName}
                           </div>
-                          <Link 
-                            to={`/tools/${outcome.toolId}`} 
+                          <Link
+                            to={`/tools/${outcome.toolId}`}
                             className="text-primary hover:underline flex items-center"
                           >
                             Made with {outcome.toolName}
@@ -419,13 +485,15 @@ const Outcomes = () => {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Loading indicator at the bottom */}
                 {loading && outcomes.length > 0 && (
                   <div className="flex justify-center py-8">
                     <div className="flex items-center space-x-2">
                       <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      <span className="text-sm text-muted-foreground">Loading more creations...</span>
+                      <span className="text-sm text-muted-foreground">
+                        Loading more creations...
+                      </span>
                     </div>
                   </div>
                 )}
