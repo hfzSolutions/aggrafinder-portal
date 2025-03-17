@@ -1,117 +1,136 @@
-
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ToolCard } from "@/components/tools/ToolCard";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import SearchBar from "@/components/ui/SearchBar";
-import FilterButton from "@/components/ui/FilterButton";
-import { ArrowLeft, Sliders, Plus } from "lucide-react";
-import { useSupabaseTools } from "@/hooks/useSupabaseTools";
-import { useSupabaseCategories } from "@/hooks/useSupabaseCategories";
-import { Skeleton } from "@/components/ui/skeleton";
-import { pricingOptions } from "@/data/toolsData";
-import { CompareToolsBar } from "@/components/tools/CompareToolsBar";
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToolCard } from '@/components/tools/ToolCard';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import SearchBar from '@/components/ui/SearchBar';
+import FilterButton from '@/components/ui/FilterButton';
+import { ArrowLeft, Sliders, Plus } from 'lucide-react';
+import { useSupabaseTools } from '@/hooks/useSupabaseTools';
+import { useSupabaseCategories } from '@/hooks/useSupabaseCategories';
+import { Skeleton } from '@/components/ui/skeleton';
+import { pricingOptions } from '@/data/toolsData';
+import { CompareToolsBar } from '@/components/tools/CompareToolsBar';
 
 const Tools = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
-  const initialCategory = searchParams.get("category") || "All";
-  const initialSearch = searchParams.get("search") || "";
-  
+  const initialCategory = searchParams.get('category') || 'All';
+  const initialSearch = searchParams.get('search') || '';
+
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [selectedPricing, setSelectedPricing] = useState("All");
+  const [selectedPricing, setSelectedPricing] = useState('All');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [view, setView] = useState<"grid" | "list">("grid");
-  
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+
   const { categories, loading: categoriesLoading } = useSupabaseCategories();
-  const { 
-    tools: filteredTools, 
-    loading: toolsLoading, 
+  const {
+    tools: filteredTools,
+    loading: toolsLoading,
     error,
     hasMore,
-    loadNextPage
+    loadNextPage,
   } = useSupabaseTools({
-    category: activeCategory !== "All" ? activeCategory : undefined,
+    category: activeCategory !== 'All' ? activeCategory : undefined,
     search: searchTerm,
-    pricing: selectedPricing !== "All" ? selectedPricing : undefined,
-    loadMore: true
+    pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
+    loadMore: true,
   });
 
   // Reference to the observer element at the bottom of the list
   const observer = useRef<IntersectionObserver | null>(null);
-  
+
   // Last element ref callback function
-  const lastToolElementRef = useCallback((node: HTMLDivElement | null) => {
-    if (toolsLoading) return;
-    
-    // Disconnect the previous observer if it exists
-    if (observer.current) observer.current.disconnect();
-    
-    // Create a new observer
-    observer.current = new IntersectionObserver(entries => {
-      // If the last element is visible and we have more items to load
-      if (entries[0].isIntersecting && hasMore) {
-        loadNextPage();
-      }
-    }, { 
-      rootMargin: '100px' // Load more when we're 100px away from the bottom
-    });
-    
-    // Observe the last element
-    if (node) observer.current.observe(node);
-  }, [toolsLoading, hasMore, loadNextPage]);
-  
+  const lastToolElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (toolsLoading) return;
+
+      // Disconnect the previous observer if it exists
+      if (observer.current) observer.current.disconnect();
+
+      // Create a new observer
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          // If the last element is visible and we have more items to load
+          if (entries[0].isIntersecting && hasMore) {
+            loadNextPage();
+          }
+        },
+        {
+          rootMargin: '100px', // Load more when we're 100px away from the bottom
+        }
+      );
+
+      // Observe the last element
+      if (node) observer.current.observe(node);
+    },
+    [toolsLoading, hasMore, loadNextPage]
+  );
+
   useEffect(() => {
     const params = new URLSearchParams();
-    if (searchTerm) params.set("search", searchTerm);
-    if (activeCategory !== "All") params.set("category", activeCategory);
-    
-    const newUrl = `${location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    if (searchTerm) params.set('search', searchTerm);
+    if (activeCategory !== 'All') params.set('category', activeCategory);
+
+    const newUrl = `${location.pathname}${
+      params.toString() ? '?' + params.toString() : ''
+    }`;
     navigate(newUrl, { replace: true });
-  }, [searchTerm, activeCategory, selectedPricing, navigate, location.pathname]);
-  
+  }, [
+    searchTerm,
+    activeCategory,
+    selectedPricing,
+    navigate,
+    location.pathname,
+  ]);
+
   const handleSearch = (value: string) => {
     setSearchTerm(value);
   };
-  
+
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
   };
-  
+
   const handlePricingChange = (pricing: string) => {
     setSelectedPricing(pricing);
   };
-  
-  const isLoading = categoriesLoading || toolsLoading && filteredTools.length === 0;
-  
+
+  const isLoading =
+    categoriesLoading || (toolsLoading && filteredTools.length === 0);
+
   return (
     <>
       <Helmet>
         <title>AI Tools Collection | AI Aggregator</title>
-        <meta name="description" content="Browse our comprehensive collection of AI tools across various categories. Find the perfect tool for your specific needs." />
+        <meta
+          name="description"
+          content="Browse our comprehensive collection of AI tools across various categories. Find the perfect tool for your specific needs."
+        />
       </Helmet>
-      
+
       <div className="min-h-screen flex flex-col">
         <Header />
-        
+
         <main className="flex-grow pt-20 pb-20">
           <div className="bg-secondary/30 border-b border-border/20">
             <div className="container px-4 md:px-8 mx-auto py-12 md:py-16">
               <div className="max-w-3xl mx-auto text-center">
-                <h1 className="text-3xl md:text-4xl font-medium mb-4 animate-fade-in">AI Tools Collection</h1>
+                <h1 className="text-3xl md:text-4xl font-medium mb-4 animate-fade-in">
+                  AI Tools Collection
+                </h1>
                 <p className="text-muted-foreground mb-8 animate-fade-in">
-                  Browse our comprehensive collection of AI tools across various categories. 
-                  Find the perfect tool for your specific needs.
+                  Browse our comprehensive collection of AI tools across various
+                  categories. Find the perfect tool for your specific needs.
                 </p>
-                
+
                 <div className="animate-slide-up">
-                  <SearchBar 
+                  <SearchBar
                     initialValue={searchTerm}
                     onSearch={handleSearch}
                     placeholder="Search AI tools..."
@@ -121,11 +140,11 @@ const Tools = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="container px-4 md:px-8 mx-auto py-8">
             <div className="md:hidden mb-4">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className="w-full justify-between"
               >
@@ -138,89 +157,95 @@ const Tools = () => {
                 </span>
               </Button>
             </div>
-            
-            <div 
+
+            <div
               className={`mb-6 p-4 rounded-lg border border-border/50 bg-background/50 md:flex space-y-4 md:space-y-0 md:space-x-4 items-center justify-between ${
-                isFilterOpen ? "block" : "hidden md:flex"
+                isFilterOpen ? 'block' : 'hidden md:flex'
               }`}
             >
               <div className="flex flex-col sm:flex-row gap-3">
-                <FilterButton 
+                <FilterButton
                   label="Category"
-                  options={categoriesLoading ? ["Loading..."] : categories}
+                  options={categoriesLoading ? ['Loading...'] : categories}
                   selectedOption={activeCategory}
                   onChange={handleCategoryChange}
                   disabled={categoriesLoading}
                 />
-                
-                <FilterButton 
+
+                <FilterButton
                   label="Pricing"
                   options={pricingOptions}
                   selectedOption={selectedPricing}
                   onChange={handlePricingChange}
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
                   {isLoading ? (
                     <Skeleton className="h-4 w-20" />
                   ) : (
                     <>
-                      {filteredTools.length} {filteredTools.length === 1 ? "tool" : "tools"} found
+                      {filteredTools.length}{' '}
+                      {filteredTools.length === 1 ? 'tool' : 'tools'} found
                     </>
                   )}
                 </div>
-                
+
                 <div className="flex space-x-2 ml-4">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`px-3 ${view === "grid" ? "bg-secondary/70" : ""}`}
-                    onClick={() => setView("grid")}
+                    className={`px-3 ${
+                      view === 'grid' ? 'bg-secondary/70' : ''
+                    }`}
+                    onClick={() => setView('grid')}
                   >
                     Grid
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`px-3 ${view === "list" ? "bg-secondary/70" : ""}`}
-                    onClick={() => setView("list")}
+                    className={`px-3 ${
+                      view === 'list' ? 'bg-secondary/70' : ''
+                    }`}
+                    onClick={() => setView('list')}
                   >
                     List
                   </Button>
                 </div>
               </div>
             </div>
-            
+
             <div className="mb-8">
               {searchTerm && (
                 <div className="mb-4 flex items-center">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-muted-foreground"
                     onClick={() => {
-                      setSearchTerm("");
-                      navigate("/tools");
+                      setSearchTerm('');
+                      navigate('/tools');
                     }}
                   >
                     <ArrowLeft className="h-4 w-4 mr-1" />
                     Clear search
                   </Button>
                   <span className="ml-2 text-sm">
-                    Results for "<span className="font-medium">{searchTerm}</span>"
+                    Results for "
+                    <span className="font-medium">{searchTerm}</span>"
                   </span>
                 </div>
               )}
-              
+
               {error && (
                 <div className="text-center py-12">
-                  <h3 className="text-lg font-medium mb-2 text-red-500">Error loading tools</h3>
-                  <p className="text-muted-foreground">
-                    {error.message}
-                  </p>
-                  <Button 
+                  <h3 className="text-lg font-medium mb-2 text-red-500">
+                    Error loading tools
+                  </h3>
+                  <p className="text-muted-foreground">{error.message}</p>
+                  <Button
                     className="mt-4"
                     onClick={() => window.location.reload()}
                   >
@@ -228,83 +253,92 @@ const Tools = () => {
                   </Button>
                 </div>
               )}
-              
+
               {isLoading && (
-                <div 
+                <div
                   className={
-                    view === "grid" 
-                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                      : "grid grid-cols-1 gap-4"
+                    view === 'grid'
+                      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+                      : 'grid grid-cols-1 gap-4'
                   }
                 >
-                  {Array(8).fill(0).map((_, index) => (
-                    <div key={`skeleton-${index}`} className="space-y-3">
-                      <Skeleton className="h-48 w-full rounded-lg" />
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-16 w-full" />
-                      <div className="flex gap-2">
-                        <Skeleton className="h-6 w-16 rounded-full" />
-                        <Skeleton className="h-6 w-16 rounded-full" />
+                  {Array(8)
+                    .fill(0)
+                    .map((_, index) => (
+                      <div key={`skeleton-${index}`} className="space-y-3">
+                        <Skeleton className="h-48 w-full rounded-lg" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-16 w-full" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-6 w-16 rounded-full" />
+                          <Skeleton className="h-6 w-16 rounded-full" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
-              
+
               {!isLoading && filteredTools.length === 0 && !error && (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-medium mb-2">No tools found</h3>
                   <p className="text-muted-foreground">
-                    Try adjusting your filters or search term to find what you're looking for.
+                    Try adjusting your filters or search term to find what
+                    you're looking for.
                   </p>
                   <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button 
+                    <Button
                       onClick={() => {
-                        setSearchTerm("");
-                        setActiveCategory("All");
-                        setSelectedPricing("All");
+                        setSearchTerm('');
+                        setActiveCategory('All');
+                        setSelectedPricing('All');
                       }}
                     >
                       Reset filters
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
-                      onClick={() => navigate("/request-tool")}
+                      onClick={() => navigate('/request-tool')}
                     >
                       Request a new tool
                     </Button>
                   </div>
                 </div>
               )}
-              
+
               {!isLoading && filteredTools.length > 0 && !error && (
-                <div 
+                <div
                   className={
-                    view === "grid" 
-                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                      : "grid grid-cols-1 gap-4"
+                    view === 'grid'
+                      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+                      : 'grid grid-cols-1 gap-4'
                   }
                 >
                   {filteredTools.map((tool, index) => (
-                    <div 
-                      key={tool.id} 
-                      ref={index === filteredTools.length - 1 ? lastToolElementRef : null}
+                    <div
+                      key={tool.id}
+                      ref={
+                        index === filteredTools.length - 1
+                          ? lastToolElementRef
+                          : null
+                      }
                       className="animate-fade-in"
                     >
                       <ToolCard tool={tool} />
                     </div>
                   ))}
-                  
+
                   {/* Loading indicator at the bottom */}
                   {toolsLoading && filteredTools.length > 0 && (
-                    <div 
+                    <div
                       className={`col-span-full flex justify-center py-4 ${
-                        view === "grid" ? "mt-4" : "mt-2"
+                        view === 'grid' ? 'mt-4' : 'mt-2'
                       }`}
                     >
                       <div className="flex items-center space-x-2">
                         <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-                        <span className="text-sm text-muted-foreground">Loading more tools...</span>
+                        <span className="text-sm text-muted-foreground">
+                          Loading more tools...
+                        </span>
                       </div>
                     </div>
                   )}
@@ -313,7 +347,7 @@ const Tools = () => {
             </div>
           </div>
         </main>
-        
+
         <CompareToolsBar />
         <Footer />
       </div>
