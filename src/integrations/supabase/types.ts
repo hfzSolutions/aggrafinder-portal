@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_outcomes: {
         Row: {
           created_at: string
@@ -128,6 +149,51 @@ export type Database = {
         }
         Relationships: []
       }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+      tool_analytics: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          tool_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          tool_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          tool_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tool_requests: {
         Row: {
           category: string[]
@@ -167,6 +233,36 @@ export type Database = {
         }
         Relationships: []
       }
+      tool_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          tool_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          tool_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          tool_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tool_votes: {
         Row: {
           created_at: string
@@ -198,6 +294,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          preferred_categories: string[] | null
+          preferred_pricing: string | null
+          receive_recommendations: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preferred_categories?: string[] | null
+          preferred_pricing?: string | null
+          receive_recommendations?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preferred_categories?: string[] | null
+          preferred_pricing?: string | null
+          receive_recommendations?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

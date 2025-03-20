@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ChevronDown, Plus, Image } from 'lucide-react';
+import { Menu, X, ChevronDown, Plus, Image, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from '@/hooks/use-theme';
 
 const Header = () => {
+  const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState(null);
@@ -92,6 +94,18 @@ const Header = () => {
           {!isLoading && user && <NavLink to="/dashboard">Dashboard</NavLink>}
           <div className="ml-4 flex items-center gap-2">
             <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="w-9 h-9"
+            >
+              {theme === 'light' ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
               asChild
               variant="outline"
               size="sm"
@@ -167,6 +181,22 @@ const Header = () => {
             <Plus className="h-4 w-4" />
             <span>Request Tool</span>
           </Link>
+          <button
+            onClick={toggleTheme}
+            className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
+          >
+            {theme === 'light' ? (
+              <>
+                <Moon className="h-4 w-4" />
+                <span>Dark Mode</span>
+              </>
+            ) : (
+              <>
+                <Sun className="h-4 w-4" />
+                <span>Light Mode</span>
+              </>
+            )}
+          </button>
 
           {/* {!isLoading && user && (
             <button

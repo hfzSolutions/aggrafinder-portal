@@ -1,19 +1,43 @@
-
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, LogOut, Settings } from "lucide-react";
-import Header from "@/components/layout/Header";
-import { AIOucome } from "@/types/outcomes";
-import OutcomeSubmissionForm from "@/components/outcomes/OutcomeSubmissionForm";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import {
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+  LogOut,
+  Settings,
+  ShieldAlert,
+} from 'lucide-react';
+import { AdminLink } from '@/components/user/AdminLink';
+import Header from '@/components/layout/Header';
+import { AIOucome } from '@/types/outcomes';
+import OutcomeSubmissionForm from '@/components/outcomes/OutcomeSubmissionForm';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { UserPreferences } from '@/components/user/UserPreferences';
+import { ProfileManager } from '@/components/user/ProfileManager';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -32,26 +56,26 @@ const Dashboard = () => {
       try {
         const { data, error } = await supabase.auth.getUser();
         if (error || !data.user) {
-          navigate("/auth");
+          navigate('/auth');
           return;
         }
         setUser(data.user);
-        
+
         // Fetch user profile
         const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", data.user.id)
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
           .single();
-          
+
         if (!profileError) {
           setProfile(profileData);
         }
-        
+
         setLoading(false);
       } catch (error) {
-        console.error("Error checking authentication", error);
-        navigate("/auth");
+        console.error('Error checking authentication', error);
+        navigate('/auth');
       }
     };
 
@@ -60,8 +84,8 @@ const Dashboard = () => {
     // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === "SIGNED_OUT") {
-          navigate("/auth");
+        if (event === 'SIGNED_OUT') {
+          navigate('/auth');
         } else if (session?.user) {
           setUser(session.user);
         }
@@ -76,34 +100,34 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUserOutcomes = async () => {
       if (!user) return;
-      
+
       setIsOutcomesLoading(true);
       try {
         const { data, error } = await supabase
-          .from("ai_outcomes")
-          .select("*, ai_tools(name)")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-          
+          .from('ai_outcomes')
+          .select('*, ai_tools(name)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
         if (error) throw error;
-        
-        const transformedData: AIOucome[] = data.map(item => ({
+
+        const transformedData: AIOucome[] = data.map((item) => ({
           id: item.id,
           title: item.title,
           description: item.description,
           imageUrl: item.image_url,
           toolId: item.tool_id,
-          toolName: item.ai_tools?.name || "Unknown Tool",
+          toolName: item.ai_tools?.name || 'Unknown Tool',
           createdAt: item.created_at,
           submitterName: item.submitter_name,
           submitterEmail: item.submitter_email,
-          userId: item.user_id
+          userId: item.user_id,
         }));
-        
+
         setUserOutcomes(transformedData);
       } catch (err) {
-        console.error("Error fetching user outcomes:", err);
-        toast.error("Failed to load your creations");
+        console.error('Error fetching user outcomes:', err);
+        toast.error('Failed to load your creations');
       } finally {
         setIsOutcomesLoading(false);
       }
@@ -114,7 +138,7 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/");
+    navigate('/');
   };
 
   const handleEditOutcome = (outcome: AIOucome) => {
@@ -129,20 +153,22 @@ const Dashboard = () => {
 
   const handleDeleteOutcome = async () => {
     if (!outcomeToDelete) return;
-    
+
     try {
       const { error } = await supabase
-        .from("ai_outcomes")
+        .from('ai_outcomes')
         .delete()
-        .eq("id", outcomeToDelete);
-        
+        .eq('id', outcomeToDelete);
+
       if (error) throw error;
-      
-      setUserOutcomes(userOutcomes.filter(outcome => outcome.id !== outcomeToDelete));
-      toast.success("Creation deleted successfully");
+
+      setUserOutcomes(
+        userOutcomes.filter((outcome) => outcome.id !== outcomeToDelete)
+      );
+      toast.success('Creation deleted successfully');
     } catch (err) {
-      console.error("Error deleting outcome:", err);
-      toast.error("Failed to delete creation");
+      console.error('Error deleting outcome:', err);
+      toast.error('Failed to delete creation');
     } finally {
       setIsDeleteDialogOpen(false);
       setOutcomeToDelete(null);
@@ -152,30 +178,30 @@ const Dashboard = () => {
   const handleSubmitSuccess = () => {
     setIsDialogOpen(false);
     setEditingOutcome(null);
-    
+
     // Refresh the user outcomes list
     if (user) {
       setIsOutcomesLoading(true);
       supabase
-        .from("ai_outcomes")
-        .select("*, ai_tools(name)")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+        .from('ai_outcomes')
+        .select('*, ai_tools(name)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
         .then(({ data, error }) => {
           if (!error && data) {
-            const transformedData: AIOucome[] = data.map(item => ({
+            const transformedData: AIOucome[] = data.map((item) => ({
               id: item.id,
               title: item.title,
               description: item.description,
               imageUrl: item.image_url,
               toolId: item.tool_id,
-              toolName: item.ai_tools?.name || "Unknown Tool",
+              toolName: item.ai_tools?.name || 'Unknown Tool',
               createdAt: item.created_at,
               submitterName: item.submitter_name,
               submitterEmail: item.submitter_email,
-              userId: item.user_id
+              userId: item.user_id,
             }));
-            
+
             setUserOutcomes(transformedData);
           }
           setIsOutcomesLoading(false);
@@ -189,7 +215,47 @@ const Dashboard = () => {
         <Header />
         <main className="flex-grow pt-20">
           <div className="container px-4 md:px-8 mx-auto py-8">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-[90vw] mx-auto overflow-y-auto">
+              <Tabs defaultValue="creations" className="space-y-6">
+                <TabsList>
+                  <TabsTrigger value="creations">My Creations</TabsTrigger>
+                  <TabsTrigger value="profile">Profile</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="profile" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Profile Settings</CardTitle>
+                      <CardDescription>
+                        Manage your profile information
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ProfileManager
+                        userId={user?.id}
+                        initialProfile={profile}
+                        onProfileUpdate={() => {
+                          // Refresh profile data
+                          if (user) {
+                            supabase
+                              .from('profiles')
+                              .select('*')
+                              .eq('id', user.id)
+                              .single()
+                              .then(({ data, error }) => {
+                                if (!error && data) {
+                                  setProfile(data);
+                                }
+                              });
+                          }
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="creations"></TabsContent>
+              </Tabs>
               <Skeleton className="h-12 w-60 mb-8" />
               <Skeleton className="h-40 w-full mb-4" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -212,7 +278,7 @@ const Dashboard = () => {
         <Header />
         <main className="flex-grow pt-20">
           <div className="container px-4 md:px-8 mx-auto py-8">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-[90vw] mx-auto overflow-y-auto">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
@@ -222,7 +288,9 @@ const Dashboard = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h1 className="text-2xl font-bold">{profile?.full_name || user?.email}</h1>
+                    <h1 className="text-2xl font-bold">
+                      {profile?.full_name || user?.email}
+                    </h1>
                     <p className="text-muted-foreground">{user?.email}</p>
                   </div>
                 </div>
@@ -239,13 +307,18 @@ const Dashboard = () => {
                   <TabsTrigger value="creations">My Creations</TabsTrigger>
                   <TabsTrigger value="profile">Profile</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="creations">
                   <div className="bg-card border rounded-lg shadow-sm mb-6">
                     <div className="p-6">
                       <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold">Your AI Creations</h2>
-                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <h2 className="text-xl font-semibold">
+                          Your AI Creations
+                        </h2>
+                        <Dialog
+                          open={isDialogOpen}
+                          onOpenChange={setIsDialogOpen}
+                        >
                           <DialogTrigger asChild>
                             <Button>
                               <Plus className="w-4 h-4 mr-2" />
@@ -255,23 +328,25 @@ const Dashboard = () => {
                           <DialogContent className="sm:max-w-[600px]">
                             <DialogHeader>
                               <DialogTitle>
-                                {editingOutcome ? "Edit AI Creation" : "Share New AI Creation"}
+                                {editingOutcome
+                                  ? 'Edit AI Creation'
+                                  : 'Share New AI Creation'}
                               </DialogTitle>
                               <DialogDescription>
-                                {editingOutcome 
-                                  ? "Update your AI-generated content"
-                                  : "Showcase your amazing AI-generated content with the community"}
+                                {editingOutcome
+                                  ? 'Update your AI-generated content'
+                                  : 'Showcase your amazing AI-generated content with the community'}
                               </DialogDescription>
                             </DialogHeader>
-                            <OutcomeSubmissionForm 
-                              onSuccess={handleSubmitSuccess} 
-                              initialData={editingOutcome || undefined} 
+                            <OutcomeSubmissionForm
+                              onSuccess={handleSubmitSuccess}
+                              initialData={editingOutcome || undefined}
                               userId={user?.id}
                             />
                           </DialogContent>
                         </Dialog>
                       </div>
-                      
+
                       {isOutcomesLoading ? (
                         <div className="space-y-4">
                           {[1, 2, 3].map((_, i) => (
@@ -280,12 +355,14 @@ const Dashboard = () => {
                         </div>
                       ) : userOutcomes.length === 0 ? (
                         <div className="text-center p-8 border border-dashed rounded-lg bg-muted/50">
-                          <h3 className="text-lg font-medium mb-2">No creations yet</h3>
+                          <h3 className="text-lg font-medium mb-2">
+                            No creations yet
+                          </h3>
                           <p className="text-muted-foreground mb-4">
                             Share your AI-generated creations with the community
                           </p>
-                          <Button 
-                            onClick={() => setIsDialogOpen(true)} 
+                          <Button
+                            onClick={() => setIsDialogOpen(true)}
                             variant="default"
                           >
                             <Plus className="w-4 h-4 mr-2" />
@@ -295,8 +372,8 @@ const Dashboard = () => {
                       ) : (
                         <div className="space-y-4">
                           {userOutcomes.map((outcome) => (
-                            <div 
-                              key={outcome.id} 
+                            <div
+                              key={outcome.id}
                               className="border rounded-lg p-4 flex gap-4 bg-background hover:bg-secondary/10 transition-colors"
                             >
                               <div className="h-20 w-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
@@ -304,16 +381,20 @@ const Dashboard = () => {
                                   <img
                                     src={outcome.imageUrl}
                                     alt={outcome.title}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain max-h-[80vh] max-w-full w-full"
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500">
-                                    <span className="text-xs text-white font-medium">No Image</span>
+                                    <span className="text-xs text-white font-medium">
+                                      No Image
+                                    </span>
                                   </div>
                                 )}
                               </div>
                               <div className="flex-grow overflow-hidden">
-                                <h3 className="font-medium text-base truncate">{outcome.title}</h3>
+                                <h3 className="font-medium text-base truncate">
+                                  {outcome.title}
+                                </h3>
                                 <p className="text-sm text-muted-foreground line-clamp-2">
                                   {outcome.description}
                                 </p>
@@ -344,26 +425,36 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                  <Dialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                  >
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
                         <DialogTitle>Delete Creation</DialogTitle>
                         <DialogDescription>
-                          Are you sure you want to delete this creation? This action cannot be undone.
+                          Are you sure you want to delete this creation? This
+                          action cannot be undone.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="flex justify-end gap-2 mt-4">
-                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsDeleteDialogOpen(false)}
+                        >
                           Cancel
                         </Button>
-                        <Button variant="destructive" onClick={handleDeleteOutcome}>
+                        <Button
+                          variant="destructive"
+                          onClick={handleDeleteOutcome}
+                        >
                           Delete
                         </Button>
                       </div>
                     </DialogContent>
                   </Dialog>
                 </TabsContent>
-                
+
                 <TabsContent value="profile">
                   <Card>
                     <CardHeader>
@@ -373,9 +464,42 @@ const Dashboard = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground">
-                        Profile settings coming soon.
-                      </p>
+                      <ProfileManager
+                        userId={user?.id}
+                        initialProfile={profile}
+                        onProfileUpdate={() => {
+                          // Refresh profile data
+                          if (user) {
+                            supabase
+                              .from('profiles')
+                              .select('*')
+                              .eq('id', user.id)
+                              .single()
+                              .then(({ data, error }) => {
+                                if (!error && data) {
+                                  setProfile(data);
+                                }
+                              });
+                          }
+                        }}
+                      />
+                    </CardContent>
+                    <CardHeader>
+                      <CardTitle>Your Preferences</CardTitle>
+                      <CardDescription>
+                        Customize your experience to get personalized AI tool
+                        recommendations
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {user && (
+                        <UserPreferences
+                          userId={user.id}
+                          onPreferencesSaved={() =>
+                            toast.success('Preferences saved successfully')
+                          }
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
