@@ -54,6 +54,8 @@ const Outcomes = () => {
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [user, setUser] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const limit = 12;
 
   // Observer for infinite scrolling
@@ -104,6 +106,12 @@ const Outcomes = () => {
 
     return () => {
       authListener.subscription.unsubscribe();
+      if (observer.current) {
+        observer.current.disconnect();
+        observer.current = null;
+      }
+      setPreviewImage(null);
+      setIsImageModalOpen(false);
     };
   }, []);
 
@@ -164,18 +172,19 @@ const Outcomes = () => {
           throw new Error(supabaseError.message);
         }
 
-        const transformedData: AIOucome[] = data.map((item) => ({
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          imageUrl: item.image_url,
-          toolId: item.tool_id,
-          toolName: item.ai_tools?.name || 'Unknown Tool',
-          createdAt: item.created_at,
-          submitterName: item.submitter_name,
-          submitterEmail: item.submitter_email,
-          userId: item.user_id,
-        }));
+        const transformedData: AIOucome[] =
+          data?.map((item) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            imageUrl: item.image_url || '/placeholder.svg',
+            toolId: item.tool_id,
+            toolName: item.ai_tools?.name || 'Unknown Tool',
+            createdAt: item.created_at,
+            submitterName: item.submitter_name,
+            submitterEmail: item.submitter_email,
+            userId: item.user_id,
+          })) || [];
 
         setHasMore(transformedData.length === limit);
 
@@ -446,17 +455,25 @@ const Outcomes = () => {
                       }
                     >
                       <Card className="overflow-hidden flex flex-col h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-border/40 hover:border-primary/20">
-                        <div className="aspect-video overflow-hidden bg-muted relative group">
-                          {outcome.imageUrl ? (
+                        <div
+                          className="aspect-video overflow-hidden bg-muted relative group cursor-pointer"
+                          onClick={() => {
+                            if (outcome.imageUrl) {
+                              setPreviewImage(outcome.imageUrl);
+                              setIsImageModalOpen(true);
+                            }
+                          }}
+                        >
+                          {outcome.imageUrl && (
                             <img
                               src={outcome.imageUrl}
                               alt={outcome.title}
-                              className="w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105"
+                              className="w-full h-full object-contain cursor-pointer"
+                              onClick={() => {
+                                setPreviewImage(outcome.imageUrl);
+                                setIsImageModalOpen(true);
+                              }}
                             />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500">
-                              <ImageIcon className="w-12 h-12 text-white/70" />
-                            </div>
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </div>
@@ -486,7 +503,7 @@ const Outcomes = () => {
                   ))}
                 </div>
 
-                {/* Loading indicator at the bottom */}
+                {/* Remove the Dialog component and keep only the overlay */}
                 {loading && outcomes.length > 0 && (
                   <div className="flex justify-center py-8">
                     <div className="flex items-center space-x-2">
@@ -502,6 +519,21 @@ const Outcomes = () => {
           </div>
         </main>
       </div>
+
+      {isImageModalOpen && previewImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setIsImageModalOpen(false)}
+        >
+          <div className="max-w-[90vw] overflow-y-auto">
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="rounded-lg object-contain max-h-[80vh] max-w-full w-full"
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 };
