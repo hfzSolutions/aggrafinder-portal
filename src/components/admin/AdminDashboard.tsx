@@ -35,6 +35,7 @@ import {
   FileText,
   FolderPlus,
   InboxIcon,
+  ImageOff,
 } from 'lucide-react';
 import {
   Dialog,
@@ -45,6 +46,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { FileUpload } from '@/components/ui/file-upload';
 
 interface AdminDashboardProps {
   userId: string;
@@ -74,6 +76,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   const [toolsLoading, setToolsLoading] = useState(true);
   const [editingTool, setEditingTool] = useState<AITool | null>(null);
   const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
+  const [triggerImageUpload, setTriggerImageUpload] = useState(false);
 
   // State for outcomes management
   const [outcomes, setOutcomes] = useState<AIOucome[]>([]);
@@ -148,6 +151,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     checkAdminStatus();
   }, [userId]);
 
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const TOOLS_PER_PAGE = 12;
+
   // Fetch tools
   useEffect(() => {
     const fetchTools = async () => {
@@ -156,6 +163,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         const { data, error } = await supabase
           .from('ai_tools')
           .select('*')
+          .range(page * TOOLS_PER_PAGE, (page + 1) * TOOLS_PER_PAGE - 1)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -172,7 +180,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           tags: item.tags,
         }));
 
-        setTools(transformedData);
+        setHasMore(data.length === TOOLS_PER_PAGE);
+        setTools((prev) =>
+          page === 0 ? transformedData : [...prev, ...transformedData]
+        );
       } catch (error) {
         console.error('Error fetching tools:', error);
         toast.error('Failed to load tools');
@@ -184,7 +195,28 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     if (isAdmin) {
       fetchTools();
     }
-  }, [isAdmin]);
+  }, [isAdmin, page]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!hasMore || toolsLoading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const sentinel = document.getElementById('tools-sentinel');
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, toolsLoading]);
 
   // Fetch outcomes
   useEffect(() => {
@@ -293,6 +325,25 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     if (!newTool.name || !newTool.description || !newTool.url) {
       toast.error('Please fill in all required fields');
       return;
+    }
+
+    // Only trigger image upload if there's a file selected in the FileUpload component
+    const fileUploadElement = document.getElementById(
+      'image-upload'
+    ) as HTMLInputElement;
+    if (fileUploadElement?.files?.length > 0) {
+      setTriggerImageUpload(true);
+      // Wait for the image upload to complete
+      await new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (!triggerImageUpload) {
+            clearInterval(checkInterval);
+            resolve(true);
+          }
+        }, 100);
+      });
+      // Ensure we have the latest image URL
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
     try {
@@ -585,7 +636,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                 </Button>
               </div>
 
-              {toolsLoading ? (
+              {toolsLoading && page === 0 ? (
                 <div className="flex items-center justify-center p-4">
                   <Loader2 className="h-6 w-6 animate-spin" />
                   <span className="ml-2">Loading tools...</span>
@@ -620,55 +671,137 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                   </div>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {tools.map((tool) => (
-                    <Card key={tool.id}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">{tool.name}</CardTitle>
-                        <CardDescription className="line-clamp-2">
-                          {tool.description}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <div className="text-sm space-y-1">
-                          <div>
-                            <span className="font-medium">URL:</span> {tool.url}
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {tools.map((tool) => (
+                      <Card key={tool.id}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            {tool.name}
+                          </CardTitle>
+                          <CardDescription className="line-clamp-2">
+                            {tool.description}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="mb-4 relative w-full aspect-video rounded-lg overflow-hidden">
+                            {tool.imageUrl ? (
+                              <img
+                                src={tool.imageUrl}
+                                alt={tool.name}
+                                className="object-cover w-full h-full"
+                                onError={(e) =>
+                                  e.currentTarget.parentElement?.classList.add(
+                                    'image-error'
+                                  )
+                                }
+                              />
+                            ) : (
+                              <div
+                                className={`absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br ${
+                                  tool.name
+                                    .split('')
+                                    .reduce(
+                                      (acc, char) => acc + char.charCodeAt(0),
+                                      0
+                                    ) %
+                                    5 ===
+                                  0
+                                    ? 'from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20'
+                                    : tool.name
+                                        .split('')
+                                        .reduce(
+                                          (acc, char) =>
+                                            acc + char.charCodeAt(0),
+                                          0
+                                        ) %
+                                        5 ===
+                                      1
+                                    ? 'from-green-100 to-teal-100 dark:from-green-900/20 dark:to-teal-900/20'
+                                    : tool.name
+                                        .split('')
+                                        .reduce(
+                                          (acc, char) =>
+                                            acc + char.charCodeAt(0),
+                                          0
+                                        ) %
+                                        5 ===
+                                      2
+                                    ? 'from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20'
+                                    : tool.name
+                                        .split('')
+                                        .reduce(
+                                          (acc, char) =>
+                                            acc + char.charCodeAt(0),
+                                          0
+                                        ) %
+                                        5 ===
+                                      3
+                                    ? 'from-rose-100 to-pink-100 dark:from-rose-900/20 dark:to-pink-900/20'
+                                    : 'from-indigo-100 to-cyan-100 dark:from-indigo-900/20 dark:to-cyan-900/20'
+                                }`}
+                              >
+                                <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
+                                <span className="text-xs text-primary/60 font-medium">
+                                  Preview not available
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <span className="font-medium">Categories:</span>{' '}
-                            {tool.category.join(', ')}
+                          <div className="text-sm space-y-1">
+                            <div>
+                              <span className="font-medium">URL:</span>{' '}
+                              {tool.url}
+                            </div>
+                            <div>
+                              <span className="font-medium">Categories:</span>{' '}
+                              {tool.category.join(', ')}
+                            </div>
+                            <div>
+                              <span className="font-medium">Pricing:</span>{' '}
+                              {tool.pricing}
+                            </div>
+                            <div>
+                              <span className="font-medium">Featured:</span>{' '}
+                              {tool.featured ? 'Yes' : 'No'}
+                            </div>
                           </div>
-                          <div>
-                            <span className="font-medium">Pricing:</span>{' '}
-                            {tool.pricing}
-                          </div>
-                          <div>
-                            <span className="font-medium">Featured:</span>{' '}
-                            {tool.featured ? 'Yes' : 'No'}
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="flex justify-end space-x-2 pt-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditTool(tool)}
-                        >
-                          <Pencil className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteTool(tool.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
+                        </CardContent>
+                        <CardFooter className="flex justify-end space-x-2 pt-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTool(tool)}
+                          >
+                            <Pencil className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteTool(tool.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </div>
+                  {hasMore && (
+                    <div
+                      id="tools-sentinel"
+                      className="flex items-center justify-center p-4"
+                    >
+                      {toolsLoading && (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                          <span className="ml-2">Loading more tools...</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </TabsContent>
 
@@ -971,18 +1104,17 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           </Tabs>
         </CardContent>
       </Card>
-
-      {/* Tool Dialog */}
+      {/* Tool form dialog */}
       <Dialog open={isToolDialogOpen} onOpenChange={setIsToolDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {editingTool ? 'Edit Tool' : 'Add New Tool'}
             </DialogTitle>
             <DialogDescription>
               {editingTool
-                ? 'Update the tool details below.'
-                : 'Fill in the details for the new AI tool.'}
+                ? 'Update the tool details below'
+                : 'Fill in the details to add a new AI tool'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -1025,13 +1157,13 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               <Label htmlFor="imageUrl" className="text-right">
                 Image URL
               </Label>
-              <Input
-                id="imageUrl"
-                value={newTool.imageUrl}
-                onChange={(e) =>
-                  handleToolInputChange('imageUrl', e.target.value)
+              <FileUpload
+                onUploadComplete={(url) =>
+                  handleToolInputChange('imageUrl', url)
                 }
-                className="col-span-3"
+                currentImageUrl={newTool.imageUrl}
+                triggerUpload={triggerImageUpload}
+                toolId={editingTool?.id}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
