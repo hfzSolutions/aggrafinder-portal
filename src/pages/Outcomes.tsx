@@ -353,7 +353,7 @@ const Outcomes = () => {
                           Share Your Creation
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[600px]">
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Share Your AI Creation</DialogTitle>
                           <DialogDescription>

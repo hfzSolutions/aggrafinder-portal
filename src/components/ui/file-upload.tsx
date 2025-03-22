@@ -10,6 +10,7 @@ interface FileUploadProps {
   accept?: string;
   maxSize?: number; // in MB
   className?: string;
+  id?: string;
 }
 
 export function FileUpload({
@@ -19,6 +20,7 @@ export function FileUpload({
   accept = 'image/*',
   maxSize = 5, // Default 5MB
   className = '',
+  id,
 }: FileUploadProps) {
   const [preview, setPreview] = useState<string | null>(
     typeof value === 'string' ? value : previewUrl || null
@@ -70,6 +72,7 @@ export function FileUpload({
           onChange={handleFileChange}
           accept={accept}
           className="hidden"
+          id={id}
         />
         <Button
           type="button"

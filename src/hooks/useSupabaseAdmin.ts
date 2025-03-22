@@ -51,6 +51,18 @@ interface UseSupabaseAdminReturn {
       tags: string[];
     }
   ) => Promise<{ success: boolean; error?: string }>;
+  bulkSubmitTools: (
+    toolsData: {
+      name: string;
+      description: string;
+      url: string;
+      image_url: string;
+      category: string[];
+      pricing: string;
+      featured: boolean;
+      tags: string[];
+    }[]
+  ) => Promise<{ success: boolean; error?: string; count: number }>;
   deleteTool: (id: string) => Promise<{ success: boolean; error?: string }>;
 
   // Loading state
@@ -393,7 +405,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
           maxWidthOrHeight: 1200, // Limit dimensions
           quality: 0.8, // 80% quality
         });
-        
+
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random()
           .toString(36)
@@ -472,6 +484,51 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
+  // Bulk tool submission function
+  const bulkSubmitTools = async (
+    toolsData: {
+      name: string;
+      description: string;
+      url: string;
+      image_url: string;
+      category: string[];
+      pricing: string;
+      featured: boolean;
+      tags: string[];
+    }[]
+  ): Promise<{ success: boolean; error?: string; count: number }> => {
+    try {
+      setLoading(true);
+
+      // Process tools in batches to avoid overwhelming the database
+      const batchSize = 10;
+      let successCount = 0;
+
+      // Process tools in batches
+      for (let i = 0; i < toolsData.length; i += batchSize) {
+        const batch = toolsData.slice(i, i + batchSize);
+
+        // Insert the batch of tools
+        const { error } = await supabase.from('ai_tools').insert(batch);
+
+        if (error) throw error;
+
+        successCount += batch.length;
+      }
+
+      return { success: true, count: successCount };
+    } catch (error: any) {
+      console.error('Error bulk submitting tools:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to bulk submit tools',
+        count: 0,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     // Outcomes management
     deleteOutcome,
@@ -489,5 +546,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     submitTool,
     updateTool,
     deleteTool,
+    bulkSubmitTools,
+    loading,
   };
 };

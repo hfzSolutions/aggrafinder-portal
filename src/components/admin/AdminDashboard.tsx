@@ -5,6 +5,7 @@ import { AITool } from '@/types/tools';
 import { AIOucome } from '@/types/outcomes';
 import { toast } from 'sonner';
 import { ToolSubmissionForm } from './ToolSubmissionForm';
+import { BulkToolUpload } from './BulkToolUpload';
 import {
   Card,
   CardContent,
@@ -547,34 +548,61 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Manage AI Tools</h3>
                 {/* Add Tool Dialog */}
-                <Dialog
-                  open={toolSubmissionOpen}
-                  onOpenChange={setToolSubmissionOpen}
-                >
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Tool
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Add New AI Tool</DialogTitle>
-                      <DialogDescription>
-                        Fill out the form below to add a new AI tool to the
-                        database.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <ToolSubmissionForm
-                      onSuccess={() => {
-                        setToolSubmissionOpen(false);
-                        // Refresh tools list
-                        refreshToolsList();
-                      }}
-                      categories={categories}
-                    />
-                  </DialogContent>
-                </Dialog>
+                <div className="flex space-x-2">
+                  <Dialog
+                    open={toolSubmissionOpen}
+                    onOpenChange={setToolSubmissionOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Tool
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New AI Tool</DialogTitle>
+                        <DialogDescription>
+                          Fill out the form below to add a new AI tool to the
+                          database.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ToolSubmissionForm
+                        onSuccess={() => {
+                          setToolSubmissionOpen(false);
+                          // Refresh tools list
+                          refreshToolsList();
+                        }}
+                        categories={categories}
+                      />
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Bulk Upload Dialog */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <FolderPlus className="h-4 w-4 mr-2" />
+                        Bulk Upload
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Bulk Upload AI Tools</DialogTitle>
+                        <DialogDescription>
+                          Upload multiple AI tools at once using a CSV file.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <BulkToolUpload
+                        onSuccess={() => {
+                          // Refresh tools list
+                          refreshToolsList();
+                        }}
+                        categories={categories}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
 
                 {/* Edit Tool Dialog */}
                 <Dialog open={toolEditOpen} onOpenChange={setToolEditOpen}>
