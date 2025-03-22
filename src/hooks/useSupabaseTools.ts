@@ -103,7 +103,9 @@ export const useSupabaseTools = ({
           id: item.id,
           name: item.name,
           description: item.description,
-          imageUrl: item.image_url,
+          imageUrl: item.image_url
+            ? `${import.meta.env.VITE_STORAGE_URL}/${item.image_url}`
+            : '',
           category: item.category,
           url: item.url,
           featured: item.featured,

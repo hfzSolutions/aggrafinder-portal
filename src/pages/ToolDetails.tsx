@@ -83,7 +83,9 @@ const ToolDetails = () => {
           id: data.id,
           name: data.name,
           description: data.description,
-          imageUrl: data.image_url,
+          imageUrl: data.image_url
+            ? `${import.meta.env.VITE_STORAGE_URL}/${data.image_url}`
+            : '',
           category: data.category,
           url: data.url,
           featured: data.featured,

@@ -3,18 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AITool } from '@/types/tools';
 import { AIOucome } from '@/types/outcomes';
+import { compressImage } from '@/utils/imageCompression';
 
 interface UseSupabaseAdminReturn {
-  // Tools management
-  createTool: (
-    tool: Omit<AITool, 'id'>
-  ) => Promise<{ success: boolean; data?: AITool; error?: string }>;
-  updateTool: (
-    id: string,
-    updates: Partial<AITool>
-  ) => Promise<{ success: boolean; error?: string }>;
-  deleteTool: (id: string) => Promise<{ success: boolean; error?: string }>;
-
   // Outcomes management
   deleteOutcome: (id: string) => Promise<{ success: boolean; error?: string }>;
 
@@ -36,141 +27,38 @@ interface UseSupabaseAdminReturn {
     id: string
   ) => Promise<{ success: boolean; error?: string }>;
 
+  // Tool management
+  submitTool: (toolData: {
+    name: string;
+    description: string;
+    url: string;
+    image_url: string;
+    category: string[];
+    pricing: string;
+    featured: boolean;
+    tags: string[];
+  }) => Promise<{ success: boolean; error?: string }>;
+  updateTool: (
+    id: string,
+    toolData: {
+      name: string;
+      description: string;
+      url: string;
+      image_url: string | File;
+      category: string[];
+      pricing: string;
+      featured: boolean;
+      tags: string[];
+    }
+  ) => Promise<{ success: boolean; error?: string }>;
+  deleteTool: (id: string) => Promise<{ success: boolean; error?: string }>;
+
   // Loading state
   loading: boolean;
 }
 
 export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
   const [loading, setLoading] = useState(false);
-
-  // Tools management functions
-  const createTool = async (
-    tool: Omit<AITool, 'id'>
-  ): Promise<{ success: boolean; data?: AITool; error?: string }> => {
-    try {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from('ai_tools')
-        .insert({
-          name: tool.name,
-          description: tool.description,
-          image_url: tool.imageUrl,
-          category: tool.category,
-          url: tool.url,
-          featured: tool.featured,
-          pricing: tool.pricing,
-          tags: tool.tags,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newTool: AITool = {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        imageUrl: data.image_url,
-        category: data.category,
-        url: data.url,
-        featured: data.featured,
-        pricing: data.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
-        tags: data.tags,
-      };
-
-      return { success: true, data: newTool };
-    } catch (error: any) {
-      console.error('Error creating tool:', error);
-      return {
-        success: false,
-        error: error.message || 'Failed to create tool',
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateTool = async (
-    id: string,
-    updates: Partial<AITool>
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setLoading(true);
-
-      // Transform the updates to match the database column names
-      const dbUpdates: any = {};
-
-      if (updates.name !== undefined) dbUpdates.name = updates.name;
-      if (updates.description !== undefined)
-        dbUpdates.description = updates.description;
-      if (updates.imageUrl !== undefined)
-        dbUpdates.image_url = updates.imageUrl;
-      if (updates.category !== undefined) dbUpdates.category = updates.category;
-      if (updates.url !== undefined) dbUpdates.url = updates.url;
-      if (updates.featured !== undefined) dbUpdates.featured = updates.featured;
-      if (updates.pricing !== undefined) dbUpdates.pricing = updates.pricing;
-      if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
-
-      const { error } = await supabase
-        .from('ai_tools')
-        .update(dbUpdates)
-        .eq('id', id);
-
-      if (error) throw error;
-
-      return { success: true };
-    } catch (error: any) {
-      console.error('Error updating tool:', error);
-      return {
-        success: false,
-        error: error.message || 'Failed to update tool',
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteTool = async (
-    id: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setLoading(true);
-
-      // First check if there are any outcomes associated with this tool
-      const { data: outcomes, error: checkError } = await supabase
-        .from('ai_outcomes')
-        .select('id')
-        .eq('tool_id', id);
-
-      if (checkError) throw checkError;
-
-      if (outcomes && outcomes.length > 0) {
-        return {
-          success: false,
-          error: `Cannot delete tool with ${outcomes.length} associated outcomes. Remove the outcomes first.`,
-        };
-      }
-
-      // Delete any votes associated with this tool
-      await supabase.from('tool_votes').delete().eq('tool_id', id);
-
-      // Delete the tool
-      const { error } = await supabase.from('ai_tools').delete().eq('id', id);
-
-      if (error) throw error;
-
-      return { success: true };
-    } catch (error: any) {
-      console.error('Error deleting tool:', error);
-      return {
-        success: false,
-        error: error.message || 'Failed to delete tool',
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Outcomes management functions
   const deleteOutcome = async (
@@ -348,12 +236,243 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  return {
-    // Tools management
-    createTool,
-    updateTool,
-    deleteTool,
+  // Tool management functions
+  const submitTool = async (toolData: {
+    name: string;
+    description: string;
+    url: string;
+    image_url: string | File;
+    category: string[];
+    pricing: string;
+    featured: boolean;
+    tags: string[];
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
 
+      let imageUrl = '';
+
+      // Handle image upload if image_url is a File
+      if (toolData.image_url instanceof File) {
+        // Compress the image before uploading
+        const file = await compressImage(toolData.image_url, {
+          maxSizeMB: 1, // Limit to 1MB
+          maxWidthOrHeight: 1200, // Limit dimensions
+          quality: 0.8, // 80% quality
+        });
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 15)}.${fileExt}`;
+        const filePath = `tools/${fileName}`;
+
+        // Upload the compressed file to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('assets')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Store just the path - the public URL will be constructed when fetching
+        imageUrl = filePath;
+      } else {
+        // If it's already a URL string, use it directly
+        // Check if it's a full URL or just a path
+        if (toolData.image_url.startsWith('http')) {
+          // It's already a full URL, use as is
+          imageUrl = toolData.image_url;
+        } else {
+          // It's a path, keep as is
+          imageUrl = toolData.image_url;
+        }
+      }
+
+      // Insert the tool with the image URL
+      const { error } = await supabase.from('ai_tools').insert({
+        ...toolData,
+        image_url: imageUrl,
+      });
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error submitting tool:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to submit tool',
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tool management functions
+  const deleteTool = async (
+    id: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+
+      // First get the tool details to get the image path
+      const { data: toolData, error: fetchError } = await supabase
+        .from('ai_tools')
+        .select('image_url')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete the tool from the database
+      const { error: deleteError } = await supabase
+        .from('ai_tools')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) throw deleteError;
+
+      // If the tool had an image and it's stored in Supabase Storage, delete it
+      if (toolData?.image_url && !toolData.image_url.startsWith('http')) {
+        const { error: storageError } = await supabase.storage
+          .from('assets')
+          .remove([toolData.image_url]);
+
+        if (storageError) {
+          console.error('Error deleting tool image:', storageError);
+          // We don't throw here as the tool was already deleted
+        }
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error deleting tool:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to delete tool',
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update tool function
+  const updateTool = async (
+    id: string,
+    toolData: {
+      name: string;
+      description: string;
+      url: string;
+      image_url: string | File;
+      category: string[];
+      pricing: string;
+      featured: boolean;
+      tags: string[];
+    }
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+
+      // First get the current tool details to get the image path
+      const { data: currentTool, error: fetchError } = await supabase
+        .from('ai_tools')
+        .select('image_url')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentImageUrl = currentTool?.image_url || '';
+      let imageUrl = '';
+
+      // Handle image upload if image_url is a File
+      if (toolData.image_url instanceof File) {
+        // Compress the image before uploading
+        const file = await compressImage(toolData.image_url, {
+          maxSizeMB: 1, // Limit to 1MB
+          maxWidthOrHeight: 1200, // Limit dimensions
+          quality: 0.8, // 80% quality
+        });
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 15)}.${fileExt}`;
+        const filePath = `tools/${fileName}`;
+
+        // Upload the compressed file to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('assets')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Store just the path - the public URL will be constructed when fetching
+        imageUrl = filePath;
+
+        // Delete the old image if it exists and is stored in Supabase Storage
+        if (currentImageUrl && !currentImageUrl.startsWith('http')) {
+          const { error: deleteError } = await supabase.storage
+            .from('assets')
+            .remove([currentImageUrl]);
+
+          if (deleteError) {
+            console.error('Error deleting old tool image:', deleteError);
+            // We don't throw here as the update can still proceed
+          }
+        }
+      } else {
+        // If it's already a URL string, use it directly
+        // Check if it's a full URL or just a path
+        if (toolData.image_url.startsWith('http')) {
+          // If the URL has changed and old one was a storage path, delete the old image
+          if (
+            toolData.image_url !== currentImageUrl &&
+            currentImageUrl &&
+            !currentImageUrl.startsWith('http')
+          ) {
+            const { error: deleteError } = await supabase.storage
+              .from('assets')
+              .remove([currentImageUrl]);
+
+            if (deleteError) {
+              console.error('Error deleting old tool image:', deleteError);
+              // We don't throw here as the update can still proceed
+            }
+          }
+
+          // Use the new URL
+          imageUrl = toolData.image_url;
+        } else {
+          // It's a path, keep as is
+          imageUrl = toolData.image_url;
+        }
+      }
+
+      // Update the tool with the image URL
+      const { error } = await supabase
+        .from('ai_tools')
+        .update({
+          ...toolData,
+          image_url: imageUrl,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error updating tool:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to update tool',
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
     // Outcomes management
     deleteOutcome,
 
@@ -366,7 +485,9 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     approveToolRequest,
     rejectToolRequest,
 
-    // Loading state
-    loading,
+    // Tool management
+    submitTool,
+    updateTool,
+    deleteTool,
   };
 };
