@@ -189,19 +189,35 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
         return { success: false, error: 'Tool request not found' };
       }
 
-      // Create a new tool from the request
-      const { error: insertError } = await supabase.from('ai_tools').insert({
-        name: requestData.name,
-        description: requestData.description,
-        image_url: 'https://via.placeholder.com/300', // Default image
-        category: requestData.category,
-        url: requestData.url,
-        featured: false,
-        pricing: requestData.pricing || 'Free',
-        tags: [],
-      });
+      if (requestData.request_type === 'update' && requestData.tool_id) {
+        // For update requests, modify the existing tool
+        const { error: updateError } = await supabase
+          .from('ai_tools')
+          .update({
+            name: requestData.name,
+            description: requestData.description,
+            category: requestData.category,
+            url: requestData.url,
+            pricing: requestData.pricing || 'Free',
+          })
+          .eq('id', requestData.tool_id);
 
-      if (insertError) throw insertError;
+        if (updateError) throw updateError;
+      } else {
+        // For new tool requests, create a new tool
+        const { error: insertError } = await supabase.from('ai_tools').insert({
+          name: requestData.name,
+          description: requestData.description,
+          image_url: 'https://via.placeholder.com/300', // Default image
+          category: requestData.category,
+          url: requestData.url,
+          featured: false,
+          pricing: requestData.pricing || 'Free',
+          tags: [],
+        });
+
+        if (insertError) throw insertError;
+      }
 
       // Update the request status
       const { error: updateError } = await supabase
