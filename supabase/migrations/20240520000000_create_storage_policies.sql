@@ -1,6 +1,6 @@
 -- Create storage bucket for tool images if it doesn't exist
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('tool-images', 'tool-images', true)
+VALUES ('assets', 'assets', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Enable RLS
@@ -12,7 +12,7 @@ CREATE POLICY "Allow authenticated users to upload files"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
-  bucket_id = 'tool-images' AND
+  bucket_id = 'assets' AND
   auth.role() = 'authenticated'
 );
 
@@ -20,10 +20,10 @@ WITH CHECK (
 CREATE POLICY "Allow public to view files"
 ON storage.objects FOR SELECT
 TO public
-USING (bucket_id = 'tool-images');
+USING (bucket_id = 'assets');
 
 -- Policy to allow file owners to delete their files
 CREATE POLICY "Allow owners to delete files"
 ON storage.objects FOR DELETE
 TO authenticated
-USING (bucket_id = 'tool-images' AND owner = auth.uid());
+USING (bucket_id = 'assets' AND owner = auth.uid());

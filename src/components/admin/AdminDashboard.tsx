@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
 import { AIOucome } from '@/types/outcomes';
 import { toast } from 'sonner';
+import { ToolSubmissionForm } from './ToolSubmissionForm';
 import {
   Card,
   CardContent,
@@ -46,7 +47,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileUpload } from '@/components/ui/file-upload';
 
 interface AdminDashboardProps {
   userId: string;
@@ -74,9 +74,6 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   // State for tools management
   const [tools, setTools] = useState<AITool[]>([]);
   const [toolsLoading, setToolsLoading] = useState(true);
-  const [editingTool, setEditingTool] = useState<AITool | null>(null);
-  const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
-  const [triggerImageUpload, setTriggerImageUpload] = useState(false);
 
   // State for outcomes management
   const [outcomes, setOutcomes] = useState<AIOucome[]>([]);
@@ -93,29 +90,24 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   const [toolRequests, setToolRequests] = useState<ToolRequest[]>([]);
   const [toolRequestsLoading, setToolRequestsLoading] = useState(true);
 
-  // New tool form state
-  const [newTool, setNewTool] = useState<Omit<AITool, 'id'>>({
-    name: '',
-    description: '',
-    imageUrl: '',
-    category: [],
-    url: '',
-    featured: false,
-    pricing: 'Free',
-    tags: [],
-  });
+  // State for tool submission dialog
+  const [toolSubmissionOpen, setToolSubmissionOpen] = useState(false);
+
+  // State for tool editing
+  const [editingTool, setEditingTool] = useState<AITool | null>(null);
+  const [toolEditOpen, setToolEditOpen] = useState(false);
 
   // Admin hook
   const {
-    createTool,
-    updateTool,
-    deleteTool,
     deleteOutcome,
     updateCategory,
     createCategory,
     deleteCategory,
     approveToolRequest,
     rejectToolRequest,
+    submitTool,
+    updateTool,
+    deleteTool,
     loading: adminActionLoading,
   } = useSupabaseAdmin();
 
@@ -154,6 +146,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const TOOLS_PER_PAGE = 12;
+  const storageBaseUrl = import.meta.env.VITE_STORAGE_URL;
 
   // Fetch tools
   useEffect(() => {
@@ -168,11 +161,13 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
         if (error) throw error;
 
+        // Construct the public URL manually
+
         const transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
           description: item.description,
-          imageUrl: item.image_url,
+          imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
           category: item.category,
           url: item.url,
           featured: item.featured,
@@ -234,7 +229,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           id: item.id,
           title: item.title,
           description: item.description,
-          imageUrl: item.image_url,
+          imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
           toolId: item.tool_id,
           toolName: item.ai_tools?.name || 'Unknown Tool',
           createdAt: item.created_at,
@@ -308,126 +303,6 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       fetchToolRequests();
     }
   }, [isAdmin]);
-
-  // Handle tool form input changes
-  const handleToolInputChange = (
-    field: keyof Omit<AITool, 'id'>,
-    value: any
-  ) => {
-    setNewTool((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  // Handle tool form submission
-  const handleToolSubmit = async () => {
-    if (!newTool.name || !newTool.description || !newTool.url) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    // Only trigger image upload if there's a file selected in the FileUpload component
-    const fileUploadElement = document.getElementById(
-      'image-upload'
-    ) as HTMLInputElement;
-    if (fileUploadElement?.files?.length > 0) {
-      setTriggerImageUpload(true);
-      // Wait for the image upload to complete
-      await new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (!triggerImageUpload) {
-            clearInterval(checkInterval);
-            resolve(true);
-          }
-        }, 100);
-      });
-      // Ensure we have the latest image URL
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
-    try {
-      if (editingTool) {
-        // Update existing tool
-        const { success, error } = await updateTool(editingTool.id, newTool);
-
-        if (!success) throw new Error(error);
-
-        // Update local state
-        setTools((prev) =>
-          prev.map((tool) =>
-            tool.id === editingTool.id ? { ...tool, ...newTool } : tool
-          )
-        );
-
-        toast.success('Tool updated successfully');
-      } else {
-        // Create new tool
-        const { success, data, error } = await createTool(newTool);
-
-        if (!success) throw new Error(error);
-
-        // Add to local state
-        if (data) {
-          setTools((prev) => [data, ...prev]);
-        }
-
-        toast.success('Tool created successfully');
-      }
-
-      // Reset form and close dialog
-      setNewTool({
-        name: '',
-        description: '',
-        imageUrl: '',
-        category: [],
-        url: '',
-        featured: false,
-        pricing: 'Free',
-        tags: [],
-      });
-      setEditingTool(null);
-      setIsToolDialogOpen(false);
-    } catch (error: any) {
-      console.error('Error saving tool:', error);
-      toast.error(error.message || 'Failed to save tool');
-    }
-  };
-
-  // Handle tool edit
-  const handleEditTool = (tool: AITool) => {
-    setEditingTool(tool);
-    setNewTool({
-      name: tool.name,
-      description: tool.description,
-      imageUrl: tool.imageUrl,
-      category: tool.category,
-      url: tool.url,
-      featured: tool.featured,
-      pricing: tool.pricing,
-      tags: tool.tags,
-    });
-    setIsToolDialogOpen(true);
-  };
-
-  // Handle tool delete
-  const handleDeleteTool = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this tool?')) return;
-
-    try {
-      const { success, error } = await deleteTool(id);
-
-      if (!success) throw new Error(error);
-
-      // Remove from local state
-      setTools((prev) => prev.filter((tool) => tool.id !== id));
-
-      toast.success('Tool deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting tool:', error);
-      toast.error(error.message || 'Failed to delete tool');
-    }
-  };
 
   // Handle outcome delete
   const handleDeleteOutcome = async (id: string) => {
@@ -565,6 +440,62 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   };
 
+  // Refresh tools list function to avoid code duplication
+  const refreshToolsList = async () => {
+    try {
+      setToolsLoading(true);
+      setPage(0);
+      setTools([]);
+
+      const { data, error } = await supabase
+        .from('ai_tools')
+        .select('*')
+        .range(0, TOOLS_PER_PAGE - 1)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const transformedData: AITool[] = data.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
+        category: item.category,
+        url: item.url,
+        featured: item.featured,
+        pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
+        tags: item.tags,
+      }));
+
+      setHasMore(data.length === TOOLS_PER_PAGE);
+      setTools(transformedData);
+    } catch (error) {
+      console.error('Error fetching tools:', error);
+      toast.error('Failed to load tools');
+    } finally {
+      setToolsLoading(false);
+    }
+  };
+
+  // Handle tool deletion
+  const handleDeleteTool = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this tool?')) return;
+
+    try {
+      const { success, error } = await deleteTool(id);
+
+      if (!success) throw new Error(error);
+
+      // Remove from local state
+      setTools((prev) => prev.filter((tool) => tool.id !== id));
+
+      toast.success('Tool deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting tool:', error);
+      toast.error(error.message || 'Failed to delete tool');
+    }
+  };
+
   if (checkingAdmin) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -615,25 +546,60 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
             <TabsContent value="tools" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Manage AI Tools</h3>
-                <Button
-                  onClick={() => {
-                    setEditingTool(null);
-                    setNewTool({
-                      name: '',
-                      description: '',
-                      imageUrl: '',
-                      category: [],
-                      url: '',
-                      featured: false,
-                      pricing: 'Free',
-                      tags: [],
-                    });
-                    setIsToolDialogOpen(true);
-                  }}
+                {/* Add Tool Dialog */}
+                <Dialog
+                  open={toolSubmissionOpen}
+                  onOpenChange={setToolSubmissionOpen}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Tool
-                </Button>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Tool
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add New AI Tool</DialogTitle>
+                      <DialogDescription>
+                        Fill out the form below to add a new AI tool to the
+                        database.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ToolSubmissionForm
+                      onSuccess={() => {
+                        setToolSubmissionOpen(false);
+                        // Refresh tools list
+                        refreshToolsList();
+                      }}
+                      categories={categories}
+                    />
+                  </DialogContent>
+                </Dialog>
+
+                {/* Edit Tool Dialog */}
+                <Dialog open={toolEditOpen} onOpenChange={setToolEditOpen}>
+                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Edit AI Tool</DialogTitle>
+                      <DialogDescription>
+                        Update the details of this AI tool.
+                      </DialogDescription>
+                    </DialogHeader>
+                    {editingTool && (
+                      <ToolSubmissionForm
+                        onSuccess={() => {
+                          setToolEditOpen(false);
+                          setEditingTool(null);
+                          // Refresh tools list
+                          refreshToolsList();
+                        }}
+                        categories={categories}
+                        editMode={true}
+                        toolToEdit={editingTool}
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
 
               {toolsLoading && page === 0 ? (
@@ -649,22 +615,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                     <p className="text-sm text-gray-500">
                       Get started by adding your first AI tool.
                     </p>
-                    <Button
-                      onClick={() => {
-                        setEditingTool(null);
-                        setNewTool({
-                          name: '',
-                          description: '',
-                          imageUrl: '',
-                          category: [],
-                          url: '',
-                          featured: false,
-                          pricing: 'Free',
-                          tags: [],
-                        });
-                        setIsToolDialogOpen(true);
-                      }}
-                    >
+                    <Button onClick={() => setToolSubmissionOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add First Tool
                     </Button>
@@ -771,7 +722,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleEditTool(tool)}
+                            onClick={() => {
+                              setEditingTool(tool);
+                              setToolEditOpen(true);
+                            }}
                           >
                             <Pencil className="h-4 w-4 mr-1" />
                             Edit
@@ -1104,160 +1058,6 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           </Tabs>
         </CardContent>
       </Card>
-      {/* Tool form dialog */}
-      <Dialog open={isToolDialogOpen} onOpenChange={setIsToolDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingTool ? 'Edit Tool' : 'Add New Tool'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingTool
-                ? 'Update the tool details below'
-                : 'Fill in the details to add a new AI tool'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={newTool.name}
-                onChange={(e) => handleToolInputChange('name', e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Textarea
-                id="description"
-                value={newTool.description}
-                onChange={(e) =>
-                  handleToolInputChange('description', e.target.value)
-                }
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="url" className="text-right">
-                URL
-              </Label>
-              <Input
-                id="url"
-                value={newTool.url}
-                onChange={(e) => handleToolInputChange('url', e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="imageUrl" className="text-right">
-                Image URL
-              </Label>
-              <FileUpload
-                onUploadComplete={(url) =>
-                  handleToolInputChange('imageUrl', url)
-                }
-                currentImageUrl={newTool.imageUrl}
-                triggerUpload={triggerImageUpload}
-                toolId={editingTool?.id}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="pricing" className="text-right">
-                Pricing
-              </Label>
-              <Select
-                value={newTool.pricing}
-                onValueChange={(value) =>
-                  handleToolInputChange('pricing', value)
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select pricing model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Free">Free</SelectItem>
-                  <SelectItem value="Freemium">Freemium</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Free Trial">Free Trial</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Categories</Label>
-              <div className="col-span-3">
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      onClick={() => {
-                        const categoryName = category.name;
-                        setNewTool((prev) => ({
-                          ...prev,
-                          category: prev.category.includes(categoryName)
-                            ? prev.category.filter(
-                                (cat) => cat !== categoryName
-                              )
-                            : [...prev.category, categoryName],
-                        }));
-                      }}
-                      className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                        newTool.category.includes(category.name)
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground'
-                      }`}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
-                </div>
-                {newTool.category.length > 0 && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Selected: {newTool.category.join(', ')}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Featured</Label>
-              <div className="col-span-3 flex items-center space-x-2">
-                <Checkbox
-                  id="featured"
-                  checked={newTool.featured}
-                  onCheckedChange={(checked) =>
-                    handleToolInputChange('featured', checked)
-                  }
-                />
-                <Label htmlFor="featured">Mark as featured tool</Label>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsToolDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleToolSubmit}
-              disabled={adminActionLoading}
-            >
-              {adminActionLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              {editingTool ? 'Update Tool' : 'Add Tool'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -1,208 +1,83 @@
-import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Loader2, Upload, ImageOff } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Button } from './button';
+import { Input } from './input';
+import { Loader2, Upload, X } from 'lucide-react';
 
 interface FileUploadProps {
-  onUploadComplete: (data: { url: string; toolId: string }) => void;
-  currentImageUrl?: string;
-  triggerUpload?: boolean;
-  toolId: string;
+  onFileChange: (file: File | null) => void;
+  value?: File | string | null;
+  previewUrl?: string | null;
+  accept?: string;
+  maxSize?: number; // in MB
+  className?: string;
 }
 
 export function FileUpload({
-  onUploadComplete,
-  currentImageUrl,
-  triggerUpload = false,
-  toolId,
+  onFileChange,
+  value,
+  previewUrl,
+  accept = 'image/*',
+  maxSize = 5, // Default 5MB
+  className = '',
 }: FileUploadProps) {
-  const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<string>(currentImageUrl || '');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isImageError, setIsImageError] = useState(false);
+  const [preview, setPreview] = useState<string | null>(
+    typeof value === 'string' ? value : previewUrl || null
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const prevTriggerUploadRef = useRef(triggerUpload);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setError(null);
 
-  useEffect(() => {
-    if (triggerUpload && !prevTriggerUploadRef.current && selectedFile) {
-      uploadImage();
-    }
-    prevTriggerUploadRef.current = triggerUpload;
-  }, [triggerUpload, selectedFile]);
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('You must select an image to upload.');
-      }
-
-      const file = event.target.files[0];
-      const localPreviewUrl = URL.createObjectURL(file);
-      setPreview(localPreviewUrl);
-      setSelectedFile(file);
-    } catch (error: any) {
-      toast.error(error.message || 'Error selecting image');
-    }
-  };
-
-  const deleteOldImage = async (imageUrl: string) => {
-    try {
-      // Extract the path from the URL
-      const urlPath = new URL(imageUrl).pathname;
-      // Keep all three segments (toolId/userId/filename) from the path
-      const filePath = urlPath.split('/').slice(-3).join('/');
-
-      const { error } = await supabase.storage
-        .from('tool-images')
-        .remove([filePath]);
-
-      if (error) {
-        console.error('Error deleting old image:', error);
-      }
-    } catch (error) {
-      console.error('Error processing old image deletion:', error);
-    }
-  };
-
-  const uploadImage = async () => {
-    if (!selectedFile) {
-      // If no file is selected, pass the current URL or empty string
-      onUploadComplete({ url: currentImageUrl || '', toolId });
+    if (!file) {
+      onFileChange(null);
+      setPreview(null);
       return;
     }
 
-    // Delete old image if it exists
-
-    if (currentImageUrl) {
-      await deleteOldImage(currentImageUrl);
+    // Check file size
+    if (file.size > maxSize * 1024 * 1024) {
+      setError(`File size exceeds ${maxSize}MB limit`);
+      return;
     }
 
-    try {
-      setUploading(true);
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
 
-      // Check if user is authenticated
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('You must be logged in to upload images');
-      }
+    onFileChange(file);
+  };
 
-      // Validate file size (max 5MB)
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        throw new Error('File size must be less than 5MB');
-      }
-
-      // Validate file type
-      const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
-      const allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
-      if (!fileExt || !allowedTypes.includes(fileExt)) {
-        throw new Error(
-          'File type not supported. Please upload an image file (jpg, jpeg, png, gif)'
-        );
-      }
-
-      const filePath = `${toolId}/${
-        session.user.id
-      }/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-      console.log('Uploading file:', {
-        name: selectedFile.name,
-        size: selectedFile.size,
-        type: selectedFile.type,
-        path: filePath,
-        userId: session.user.id,
-      });
-
-      const { error: uploadError, data } = await supabase.storage
-        .from('tool-images')
-        .upload(filePath, selectedFile, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) {
-        if (uploadError.message.includes('storage/unauthorized')) {
-          throw new Error(
-            'Unauthorized to upload. Please check if you are logged in.'
-          );
-        }
-        console.error('Upload error:', uploadError);
-        throw uploadError;
-      }
-
-      if (!data) {
-        throw new Error('Upload failed - no data returned');
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('tool-images').getPublicUrl(filePath);
-
-      if (!publicUrl) {
-        throw new Error('Failed to get public URL');
-      }
-
-      setPreview(publicUrl);
-      setSelectedFile(null);
-
-      // Update the image URL in the ai_tools table
-      const { error: dbError } = await supabase
-        .from('ai_tools')
-        .update({ image_url: 'publicUrl55' })
-        .eq('id', toolId);
-
-      if (dbError) {
-        console.error('Database update error:', dbError);
-        toast.error('Failed to update image URL in database');
-        return;
-      }
-
-      onUploadComplete({ url: publicUrl, toolId });
-      toast.success('Image uploaded and database updated successfully');
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      toast.error(error.message || 'Error uploading image');
-      if (error.message.includes('logged in')) {
-        // Optionally redirect to login page or trigger login modal
-        console.log('User needs to log in');
-      }
-    } finally {
-      setUploading(false);
+  const handleRemove = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
+    onFileChange(null);
+    setPreview(null);
   };
 
   return (
-    <div className="space-y-4">
-      {preview && (
-        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
-          {isImageError ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
-              <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
-              <span className="text-xs text-primary/60 font-medium">
-                Preview not available
-              </span>
-            </div>
-          ) : (
-            <img
-              src={preview}
-              alt="Preview"
-              className="object-cover w-full h-full"
-              onError={() => setIsImageError(true)}
-            />
-          )}
-        </div>
-      )}
-      <div className="flex items-center gap-4">
+    <div className={`space-y-2 ${className}`}>
+      <div className="flex items-center gap-2">
+        <Input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept={accept}
+          className="hidden"
+        />
         <Button
           type="button"
           variant="outline"
-          disabled={uploading}
-          className="w-full"
-          onClick={() => document.getElementById('image-upload')?.click()}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isLoading}
         >
-          {uploading ? (
+          {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Uploading...
@@ -214,15 +89,30 @@ export function FileUpload({
             </>
           )}
         </Button>
-        <input
-          id="image-upload"
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          disabled={uploading}
-          className="hidden"
-        />
+        {preview && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleRemove}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {preview && (
+        <div className="relative mt-2 rounded-md overflow-hidden border border-input">
+          <img
+            src={preview}
+            alt="Preview"
+            className="max-h-[200px] w-auto object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
