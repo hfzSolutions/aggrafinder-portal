@@ -64,6 +64,8 @@ interface ToolRequest {
   submitter_name: string | null;
   submitter_email: string | null;
   created_at: string;
+  request_type: 'new' | 'update';
+  tool_id: string | null;
 }
 
 interface Category {
@@ -286,7 +288,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         setToolRequestsLoading(true);
         const { data, error } = await supabase
           .from('tool_requests')
-          .select('*')
+          .select('*, ai_tools!tool_requests_tool_id_fkey(name)')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -1036,6 +1038,21 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                       </CardHeader>
                       <CardContent className="pb-2">
                         <div className="text-sm space-y-1">
+                          <div>
+                            <span className="font-medium">Request Type:</span>{' '}
+                            {request.request_type === 'new'
+                              ? 'New Tool'
+                              : 'Update Request'}
+                          </div>
+                          {request.request_type === 'update' &&
+                            request.tool_id && (
+                              <div>
+                                <span className="font-medium">
+                                  Updating Tool:
+                                </span>{' '}
+                                {request.ai_tools?.name || 'Unknown Tool'}
+                              </div>
+                            )}
                           <div>
                             <span className="font-medium">URL:</span>{' '}
                             {request.url}
