@@ -282,7 +282,15 @@ const Dashboard = () => {
               <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={profile?.avatar_url} />
+                    <AvatarImage
+                      src={
+                        profile?.avatar_url
+                          ? `${import.meta.env.VITE_STORAGE_URL}/${
+                              profile.avatar_url
+                            }`
+                          : undefined
+                      }
+                    />
                     <AvatarFallback>
                       {user?.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -325,7 +333,7 @@ const Dashboard = () => {
                               Add New Creation
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="sm:max-w-[600px]">
+                          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>
                                 {editingOutcome

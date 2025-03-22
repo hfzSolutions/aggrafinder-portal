@@ -1,0 +1,6 @@
+name,description,url,imageUrl,category,pricing,featured,tags
+ChatGPT,Advanced AI chatbot for natural language processing and content generation,https://chat.openai.com,https://example.com/chatgpt-image.jpg,AI Assistant;Natural Language Processing,Freemium,true,chatbot;ai assistant;text generation
+Midjourney,AI image generation tool that creates stunning visuals from text prompts,https://www.midjourney.com,https://example.com/midjourney-image.jpg,Image Generation;Creative Tools,Paid,false,image generation;art;creative
+Notion AI,AI-powered writing assistant integrated with Notion workspace,https://www.notion.so/product/ai,https://example.com/notion-ai-image.jpg,Productivity;AI Assistant,Free Trial,false,writing;productivity;workspace
+Jasper,AI content creation platform for marketing teams,https://www.jasper.ai,https://example.com/jasper-image.jpg,Content Creation;Marketing,Paid,false,marketing;content;writing
+Dall-E,OpenAI's image generation model that creates images from text descriptions,https://openai.com/dall-e-3,https://example.com/dalle-image.jpg,Image Generation;Creative Tools,Freemium,true,image generation;art;openai
