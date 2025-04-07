@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -25,6 +26,8 @@ import {
 } from '@/components/ui/select';
 import { useSupabaseAdmin } from '@/hooks/useSupabaseAdmin';
 import { toast } from 'sonner';
+import { AITool } from '@/types/tools';
+import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
   name: z
@@ -53,27 +56,47 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface ToolSubmissionFormProps {
   onSuccess: () => void;
-  categories: { id: number; name: string }[];
   editMode?: boolean;
   toolToEdit?: AITool;
+  userId: string;
 }
 
 export function ToolSubmissionForm({
   onSuccess,
-  categories,
   editMode = false,
   toolToEdit,
+  userId,
 }: ToolSubmissionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     toolToEdit?.category || []
   );
   const [tagsInput, setTagsInput] = useState('');
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const {
     submitTool,
     updateTool,
     loading: adminActionLoading,
   } = useSupabaseAdmin();
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching categories:', error);
+        return;
+      }
+      
+      setCategories(data || []);
+    };
+    
+    fetchCategories();
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -143,6 +166,7 @@ export function ToolSubmissionForm({
         pricing: values.pricing,
         featured: values.featured,
         tags: values.tags,
+        user_id: userId,
       };
 
       let result;
@@ -247,7 +271,7 @@ export function ToolSubmissionForm({
                     typeof field.value === 'string' ? field.value : undefined
                   }
                   accept="image/*"
-                  maxSize={5} // 2MB limit
+                  maxSize={5} // 5MB limit
                 />
               </FormControl>
               <FormMessage />
@@ -262,26 +286,30 @@ export function ToolSubmissionForm({
             <FormItem>
               <FormLabel>Categories</FormLabel>
               <div className="grid grid-cols-2 gap-2 mt-2">
-                {categories.map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex items-center space-x-2"
-                  >
-                    <Checkbox
-                      id={`category-${category.id}`}
-                      checked={selectedCategories.includes(category.name)}
-                      onCheckedChange={() =>
-                        handleCategoryToggle(category.name)
-                      }
-                    />
-                    <label
-                      htmlFor={`category-${category.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                {categories && categories.length > 0 ? (
+                  categories.map((category) => (
+                    <div
+                      key={category.id}
+                      className="flex items-center space-x-2"
                     >
-                      {category.name}
-                    </label>
-                  </div>
-                ))}
+                      <Checkbox
+                        id={`category-${category.id}`}
+                        checked={selectedCategories.includes(category.name)}
+                        onCheckedChange={() =>
+                          handleCategoryToggle(category.name)
+                        }
+                      />
+                      <label
+                        htmlFor={`category-${category.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {category.name}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Loading categories...</p>
+                )}
               </div>
               {form.formState.errors.category && (
                 <p className="text-sm font-medium text-destructive mt-2">

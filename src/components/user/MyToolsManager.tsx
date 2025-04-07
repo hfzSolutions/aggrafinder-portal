@@ -2,10 +2,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Plus, Pencil, Trash2, Eye, AlertCircle } from 'lucide-react';
 import { ToolSubmissionForm } from '@/components/admin/ToolSubmissionForm';
 import { toast } from 'sonner';
@@ -46,6 +45,7 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
         featured: tool.featured,
         pricing: tool.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
         tags: tool.tags || [],
+        userId: tool.user_id,
         approvalStatus: tool.approval_status as 'pending' | 'approved' | 'rejected',
       }));
 
@@ -228,9 +228,10 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
             </DialogDescription>
           </DialogHeader>
           <ToolSubmissionForm 
-            initialData={editingTool || undefined}
+            toolToEdit={editingTool || undefined}
             onSuccess={handleSubmitSuccess}
             userId={userId}
+            editMode={!!editingTool}
           />
         </DialogContent>
       </Dialog>

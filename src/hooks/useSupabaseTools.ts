@@ -119,6 +119,12 @@ export const useSupabaseTools = ({
           throw new Error(supabaseError.message);
         }
 
+        if (!data) {
+          setTools([]);
+          setHasMore(false);
+          return;
+        }
+
         const transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
@@ -130,7 +136,7 @@ export const useSupabaseTools = ({
           url: item.url,
           featured: item.featured,
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
-          tags: item.tags,
+          tags: item.tags || [],
           userId: item.user_id,
           approvalStatus: item.approval_status,
         }));
