@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,7 +38,9 @@ interface UseSupabaseAdminReturn {
     pricing: string;
     featured: boolean;
     tags: string[];
+    user_id: string;
   }) => Promise<{ success: boolean; error?: string }>;
+  
   updateTool: (
     id: string,
     toolData: {
@@ -49,8 +52,10 @@ interface UseSupabaseAdminReturn {
       pricing: string;
       featured: boolean;
       tags: string[];
+      user_id?: string;
     }
   ) => Promise<{ success: boolean; error?: string }>;
+  
   bulkSubmitTools: (
     toolsData: {
       name: string;
@@ -61,9 +66,19 @@ interface UseSupabaseAdminReturn {
       pricing: string;
       featured: boolean;
       tags: string[];
+      user_id?: string;
     }[]
   ) => Promise<{ success: boolean; error?: string; count: number }>;
+  
   deleteTool: (id: string) => Promise<{ success: boolean; error?: string }>;
+
+  // Direct tool approval management
+  approveTool: (
+    id: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  rejectTool: (
+    id: string
+  ) => Promise<{ success: boolean; error?: string }>;
 
   // Loading state
   loading: boolean;
@@ -274,6 +289,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     pricing: string;
     featured: boolean;
     tags: string[];
+    user_id: string;
   }): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
@@ -396,6 +412,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
       pricing: string;
       featured: boolean;
       tags: string[];
+      user_id?: string;
     }
   ): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -511,6 +528,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
       pricing: string;
       featured: boolean;
       tags: string[];
+      user_id?: string;
     }[]
   ): Promise<{ success: boolean; error?: string; count: number }> => {
     try {
@@ -545,6 +563,53 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
+  // New functions for direct tool approval
+  const approveTool = async (
+    id: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+
+      // Call the approve_tool database function
+      const { error } = await supabase.rpc('approve_tool', { tool_id: id });
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error approving tool:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to approve tool',
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rejectTool = async (
+    id: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+
+      // Call the reject_tool database function
+      const { error } = await supabase.rpc('reject_tool', { tool_id: id });
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error rejecting tool:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to reject tool',
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     // Outcomes management
     deleteOutcome,
@@ -563,6 +628,11 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     updateTool,
     deleteTool,
     bulkSubmitTools,
+    
+    // Direct tool approval management
+    approveTool,
+    rejectTool,
+    
     loading,
   };
 };

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
@@ -11,6 +12,8 @@ interface UseSupabaseToolsOptions {
   page?: number;
   loadMore?: boolean;
   excludeId?: string; // Add this to exclude specific tools (useful for related tools)
+  userId?: string; // Add this to filter by user ID
+  includeUnapproved?: boolean; // Add this to include unapproved tools (for admin views)
 }
 
 export const useSupabaseTools = ({
@@ -22,6 +25,8 @@ export const useSupabaseTools = ({
   page = 0,
   loadMore = false,
   excludeId,
+  userId,
+  includeUnapproved = false,
 }: UseSupabaseToolsOptions = {}) => {
   const [tools, setTools] = useState<AITool[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +40,8 @@ export const useSupabaseTools = ({
     search,
     pricing,
     excludeId,
+    userId,
+    includeUnapproved,
   });
 
   useEffect(() => {
@@ -43,7 +50,9 @@ export const useSupabaseTools = ({
       prevFiltersRef.current.category !== category ||
       prevFiltersRef.current.search !== search ||
       prevFiltersRef.current.pricing !== pricing ||
-      prevFiltersRef.current.excludeId !== excludeId;
+      prevFiltersRef.current.excludeId !== excludeId ||
+      prevFiltersRef.current.userId !== userId ||
+      prevFiltersRef.current.includeUnapproved !== includeUnapproved;
 
     if (filtersChanged && loadMore) {
       setTools([]);
@@ -57,6 +66,8 @@ export const useSupabaseTools = ({
       search,
       pricing,
       excludeId,
+      userId,
+      includeUnapproved,
     };
 
     const fetchTools = async () => {
@@ -81,6 +92,15 @@ export const useSupabaseTools = ({
           query = query.neq('id', excludeId);
         }
 
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
+        // Filter by approval status unless explicitly including unapproved
+        if (!includeUnapproved && !userId) {
+          query = query.eq('approval_status', 'approved');
+        }
+
         if (search) {
           const searchTerm = search.toLowerCase();
           query = query.or(
@@ -99,6 +119,12 @@ export const useSupabaseTools = ({
           throw new Error(supabaseError.message);
         }
 
+        if (!data) {
+          setTools([]);
+          setHasMore(false);
+          return;
+        }
+
         const transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
@@ -110,7 +136,9 @@ export const useSupabaseTools = ({
           url: item.url,
           featured: item.featured,
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
-          tags: item.tags,
+          tags: item.tags || [],
+          userId: item.user_id,
+          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
         }));
 
         setHasMore(transformedData.length === limit);
@@ -139,6 +167,8 @@ export const useSupabaseTools = ({
     page,
     loadMore,
     excludeId,
+    userId,
+    includeUnapproved,
   ]);
 
   const loadNextPage = () => {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -38,6 +39,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserPreferences } from '@/components/user/UserPreferences';
 import { ProfileManager } from '@/components/user/ProfileManager';
+import { MyToolsManager } from '@/components/user/MyToolsManager';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -310,11 +312,16 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <Tabs defaultValue="creations">
+              <Tabs defaultValue="tools">
                 <TabsList className="mb-4">
+                  <TabsTrigger value="tools">My Tools</TabsTrigger>
                   <TabsTrigger value="creations">My Creations</TabsTrigger>
                   <TabsTrigger value="profile">Profile</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="tools">
+                  {user && <MyToolsManager userId={user.id} />}
+                </TabsContent>
 
                 <TabsContent value="creations">
                   <div className="bg-card border rounded-lg shadow-sm mb-6">
