@@ -1,14 +1,8 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-
-type AnalyticsAction =
-  | 'view'
-  | 'click_url'
-  | 'review_submitted'
-  | 'compare_added'
-  | 'search'
-  | 'filter_applied';
+import { AnalyticsAction } from '@/types/tools';
 
 export const useToolAnalytics = () => {
   const [isTracking, setIsTracking] = useState(false);
@@ -28,7 +22,7 @@ export const useToolAnalytics = () => {
     action: AnalyticsAction,
     metadata?: Record<string, any>
   ) => {
-    if (isTracking) return; // Prevent duplicate tracking
+    if (isTracking) return false; // Prevent duplicate tracking
 
     try {
       setIsTracking(true);

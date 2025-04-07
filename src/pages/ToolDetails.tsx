@@ -27,7 +27,7 @@ import { AITool } from '@/types/tools';
 import { cn } from '@/lib/utils';
 import { VoteButtons } from '@/components/tools/VoteButtons';
 import { ReviewsList } from '@/components/tools/ReviewsList';
-import { ShareButton } from '@/components/tools/ShareButton';
+import ShareButton from '@/components/tools/ShareButton';
 
 const ToolDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,18 +41,15 @@ const ToolDetails = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
-  // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Fetch related tools based on the current tool's category
   const { tools: relatedTools, loading: relatedLoading } = useSupabaseTools({
     category: tool?.category?.[0],
     limit: 3,
   });
 
-  // Filter out the current tool from related tools
   const filteredRelatedTools = relatedTools.filter(
     (relatedTool) => relatedTool.id !== id
   );
@@ -78,7 +75,6 @@ const ToolDetails = () => {
           throw new Error('Tool not found');
         }
 
-        // Transform the data to match our AITool type
         const transformedData: AITool = {
           id: data.id,
           name: data.name,
@@ -121,16 +117,13 @@ const ToolDetails = () => {
   };
 
   const handleBackClick = () => {
-    // If we came from inside the app, go back to preserve scroll position and filters
     if (location.key !== 'default') {
       navigate(-1);
     } else {
-      // Fallback to tools page if there's no history
       navigate('/tools');
     }
   };
 
-  // Initialize the analytics hook
   const { trackEvent } = useToolAnalytics();
 
   const handleVisitWebsite = (url: string) => {
@@ -197,7 +190,6 @@ const ToolDetails = () => {
                 </Card>
               ) : tool ? (
                 <div className="animate-fade-in">
-                  {/* Tool header with name, description, and main actions */}
                   <div className="mb-8 p-8 md:p-10">
                     <div className="flex flex-wrap gap-3 items-center mb-6">
                       {tool.featured && (
@@ -240,7 +232,6 @@ const ToolDetails = () => {
                             {tool.description}
                           </p>
 
-                          {/* Primary actions */}
                           <div className="flex flex-wrap items-center gap-3 pt-4">
                             <Button
                               size="lg"
@@ -251,7 +242,6 @@ const ToolDetails = () => {
                               <ExternalLink className="h-4 w-4" />
                             </Button>
 
-                            {/* Share button */}
                             <ShareButton
                               title={`${tool.name} - AI Tool`}
                               description={tool.description}
@@ -262,7 +252,6 @@ const ToolDetails = () => {
                               className="transition-all hover:bg-secondary rounded-xl"
                             />
 
-                            {/* Vote buttons */}
                             <div
                               className="py-2 px-3 rounded-xl border border-border/40 bg-background/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all"
                               onClick={(e) => e.stopPropagation()}
@@ -273,7 +262,6 @@ const ToolDetails = () => {
                         </div>
                       </div>
 
-                      {/* Image container - moved up for better visibility */}
                       <div className="order-first lg:order-last lg:col-span-4">
                         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-secondary/20 to-secondary/5 aspect-video transition-transform duration-300 hover:scale-[1.02] soft-shadow">
                           {!isImageLoaded && !isImageError && (
@@ -313,9 +301,7 @@ const ToolDetails = () => {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main content - Tool details */}
                     <div className="lg:col-span-2 space-y-8">
-                      {/* Reviews section */}
                       <div className="space-y-8">
                         <div className="p-6 md:p-8">
                           <ReviewsList toolId={tool.id} />
@@ -323,10 +309,8 @@ const ToolDetails = () => {
                       </div>
                     </div>
 
-                    {/* Sidebar */}
                     <div className="space-y-6">
-                      {/* Quick actions section */}
-                      {/* <div className="space-y-4 p-4 rounded-xl bg-secondary/5 border border-border/10 hover:border-border/20">
+                      <div className="space-y-4 p-4 rounded-xl bg-secondary/5 border border-border/10 hover:border-border/20">
                         <h2 className="text-lg font-semibold px-2">
                           Quick Actions
                         </h2>
@@ -359,9 +343,8 @@ const ToolDetails = () => {
                             Back to all tools
                           </Button>
                         </div>
-                      </div> */}
+                      </div>
 
-                      {/* Tags section */}
                       <div className="space-y-4 p-4 rounded-xl bg-secondary/5 border border-border/10 hover:border-border/20 mb-6">
                         <div className="flex items-center gap-2 px-2">
                           <Tag className="h-4 w-4 text-primary" />
@@ -381,7 +364,6 @@ const ToolDetails = () => {
                         </div>
                       </div>
 
-                      {/* Related tools section */}
                       <div className="space-y-4 p-4 rounded-xl bg-secondary/5 border border-border/10 hover:border-border/20">
                         <div className="flex items-center gap-2 px-2">
                           <Tag className="h-4 w-4 text-primary" />

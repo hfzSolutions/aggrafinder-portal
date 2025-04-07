@@ -346,7 +346,13 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
         if (error) throw error;
 
-        setToolRequests(data);
+        // Make sure the request_type is either 'new' or 'update'
+        const typedData = data.map(item => ({
+          ...item,
+          request_type: item.request_type === 'new' ? 'new' : 'update' as 'new' | 'update'
+        }));
+
+        setToolRequests(typedData);
       } catch (error) {
         console.error('Error fetching tool requests:', error);
         toast.error('Failed to load tool requests');
@@ -721,6 +727,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                         categories={categories}
                         editMode={true}
                         toolToEdit={editingTool}
+                        userId={userId}
                       />
                     )}
                   </DialogContent>

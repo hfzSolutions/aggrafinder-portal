@@ -57,7 +57,8 @@ interface ToolSubmissionFormProps {
   onSuccess: () => void;
   editMode?: boolean;
   toolToEdit?: AITool;
-  userId: string;
+  userId?: string;
+  categories?: { id: number; name: string }[];
 }
 
 export function ToolSubmissionForm({
@@ -65,13 +66,14 @@ export function ToolSubmissionForm({
   editMode = false,
   toolToEdit,
   userId,
+  categories: propCategories,
 }: ToolSubmissionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     toolToEdit?.category || []
   );
   const [tagsInput, setTagsInput] = useState('');
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>(propCategories || []);
   const {
     submitTool,
     updateTool,
@@ -79,22 +81,26 @@ export function ToolSubmissionForm({
   } = useSupabaseAdmin();
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name', { ascending: true });
+    if (propCategories && propCategories.length > 0) {
+      setCategories(propCategories);
+    } else {
+      const fetchCategories = async () => {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        if (error) {
+          console.error('Error fetching categories:', error);
+          return;
+        }
+        
+        setCategories(data || []);
+      };
       
-      if (error) {
-        console.error('Error fetching categories:', error);
-        return;
-      }
-      
-      setCategories(data || []);
-    };
-    
-    fetchCategories();
-  }, []);
+      fetchCategories();
+    }
+  }, [propCategories]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
