@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -79,7 +78,6 @@ export function ToolSubmissionForm({
     loading: adminActionLoading,
   } = useSupabaseAdmin();
 
-  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       const { data, error } = await supabase
@@ -112,14 +110,12 @@ export function ToolSubmissionForm({
     },
   });
 
-  // Initialize selected categories if in edit mode
   useEffect(() => {
     if (editMode && toolToEdit) {
       setSelectedCategories(toolToEdit.category);
     }
   }, [editMode, toolToEdit]);
 
-  // Update form value when selectedCategories changes
   useEffect(() => {
     form.setValue('category', selectedCategories);
   }, [selectedCategories, form]);
@@ -157,11 +153,18 @@ export function ToolSubmissionForm({
     try {
       setIsSubmitting(true);
 
+      let finalImageUrl: string = '';
+      if (values.imageUrl instanceof File) {
+        finalImageUrl = '';
+      } else if (typeof values.imageUrl === 'string') {
+        finalImageUrl = values.imageUrl;
+      }
+
       const toolData = {
         name: values.name,
         description: values.description,
         url: values.url,
-        image_url: values.imageUrl,
+        image_url: finalImageUrl,
         category: values.category,
         pricing: values.pricing,
         featured: values.featured,
@@ -172,13 +175,11 @@ export function ToolSubmissionForm({
       let result;
 
       if (editMode && toolToEdit) {
-        // Update existing tool
         result = await updateTool(toolToEdit.id, toolData);
         if (result.success) {
           toast.success('Tool updated successfully!');
         }
       } else {
-        // Create new tool
         result = await submitTool(toolData);
         if (result.success) {
           toast.success('Tool submitted successfully!');
@@ -271,7 +272,7 @@ export function ToolSubmissionForm({
                     typeof field.value === 'string' ? field.value : undefined
                   }
                   accept="image/*"
-                  maxSize={5} // 5MB limit
+                  maxSize={5}
                 />
               </FormControl>
               <FormMessage />

@@ -138,7 +138,7 @@ export const useSupabaseTools = ({
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags || [],
           userId: item.user_id,
-          approvalStatus: item.approval_status,
+          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
         }));
 
         setHasMore(transformedData.length === limit);

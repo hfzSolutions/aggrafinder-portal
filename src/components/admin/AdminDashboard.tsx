@@ -66,6 +66,10 @@ interface ToolRequest {
   created_at: string;
   request_type: 'new' | 'update';
   tool_id: string | null;
+  migrated?: boolean;
+  ai_tools?: {
+    name: string;
+  };
 }
 
 interface Category {
@@ -77,6 +81,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   // State for tools management
   const [tools, setTools] = useState<AITool[]>([]);
   const [toolsLoading, setToolsLoading] = useState(true);
+  
+  // State for pending tools
+  const [pendingTools, setPendingTools] = useState<AITool[]>([]);
+  const [pendingToolsLoading, setPendingToolsLoading] = useState(true);
 
   // State for outcomes management
   const [outcomes, setOutcomes] = useState<AIOucome[]>([]);
@@ -111,6 +119,8 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     submitTool,
     updateTool,
     deleteTool,
+    approveTool,
+    rejectTool,
     loading: adminActionLoading,
   } = useSupabaseAdmin();
 
@@ -159,13 +169,13 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         const { data, error } = await supabase
           .from('ai_tools')
           .select('*')
+          .eq('approval_status', 'approved')
           .range(page * TOOLS_PER_PAGE, (page + 1) * TOOLS_PER_PAGE - 1)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
 
         // Construct the public URL manually
-
         const transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
@@ -176,6 +186,8 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           featured: item.featured,
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags,
+          userId: item.user_id,
+          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
         }));
 
         setHasMore(data.length === TOOLS_PER_PAGE);
@@ -194,6 +206,47 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       fetchTools();
     }
   }, [isAdmin, page]);
+
+  // Fetch pending tools that need approval
+  useEffect(() => {
+    const fetchPendingTools = async () => {
+      try {
+        setPendingToolsLoading(true);
+        const { data, error } = await supabase
+          .from('ai_tools')
+          .select('*')
+          .eq('approval_status', 'pending')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const transformedData: AITool[] = data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
+          category: item.category,
+          url: item.url,
+          featured: item.featured,
+          pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
+          tags: item.tags,
+          userId: item.user_id,
+          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
+        }));
+
+        setPendingTools(transformedData);
+      } catch (error) {
+        console.error('Error fetching pending tools:', error);
+        toast.error('Failed to load pending tools');
+      } finally {
+        setPendingToolsLoading(false);
+      }
+    };
+
+    if (isAdmin) {
+      fetchPendingTools();
+    }
+  }, [isAdmin]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -499,6 +552,47 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   };
 
+  // Handle tool approval
+  const handleApproveTool = async (id: string) => {
+    if (!confirm('Are you sure you want to approve this tool?')) return;
+
+    try {
+      const { success, error } = await approveTool(id);
+
+      if (!success) throw new Error(error);
+
+      // Update local state
+      setPendingTools((prev) => prev.filter((tool) => tool.id !== id));
+      
+      // Refresh the main tools list
+      refreshToolsList();
+
+      toast.success('Tool approved successfully');
+    } catch (error: any) {
+      console.error('Error approving tool:', error);
+      toast.error(error.message || 'Failed to approve tool');
+    }
+  };
+
+  // Handle tool rejection
+  const handleRejectTool = async (id: string) => {
+    if (!confirm('Are you sure you want to reject this tool?')) return;
+
+    try {
+      const { success, error } = await rejectTool(id);
+
+      if (!success) throw new Error(error);
+
+      // Update local state
+      setPendingTools((prev) => prev.filter((tool) => tool.id !== id));
+
+      toast.success('Tool rejected successfully');
+    } catch (error: any) {
+      console.error('Error rejecting tool:', error);
+      toast.error(error.message || 'Failed to reject tool');
+    }
+  };
+
   if (checkingAdmin) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -540,6 +634,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           <Tabs defaultValue="tools">
             <TabsList className="mb-4">
               <TabsTrigger value="tools">Tools</TabsTrigger>
+              <TabsTrigger value="pending">Pending Approval</TabsTrigger>
               <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="requests">Tool Requests</TabsTrigger>
@@ -575,7 +670,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                           // Refresh tools list
                           refreshToolsList();
                         }}
-                        categories={categories}
+                        userId={userId}
                       />
                     </DialogContent>
                   </Dialog>
@@ -786,6 +881,109 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                     </div>
                   )}
                 </>
+              )}
+            </TabsContent>
+
+            {/* Pending Tools Tab */}
+            <TabsContent value="pending" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Tools Pending Approval</h3>
+              </div>
+
+              {pendingToolsLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="ml-2">Loading pending tools...</span>
+                </div>
+              ) : pendingTools.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Check className="h-12 w-12 text-gray-400" />
+                    <h3 className="font-semibold">No Pending Tools</h3>
+                    <p className="text-sm text-gray-500">
+                      All submitted tools have been reviewed.
+                    </p>
+                  </div>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pendingTools.map((tool) => (
+                    <Card key={tool.id}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">
+                          {tool.name}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-2">
+                          {tool.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pb-2">
+                        <div className="mb-4 relative w-full aspect-video rounded-lg overflow-hidden">
+                          {tool.imageUrl ? (
+                            <img
+                              src={tool.imageUrl}
+                              alt={tool.name}
+                              className="object-cover w-full h-full"
+                              onError={(e) =>
+                                e.currentTarget.parentElement?.classList.add(
+                                  'image-error'
+                                )
+                              }
+                            />
+                          ) : (
+                            <div
+                              className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20"
+                            >
+                              <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
+                              <span className="text-xs text-primary/60 font-medium">
+                                Preview not available
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-sm space-y-1">
+                          <div>
+                            <span className="font-medium">URL:</span>{' '}
+                            {tool.url}
+                          </div>
+                          <div>
+                            <span className="font-medium">Categories:</span>{' '}
+                            {tool.category.join(', ')}
+                          </div>
+                          <div>
+                            <span className="font-medium">Pricing:</span>{' '}
+                            {tool.pricing}
+                          </div>
+                          <div>
+                            <span className="font-medium">Status:</span>{' '}
+                            <span className="text-yellow-600 font-medium">
+                              Pending Approval
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-end space-x-2 pt-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 hover:text-green-700"
+                          onClick={() => handleApproveTool(tool.id)}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRejectTool(tool.id)}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
               )}
             </TabsContent>
 

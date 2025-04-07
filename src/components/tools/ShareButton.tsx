@@ -1,175 +1,126 @@
-import { useState } from 'react';
-import {
-  Share2,
-  Copy,
-  Twitter,
-  Facebook,
-  Linkedin,
-  Mail,
-  X,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
+// Fix the import for AnalyticsAction
+import React, { useState } from 'react';
+import { Share2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { useToolAnalytics } from '@/hooks/useToolAnalytics';
+import { toast } from 'sonner';
 
 interface ShareButtonProps {
-  title: string;
-  description: string;
-  url: string;
-  toolId?: string;
-  variant?: 'default' | 'outline' | 'secondary' | 'ghost';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
-  showText?: boolean;
+  toolId: string;
+  toolName: string;
+  toolUrl: string;
   className?: string;
 }
 
-export const ShareButton = ({
-  title,
-  description,
-  url,
-  toolId,
-  variant = 'outline',
-  size = 'sm',
-  showText = true,
-  className = '',
-}: ShareButtonProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { trackEvent } = useToolAnalytics();
+const ShareButton = ({ toolId, toolName, toolUrl, className }: ShareButtonProps) => {
+  const { trackToolAction } = useToolAnalytics();
+  const [copied, setCopied] = useState(false);
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
-      if (toolId) trackEvent(toolId, 'share_copy_link');
-    } catch (error) {
-      toast.error('Failed to copy link');
-      console.error('Error copying link:', error);
+  const copyLink = () => {
+    // Get the current URL or construct a URL to the tool
+    const shareUrl = `${window.location.origin}/tools/${toolId}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        setCopied(true);
+        toast.success('Link copied to clipboard!');
+        setTimeout(() => setCopied(false), 2000);
+        
+        // Track the share action
+        trackToolAction(toolId, "share_copy_link" as any);
+      })
+      .catch(err => {
+        console.error('Failed to copy link:', err);
+        toast.error('Failed to copy link');
+      });
+  };
+
+  const shareNative = () => {
+    const shareUrl = `${window.location.origin}/tools/${toolId}`;
+    if (navigator.share) {
+      navigator.share({
+        title: toolName,
+        text: `Check out this AI tool: ${toolName}`,
+        url: shareUrl,
+      })
+      .then(() => {
+        // Track the share action
+        trackToolAction(toolId, "share_native" as any);
+      })
+      .catch(err => {
+        console.error('Error sharing:', err);
+      });
+    } else {
+      copyLink();
     }
   };
 
-  const handleShare = async (platform: string) => {
-    let shareUrl = '';
-    const encodedUrl = encodeURIComponent(url);
-    const encodedTitle = encodeURIComponent(title);
-    const encodedDescription = encodeURIComponent(description);
+  const shareTwitter = () => {
+    const shareUrl = `${window.location.origin}/tools/${toolId}`;
+    window.open(`https://twitter.com/intent/tweet?text=Check out ${toolName}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+    trackToolAction(toolId, "share_twitter" as any);
+  };
 
-    switch (platform) {
-      case 'native':
-        if (navigator.share) {
-          try {
-            await navigator.share({
-              title,
-              text: description,
-              url,
-            });
-            toast.success('Shared successfully');
-            if (toolId) trackEvent(toolId, 'share_native');
-          } catch (error) {
-            if (error instanceof Error && error.name !== 'AbortError') {
-              toast.error('Failed to share');
-              console.error('Error sharing:', error);
-            }
-          }
-        } else {
-          handleCopyLink();
-        }
-        break;
-      case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`;
-        window.open(shareUrl, '_blank');
-        if (toolId) trackEvent(toolId, 'share_twitter');
-        break;
-      case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-        window.open(shareUrl, '_blank');
-        if (toolId) trackEvent(toolId, 'share_facebook');
-        break;
-      case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}&title=${encodedTitle}&summary=${encodedDescription}`;
-        window.open(shareUrl, '_blank');
-        if (toolId) trackEvent(toolId, 'share_linkedin');
-        break;
-      case 'email':
-        shareUrl = `mailto:?subject=${encodedTitle}&body=${encodedDescription}%0A%0A${encodedUrl}`;
-        window.location.href = shareUrl;
-        if (toolId) trackEvent(toolId, 'share_email');
-        break;
-      default:
-        break;
-    }
+  const shareFacebook = () => {
+    const shareUrl = `${window.location.origin}/tools/${toolId}`;
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+    trackToolAction(toolId, "share_facebook" as any);
+  };
 
-    setIsOpen(false);
+  const shareLinkedIn = () => {
+    const shareUrl = `${window.location.origin}/tools/${toolId}`;
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+    trackToolAction(toolId, "share_linkedin" as any);
+  };
+
+  const shareEmail = () => {
+    const shareUrl = `${window.location.origin}/tools/${toolId}`;
+    window.open(`mailto:?subject=Check out this AI tool: ${toolName}&body=I found this interesting AI tool: ${toolName}. Check it out here: ${shareUrl}`, '_blank');
+    trackToolAction(toolId, "share_email" as any);
   };
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant={variant}
-          size={size}
-          className={`transition-all hover:bg-secondary rounded-xl ${className}`}
-        >
-          <Share2 className="h-4 w-4" />
-          {showText && <span className="ml-1">Share</span>}
+        <Button variant="outline" size="sm" className={className}>
+          <Share2 className="h-4 w-4 mr-2" />
+          Share
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 p-2">
-        <DropdownMenuItem
-          className="flex items-center gap-2 cursor-pointer py-2"
-          onClick={() => handleCopyLink()}
-        >
-          <Copy className="h-4 w-4" />
-          <span>Copy link</span>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={copyLink}>
+          Copy link
         </DropdownMenuItem>
-
         {navigator.share && (
-          <DropdownMenuItem
-            className="flex items-center gap-2 cursor-pointer py-2"
-            onClick={() => handleShare('native')}
-          >
-            <Share2 className="h-4 w-4" />
-            <span>Share via device</span>
+          <DropdownMenuItem onClick={shareNative}>
+            Share...
           </DropdownMenuItem>
         )}
-
-        <DropdownMenuItem
-          className="flex items-center gap-2 cursor-pointer py-2"
-          onClick={() => handleShare('twitter')}
-        >
-          <Twitter className="h-4 w-4" />
-          <span>Share on Twitter</span>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={shareTwitter}>
+          Twitter
         </DropdownMenuItem>
-
-        <DropdownMenuItem
-          className="flex items-center gap-2 cursor-pointer py-2"
-          onClick={() => handleShare('facebook')}
-        >
-          <Facebook className="h-4 w-4" />
-          <span>Share on Facebook</span>
+        <DropdownMenuItem onClick={shareFacebook}>
+          Facebook
         </DropdownMenuItem>
-
-        <DropdownMenuItem
-          className="flex items-center gap-2 cursor-pointer py-2"
-          onClick={() => handleShare('linkedin')}
-        >
-          <Linkedin className="h-4 w-4" />
-          <span>Share on LinkedIn</span>
+        <DropdownMenuItem onClick={shareLinkedIn}>
+          LinkedIn
         </DropdownMenuItem>
-
-        <DropdownMenuItem
-          className="flex items-center gap-2 cursor-pointer py-2"
-          onClick={() => handleShare('email')}
-        >
-          <Mail className="h-4 w-4" />
-          <span>Share via Email</span>
+        <DropdownMenuItem onClick={shareEmail}>
+          Email
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
+
+export default ShareButton;

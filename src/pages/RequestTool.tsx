@@ -1,18 +1,22 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Helmet } from 'react-helmet';
-import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -21,176 +25,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useSupabaseCategories } from '@/hooks/useSupabaseCategories';
-import { CompareToolsBar } from '@/components/tools/CompareToolsBar';
-import { pricingOptions } from '@/data/toolsData';
+import { toast } from 'sonner';
+import { Loader2, CheckCircle2 } from 'lucide-react';
+
+// Form validation schema
+const requestToolSchema = z.object({
+  name: z.string().min(2, 'Tool name is required').max(100),
+  description: z.string().min(10, 'Description must be at least 10 characters'),
+  url: z.string().url('Please enter a valid URL'),
+  category: z.string().min(1, 'Please select a category'),
+  submitter_name: z.string().min(2, 'Your name is required'),
+  submitter_email: z
+    .string()
+    .email('Please enter a valid email')
+    .optional()
+    .or(z.literal('')),
+});
+
+type RequestToolFormValues = z.infer<typeof requestToolSchema>;
 
 const RequestTool = () => {
-  const navigate = useNavigate();
-  const { categories, loading: categoriesLoading } = useSupabaseCategories();
-
+  const [categories, setCategories] = useState<
+    { id: number; name: string }[] | null
+  >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [requestType, setRequestType] = useState<'new' | 'update'>('new');
-  const [selectedTool, setSelectedTool] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    url: '',
-    category: [] as string[],
-    pricing: 'Free',
-    submitter_name: '',
-    submitter_email: '',
-    request_type: 'new' as 'new' | 'update',
-    tool_id: null as string | null,
-  });
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  const searchTools = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const { data, error } = await supabase
-        .from('ai_tools')
-        .select('id, name, description, url, category, pricing')
-        .ilike('name', `%${query}%`)
-        .limit(5);
-
-      if (error) throw error;
-      setSearchResults(data || []);
-    } catch (error) {
-      console.error('Error searching tools:', error);
-      toast.error('Failed to search tools');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleToolSelect = (tool: any) => {
-    setSelectedTool(tool);
-    setFormData({
-      ...formData,
-      name: tool.name,
-      description: tool.description,
-      url: tool.url,
-      category: tool.category,
-      pricing: tool.pricing,
-      request_type: 'update',
-      tool_id: tool.id,
-    });
-    setSearchResults([]);
-    setSearchQuery('');
-  };
-
-  const handleRequestTypeChange = (type: 'new' | 'update') => {
-    setRequestType(type);
-    setFormData({
+  const form = useForm<RequestToolFormValues>({
+    resolver: zodResolver(requestToolSchema),
+    defaultValues: {
       name: '',
       description: '',
       url: '',
-      category: [],
-      pricing: 'Free',
+      category: '',
       submitter_name: '',
       submitter_email: '',
-      request_type: type,
-      tool_id: null,
-    });
-    setSelectedTool(null);
-    setSearchQuery('');
-    setSearchResults([]);
-  };
+    },
+  });
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData({ ...formData, [name]: value });
-  };
+      if (error) {
+        console.error('Error fetching categories:', error);
+        toast('Failed to load categories. Please try again.');
+        return;
+      }
 
-  const handleCategoryChange = (value: string) => {
-    // If All is selected, don't add it to the categories array
-    if (value === 'All') return;
+      setCategories(data);
+    };
 
-    // Check if category is already selected
-    if (formData.category.includes(value)) {
-      setFormData({
-        ...formData,
-        category: formData.category.filter((cat) => cat !== value),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        category: [...formData.category, value],
-      });
-    }
-  };
+    fetchCategories();
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Simple validation
-    // Update the validation check in handleSubmit
-    if (
-      !formData.name ||
-      !formData.description ||
-      !formData.url ||
-      formData.category.length === 0 ||
-      (requestType === 'update' && !selectedTool)
-    ) {
-      toast({
-        title: 'Missing information',
-        description:
-          requestType === 'update' && !selectedTool
-            ? 'Please select a tool to update.'
-            : 'Please fill in all required fields.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (
-      !formData.url.startsWith('http://') &&
-      !formData.url.startsWith('https://')
-    ) {
-      setFormData({ ...formData, url: `https://${formData.url}` });
-    }
-
+  const onSubmit = async (values: RequestToolFormValues) => {
     try {
       setIsSubmitting(true);
 
-      const { error } = await supabase.from('tool_requests').insert([formData]);
+      const { error } = await supabase.from('tool_requests').insert({
+        name: values.name,
+        description: values.description,
+        url: values.url,
+        category: [values.category], // Store as array to match ai_tools schema
+        submitter_name: values.submitter_name,
+        submitter_email: values.submitter_email || null,
+        status: 'pending',
+        request_type: 'new',
+      });
 
       if (error) throw error;
 
-      toast({
-        title: 'Tool request submitted!',
-        description: "Thanks for your submission. We'll review it soon.",
-      });
-
-      // Redirect to tools page
-      navigate('/tools');
-    } catch (error) {
-      console.error('Error submitting tool request:', error);
-      toast({
-        title: 'Submission failed',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      form.reset();
+      setIsSubmitted(true);
+      toast('Tool request submitted successfully!');
+    } catch (err) {
+      console.error('Error submitting tool request:', err);
+      toast('Failed to submit tool request. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -199,279 +113,194 @@ const RequestTool = () => {
   return (
     <>
       <Helmet>
-        <title>Request a New AI Tool | AI Aggregator</title>
+        <title>Request a Tool | AggraFinder</title>
         <meta
           name="description"
-          content="Submit a request for a new AI tool to be added to our directory."
+          content="Request a new AI tool to be added to our database."
         />
       </Helmet>
 
-      <div className="min-h-screen flex flex-col">
-        <Header />
+      <Header />
 
-        <main className="flex-grow pt-20 pb-20">
-          <div className="container px-4 md:px-8 py-8 mx-auto">
-            <div className="max-w-3xl mx-auto">
-              <h1 className="text-3xl font-bold mb-6 text-center">
-                Request or Update an AI Tool
-              </h1>
-              <p className="text-muted-foreground mb-8 text-center">
-                Submit a new AI tool or request updates to an existing one.
+      <main className="flex-grow pt-24 px-4">
+        <div className="container mx-auto max-w-3xl py-8">
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            Request an AI Tool
+          </h1>
+
+          {isSubmitted ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+              <CheckCircle2 className="mx-auto h-12 w-12 text-green-500 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">
+                Request Submitted Successfully
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Thank you for your submission! Our team will review your tool
+                request and add it to our database if it meets our criteria.
+              </p>
+              <Button
+                onClick={() => {
+                  setIsSubmitted(false);
+                  form.reset();
+                }}
+              >
+                Submit Another Tool
+              </Button>
+            </div>
+          ) : (
+            <div className="bg-background border rounded-lg p-6 shadow-sm">
+              <p className="text-muted-foreground mb-6">
+                Know of an AI tool that should be in our database? Let us know by
+                filling out the form below. Our team will review your submission
+                and add it to our collection if it meets our criteria.
               </p>
 
-              <div className="flex justify-center gap-4 mb-8">
-                <Button
-                  type="button"
-                  variant={requestType === 'new' ? 'default' : 'outline'}
-                  onClick={() => handleRequestTypeChange('new')}
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
                 >
-                  Add New Tool
-                </Button>
-                <Button
-                  type="button"
-                  variant={requestType === 'update' ? 'default' : 'outline'}
-                  onClick={() => handleRequestTypeChange('update')}
-                >
-                  Update Existing Tool
-                </Button>
-              </div>
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tool Name*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="E.g., ChatGPT" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              {requestType === 'update' && (
-                <Card className="mb-8">
-                  <CardHeader>
-                    <CardTitle>Search for a Tool</CardTitle>
-                    <CardDescription>
-                      Find the tool you'd like to update.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="toolSearch">
-                          Search Tool <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="toolSearch"
-                          value={searchQuery}
-                          onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            searchTools(e.target.value);
-                          }}
-                          placeholder="Type to search for a tool..."
-                        />
-                      </div>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description*</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Briefly describe what this tool does and why it's useful..."
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                      {isSearching ? (
-                        <p className="text-sm text-muted-foreground">
-                          Searching...
-                        </p>
-                      ) : searchResults.length > 0 ? (
-                        <div className="space-y-2">
-                          {searchResults.map((tool) => (
-                            <Button
-                              key={tool.id}
-                              type="button"
-                              variant="outline"
-                              className="w-full justify-start"
-                              onClick={() => handleToolSelect(tool)}
-                            >
-                              <div className="text-left">
-                                <div className="font-medium">{tool.name}</div>
-                                <div className="text-sm text-muted-foreground truncate">
-                                  {tool.description}
-                                </div>
-                              </div>
-                            </Button>
-                          ))}
-                        </div>
-                      ) : (
-                        searchQuery && (
-                          <p className="text-sm text-muted-foreground">
-                            No tools found matching your search.
-                          </p>
-                        )
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  <FormField
+                    control={form.control}
+                    name="url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tool URL*</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://example.com"
+                            type="url"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tool Information</CardTitle>
-                  <CardDescription>
-                    Please provide details about the AI tool you're submitting.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="name">
-                          Tool Name <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          placeholder="e.g., ChatGPT"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="description">
-                          Description <span className="text-red-500">*</span>
-                        </Label>
-                        <Textarea
-                          id="description"
-                          name="description"
-                          value={formData.description}
-                          onChange={handleInputChange}
-                          placeholder="Brief description of what the tool does..."
-                          rows={4}
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="url">
-                          Website URL <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="url"
-                          name="url"
-                          value={formData.url}
-                          onChange={handleInputChange}
-                          placeholder="e.g., https://chat.openai.com"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <Label>
-                          Categories <span className="text-red-500">*</span>
-                        </Label>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {categoriesLoading ? (
-                            <p className="text-sm text-muted-foreground">
-                              Loading categories...
-                            </p>
-                          ) : (
-                            categories.map(
-                              (category) =>
-                                category !== 'All' && (
-                                  <button
-                                    key={category}
-                                    type="button"
-                                    onClick={() =>
-                                      handleCategoryChange(category)
-                                    }
-                                    className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                                      formData.category.includes(category)
-                                        ? 'bg-primary text-primary-foreground border-primary'
-                                        : 'bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground'
-                                    }`}
-                                  >
-                                    {category}
-                                  </button>
-                                )
-                            )
-                          )}
-                        </div>
-                        {formData.category.length > 0 && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Selected: {formData.category.join(', ')}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="pricing">Pricing Model</Label>
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category*</FormLabel>
                         <Select
-                          value={formData.pricing}
-                          onValueChange={(value) =>
-                            handleSelectChange('pricing', value)
-                          }
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
                         >
-                          <SelectTrigger id="pricing">
-                            <SelectValue placeholder="Select pricing model" />
-                          </SelectTrigger>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
                           <SelectContent>
-                            {pricingOptions
-                              .filter((option) => option !== 'All')
-                              .map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
+                            {categories ? (
+                              categories.map((category) => (
+                                <SelectItem
+                                  key={category.id}
+                                  value={category.name}
+                                >
+                                  {category.name}
                                 </SelectItem>
-                              ))}
+                              ))
+                            ) : (
+                              <SelectItem value="loading" disabled>
+                                Loading...
+                              </SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
-                      </div>
-                    </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <div className="border-t pt-6">
-                      <CardTitle className="text-lg mb-4">
-                        About You (Optional)
-                      </CardTitle>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="submitter_name">Your Name</Label>
-                          <Input
-                            id="submitter_name"
-                            name="submitter_name"
-                            value={formData.submitter_name}
-                            onChange={handleInputChange}
-                            placeholder="Your name"
-                          />
-                        </div>
+                  <div className="border-t pt-6 mt-6">
+                    <h2 className="text-lg font-semibold mb-4">Your Details</h2>
 
-                        <div>
-                          <Label htmlFor="submitter_email">Your Email</Label>
-                          <Input
-                            id="submitter_email"
-                            name="submitter_email"
-                            type="email"
-                            value={formData.submitter_email}
-                            onChange={handleInputChange}
-                            placeholder="Your email"
-                          />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            We'll notify you when your submission is approved.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="submitter_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your Name*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                    <div className="flex justify-end gap-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => navigate(-1)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        disabled={
-                          isSubmitting ||
-                          (requestType === 'update' && !selectedTool)
-                        }
-                      >
-                        {isSubmitting ? 'Submitting...' : 'Submit Request'}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
+                    <FormField
+                      control={form.control}
+                      name="submitter_email"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <FormLabel>Your Email (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="your.email@example.com"
+                              type="email"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      'Submit Tool Request'
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </div>
-          </div>
-        </main>
+          )}
+        </div>
+      </main>
 
-        <CompareToolsBar />
-        <Footer />
-      </div>
+      <Footer />
     </>
   );
 };
