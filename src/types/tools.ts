@@ -9,4 +9,6 @@ export interface AITool {
   featured: boolean;
   pricing: "Free" | "Freemium" | "Paid" | "Free Trial";
   tags: string[];
+  userId?: string;
+  approvalStatus?: "pending" | "approved" | "rejected";
 }
