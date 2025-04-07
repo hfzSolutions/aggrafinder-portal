@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -15,6 +14,7 @@ import { useSupabaseCategories } from '@/hooks/useSupabaseCategories';
 import { Skeleton } from '@/components/ui/skeleton';
 import { pricingOptions } from '@/data/toolsData';
 import { CompareToolsBar } from '@/components/tools/CompareToolsBar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Tools = () => {
   const location = useLocation();
@@ -22,12 +22,13 @@ const Tools = () => {
   const searchParams = new URLSearchParams(location.search);
   const initialCategory = searchParams.get('category') || 'All';
   const initialSearch = searchParams.get('search') || '';
+  const isMobile = useIsMobile();
 
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [selectedPricing, setSelectedPricing] = useState('All');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [view, setView] = useState<'grid' | 'list'>('list'); // Changed default to 'list'
+  const [view, setView] = useState<'grid' | 'list'>('list');
 
   const { categories, loading: categoriesLoading } = useSupabaseCategories();
   const {
@@ -43,31 +44,25 @@ const Tools = () => {
     loadMore: true,
   });
 
-  // Reference to the observer element at the bottom of the list
   const observer = useRef<IntersectionObserver | null>(null);
 
-  // Last element ref callback function
   const lastToolElementRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (toolsLoading) return;
 
-      // Disconnect the previous observer if it exists
       if (observer.current) observer.current.disconnect();
 
-      // Create a new observer
       observer.current = new IntersectionObserver(
         (entries) => {
-          // If the last element is visible and we have more items to load
           if (entries[0].isIntersecting && hasMore) {
             loadNextPage();
           }
         },
         {
-          rootMargin: '100px', // Load more when we're 100px away from the bottom
+          rootMargin: '100px',
         }
       );
 
-      // Observe the last element
       if (node) observer.current.observe(node);
     },
     [toolsLoading, hasMore, loadNextPage]
@@ -89,6 +84,12 @@ const Tools = () => {
     navigate,
     location.pathname,
   ]);
+
+  useEffect(() => {
+    if (isMobile) {
+      setView('list');
+    }
+  }, [isMobile]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -134,7 +135,6 @@ const Tools = () => {
           </div>
 
           <div className="container px-4 md:px-8 mx-auto py-8">
-            {/* Mobile Filters Toggle Button */}
             <div className="lg:hidden mb-4">
               <Button
                 variant="outline"
@@ -151,16 +151,13 @@ const Tools = () => {
               </Button>
             </div>
 
-            {/* New Layout: Sidebar and Content */}
             <div className="flex flex-col lg:flex-row gap-6">
-              {/* Sidebar with Filters */}
               <div
                 className={`lg:w-1/4 ${
                   isFilterOpen || window.innerWidth >= 1024 ? 'block' : 'hidden'
                 }`}
               >
                 <div className="sticky top-24 space-y-6">
-                  {/* Search in Sidebar */}
                   <div className="animate-slide-up">
                     <SearchBar
                       initialValue={searchTerm}
@@ -170,7 +167,6 @@ const Tools = () => {
                     />
                   </div>
 
-                  {/* Filters in Sidebar */}
                   <div className="p-4 rounded-lg border border-border/50 bg-background/50 space-y-4">
                     <h3 className="font-medium">Filters</h3>
                     
@@ -205,37 +201,37 @@ const Tools = () => {
                     </div>
                   </div>
 
-                  {/* View Toggle in Sidebar */}
-                  <div className="flex p-4 rounded-lg border border-border/50 bg-background/50">
-                    <div className="flex space-x-2 w-full">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`px-3 flex-1 ${
-                          view === 'list' ? 'bg-secondary/70' : ''
-                        }`}
-                        onClick={() => setView('list')}
-                      >
-                        <List className="h-4 w-4 mr-2" />
-                        List
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`px-3 flex-1 ${
-                          view === 'grid' ? 'bg-secondary/70' : ''
-                        }`}
-                        onClick={() => setView('grid')}
-                      >
-                        <Grid className="h-4 w-4 mr-2" />
-                        Grid
-                      </Button>
+                  {!isMobile && (
+                    <div className="flex p-4 rounded-lg border border-border/50 bg-background/50">
+                      <div className="flex space-x-2 w-full">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`px-3 flex-1 ${
+                            view === 'list' ? 'bg-secondary/70' : ''
+                          }`}
+                          onClick={() => setView('list')}
+                        >
+                          <List className="h-4 w-4 mr-2" />
+                          List
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`px-3 flex-1 ${
+                            view === 'grid' ? 'bg-secondary/70' : ''
+                          }`}
+                          onClick={() => setView('grid')}
+                        >
+                          <Grid className="h-4 w-4 mr-2" />
+                          Grid
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Main Content */}
               <div className="lg:w-3/4">
                 {searchTerm && (
                   <div className="mb-4 flex items-center">
@@ -359,11 +355,10 @@ const Tools = () => {
                         }
                         className="animate-fade-in"
                       >
-                        <ToolCard tool={tool} viewType={view} />
+                        <ToolCard tool={tool} viewType={isMobile ? 'list' : view} />
                       </div>
                     ))}
 
-                    {/* Loading indicator at the bottom */}
                     {toolsLoading && filteredTools.length > 0 && (
                       <div
                         className={`col-span-full flex justify-center py-4 ${
