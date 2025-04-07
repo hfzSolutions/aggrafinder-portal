@@ -247,7 +247,7 @@ export function ToolSubmissionForm({
                     typeof field.value === 'string' ? field.value : undefined
                   }
                   accept="image/*"
-                  maxSize={2} // 2MB limit
+                  maxSize={5} // 2MB limit
                 />
               </FormControl>
               <FormMessage />
