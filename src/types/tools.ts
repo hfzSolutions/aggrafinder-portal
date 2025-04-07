@@ -1,4 +1,3 @@
-
 export interface AITool {
   id: string;
   name: string;
@@ -13,22 +12,19 @@ export interface AITool {
   approvalStatus?: "pending" | "approved" | "rejected";
 }
 
-// Add specific analytics actions enum
 export type AnalyticsAction = 
   | "view" 
-  | "click" 
-  | "search" 
-  | "filter" 
-  | "upvote" 
-  | "downvote" 
-  | "compare_add" 
-  | "compare_remove" 
-  | "share_copy_link" 
-  | "share_native" 
-  | "share_twitter" 
-  | "share_facebook" 
-  | "share_linkedin" 
-  | "share_email";
+  | "click_url" 
+  | "share_copy_link"
+  | "share_native"
+  | "share_twitter"
+  | "share_facebook"
+  | "share_linkedin"
+  | "share_email"
+  | "upvote"
+  | "downvote"
+  | "submit_review"
+  | "submit_outcome";
 
 export interface ToolRequest {
   id: string;

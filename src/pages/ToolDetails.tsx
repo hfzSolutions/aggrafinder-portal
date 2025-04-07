@@ -243,13 +243,10 @@ const ToolDetails = () => {
                             </Button>
 
                             <ShareButton
-                              title={`${tool.name} - AI Tool`}
-                              description={tool.description}
-                              url={window.location.href}
                               toolId={tool.id}
-                              variant="outline"
-                              size="lg"
-                              className="transition-all hover:bg-secondary rounded-xl"
+                              toolName={tool.name}
+                              toolUrl={tool.url}
+                              className="ml-2"
                             />
 
                             <div
@@ -325,11 +322,9 @@ const ToolDetails = () => {
                           </Button>
 
                           <ShareButton
-                            title={`${tool.name} - AI Tool`}
-                            description={tool.description}
-                            url={window.location.href}
                             toolId={tool.id}
-                            variant="secondary"
+                            toolName={tool.name}
+                            toolUrl={tool.url}
                             className="action-button"
                             showText={true}
                           />

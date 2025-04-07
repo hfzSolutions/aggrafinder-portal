@@ -161,7 +161,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   const TOOLS_PER_PAGE = 12;
   const storageBaseUrl = import.meta.env.VITE_STORAGE_URL;
 
-  // Fetch tools
+  // State for tabs
+  const [activeTab, setActiveTab] = useState('tools');
+
+  // Fetch tools - updated to include the activeTab dependency
   useEffect(() => {
     const fetchTools = async () => {
       try {
@@ -202,12 +205,13 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       }
     };
 
-    if (isAdmin) {
+    // Only fetch approved tools when on the tools tab and admin is verified
+    if (isAdmin && activeTab === 'tools') {
       fetchTools();
     }
-  }, [isAdmin, page]);
+  }, [isAdmin, page, activeTab]); // Add activeTab as a dependency
 
-  // Fetch pending tools that need approval
+  // Fetch pending tools that need approval - also update this to refresh when activeTab changes
   useEffect(() => {
     const fetchPendingTools = async () => {
       try {
@@ -243,10 +247,11 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       }
     };
 
-    if (isAdmin) {
+    // Only fetch pending tools when on the pending tab and admin is verified
+    if (isAdmin && activeTab === 'pending') {
       fetchPendingTools();
     }
-  }, [isAdmin]);
+  }, [isAdmin, activeTab]); // Add activeTab as a dependency
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -502,7 +507,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   };
 
-  // Refresh tools list function to avoid code duplication
+  // Refresh tools list function to avoid code duplication - modified to respect approval status
   const refreshToolsList = async () => {
     try {
       setToolsLoading(true);
@@ -512,6 +517,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       const { data, error } = await supabase
         .from('ai_tools')
         .select('*')
+        .eq('approval_status', 'approved') // Ensure we only get approved tools
         .range(0, TOOLS_PER_PAGE - 1)
         .order('created_at', { ascending: false });
 
@@ -527,6 +533,8 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         featured: item.featured,
         pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
         tags: item.tags,
+        userId: item.user_id,
+        approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
       }));
 
       setHasMore(data.length === TOOLS_PER_PAGE);
@@ -558,7 +566,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   };
 
-  // Handle tool approval
+  // Handle tool approval - updated to refresh the lists appropriately
   const handleApproveTool = async (id: string) => {
     if (!confirm('Are you sure you want to approve this tool?')) return;
 
@@ -567,10 +575,35 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
       if (!success) throw new Error(error);
 
-      // Update local state
+      // Update local state for pending tools
       setPendingTools((prev) => prev.filter((tool) => tool.id !== id));
       
-      // Refresh the main tools list
+      // Also refresh the pending tools list
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('ai_tools')
+        .select('*')
+        .eq('approval_status', 'pending')
+        .order('created_at', { ascending: false });
+      
+      if (!pendingError && pendingData) {
+        const transformedPendingData: AITool[] = pendingData.map((item) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
+          category: item.category,
+          url: item.url,
+          featured: item.featured,
+          pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
+          tags: item.tags,
+          userId: item.user_id,
+          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
+        }));
+        
+        setPendingTools(transformedPendingData);
+      }
+      
+      // Refresh the main tools list to include the newly approved tool
       refreshToolsList();
 
       toast.success('Tool approved successfully');
@@ -637,7 +670,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="tools">
+          <Tabs defaultValue="tools" onValueChange={(value) => setActiveTab(value)}>
             <TabsList className="mb-4">
               <TabsTrigger value="tools">Tools</TabsTrigger>
               <TabsTrigger value="pending">Pending Approval</TabsTrigger>
