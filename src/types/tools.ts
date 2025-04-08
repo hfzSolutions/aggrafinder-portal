@@ -1,3 +1,4 @@
+
 export interface AITool {
   id: string;
   name: string;
@@ -39,6 +40,7 @@ export interface ToolRequest {
   submitter_name?: string;
   status: string;
   created_at: string;
-  request_type: 'new' | 'update';
+  request_type: 'new' | 'update' | 'claim';
   tool_id?: string;
+  verification_details?: string;
 }
