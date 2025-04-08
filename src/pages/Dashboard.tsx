@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -320,7 +319,11 @@ const Dashboard = () => {
                 </TabsList>
 
                 <TabsContent value="tools">
-                  {user && <MyToolsManager userId={user.id} />}
+                  <div className="bg-card border rounded-lg shadow-sm mb-6">
+                    <div className="p-6">
+                      {user && <MyToolsManager userId={user.id} />}
+                    </div>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="creations">
