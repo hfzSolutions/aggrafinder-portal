@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Support = () => {
   const { toast } = useToast();
@@ -17,12 +18,23 @@ const Support = () => {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      // Save message to Supabase
+      const { error } = await supabase
+        .from('support_messages')
+        .insert({
+          name,
+          email,
+          subject,
+          message
+        });
+      
+      if (error) throw error;
+      
       toast({
         title: "Message sent",
         description: "We've received your message and will get back to you soon.",
@@ -33,8 +45,16 @@ const Support = () => {
       setEmail('');
       setSubject('');
       setMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem sending your message. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (
