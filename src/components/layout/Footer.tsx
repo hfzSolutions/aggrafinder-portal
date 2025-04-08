@@ -1,5 +1,6 @@
+
 import { Link } from 'react-router-dom';
-// import { Github, Twitter, Linkedin } from 'lucide-react';
+import { Github, Twitter, Linkedin, Info, HelpCircle, Mail } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -24,7 +25,7 @@ const Footer = () => {
               collection helps you find the perfect AI solutions for your needs.
             </p>
             <div className="flex mt-6 space-x-4">
-              {/* <a
+              <a
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -50,7 +51,7 @@ const Footer = () => {
                 aria-label="LinkedIn"
               >
                 <Linkedin size={20} />
-              </a> */}
+              </a>
             </div>
           </div>
 
@@ -118,28 +119,37 @@ const Footer = () => {
             </h3>
             <ul className="space-y-2">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/privacy-policy"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Privacy Policy
-                </a>
+                  <span className="flex items-center">
+                    <Info className="h-4 w-4 mr-1" />
+                    Privacy Policy
+                  </span>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/terms-of-service"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Terms of Service
-                </a>
+                  <span className="flex items-center">
+                    <Info className="h-4 w-4 mr-1" />
+                    Terms of Service
+                  </span>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/cookies-policy"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Cookie Policy
-                </a>
+                  <span className="flex items-center">
+                    <Info className="h-4 w-4 mr-1" />
+                    Cookie Policy
+                  </span>
+                </Link>
               </li>
             </ul>
           </div>
@@ -151,19 +161,25 @@ const Footer = () => {
             </h3>
             <ul className="space-y-2">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/support"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Support
-                </a>
+                  <span className="flex items-center">
+                    <HelpCircle className="h-4 w-4 mr-1" />
+                    Support & Feedback
+                  </span>
+                </Link>
               </li>
               <li>
                 <a
                   href="#"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Feedback
+                  <span className="flex items-center">
+                    <HelpCircle className="h-4 w-4 mr-1" />
+                    FAQs
+                  </span>
                 </a>
               </li>
               <li>
@@ -171,7 +187,10 @@ const Footer = () => {
                   href="mailto:hello@example.com"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  hello@example.com
+                  <span className="flex items-center">
+                    <Mail className="h-4 w-4 mr-1" />
+                    hello@example.com
+                  </span>
                 </a>
               </li>
             </ul>
