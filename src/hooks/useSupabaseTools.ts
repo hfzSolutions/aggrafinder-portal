@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
@@ -14,6 +13,8 @@ interface UseSupabaseToolsOptions {
   excludeId?: string; // Add this to exclude specific tools (useful for related tools)
   userId?: string; // Add this to filter by user ID
   includeUnapproved?: boolean; // Add this to include unapproved tools (for admin views)
+  sortBy?: 'created_at' | 'popularity' | 'name'; // Add sorting options
+  customQuery?: (query: any) => any; // Allow custom query modifications
 }
 
 export const useSupabaseTools = ({
@@ -27,6 +28,8 @@ export const useSupabaseTools = ({
   excludeId,
   userId,
   includeUnapproved = false,
+  sortBy,
+  customQuery,
 }: UseSupabaseToolsOptions = {}) => {
   const [tools, setTools] = useState<AITool[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +45,8 @@ export const useSupabaseTools = ({
     excludeId,
     userId,
     includeUnapproved,
+    sortBy,
+    customQuery,
   });
 
   useEffect(() => {
@@ -52,7 +57,9 @@ export const useSupabaseTools = ({
       prevFiltersRef.current.pricing !== pricing ||
       prevFiltersRef.current.excludeId !== excludeId ||
       prevFiltersRef.current.userId !== userId ||
-      prevFiltersRef.current.includeUnapproved !== includeUnapproved;
+      prevFiltersRef.current.includeUnapproved !== includeUnapproved ||
+      prevFiltersRef.current.sortBy !== sortBy ||
+      prevFiltersRef.current.customQuery !== customQuery;
 
     if (filtersChanged && loadMore) {
       setTools([]);
@@ -109,9 +116,26 @@ export const useSupabaseTools = ({
         }
 
         const pageToFetch = loadMore ? currentPage : page;
-        query = query
-          .range(pageToFetch * limit, pageToFetch * limit + limit - 1)
-          .order('created_at', { ascending: false });
+        // Apply custom query modifications if provided
+        if (typeof customQuery === 'function') {
+          query = customQuery(query);
+        }
+
+        // Apply sorting
+        if (sortBy === 'popularity') {
+          // Join with tool_vote_counts to get upvotes for sorting by popularity
+          query = query.select('*, tool_vote_counts(upvotes)');
+        } else if (sortBy === 'name') {
+          query = query.order('name', { ascending: true });
+        } else {
+          // Default sort by created_at
+          query = query.order('created_at', { ascending: false });
+        }
+
+        query = query.range(
+          pageToFetch * limit,
+          pageToFetch * limit + limit - 1
+        );
 
         const { data, error: supabaseError } = await query;
 
@@ -125,7 +149,7 @@ export const useSupabaseTools = ({
           return;
         }
 
-        const transformedData: AITool[] = data.map((item) => ({
+        let transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
           description: item.description,
@@ -138,8 +162,19 @@ export const useSupabaseTools = ({
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags || [],
           userId: item.user_id,
-          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
+          approvalStatus: item.approval_status as
+            | 'pending'
+            | 'approved'
+            | 'rejected',
+          upvotes: item.tool_vote_counts?.[0]?.upvotes || 0,
         }));
+
+        // Sort by upvotes if sortBy is popularity
+        if (sortBy === 'popularity') {
+          transformedData = transformedData.sort(
+            (a, b) => (b.upvotes || 0) - (a.upvotes || 0)
+          );
+        }
 
         setHasMore(transformedData.length === limit);
 
@@ -169,6 +204,8 @@ export const useSupabaseTools = ({
     excludeId,
     userId,
     includeUnapproved,
+    sortBy,
+    customQuery,
   ]);
 
   const loadNextPage = () => {

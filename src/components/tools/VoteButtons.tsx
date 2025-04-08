@@ -1,6 +1,7 @@
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ThumbsUp, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToolVotes } from '@/hooks/useToolVotes';
+import { useToolComments } from '@/hooks/useToolComments';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -16,6 +17,7 @@ export const VoteButtons = ({
   className,
 }: VoteButtonsProps) => {
   const { voteCount, userVote, loading, vote } = useToolVotes(toolId);
+  const { commentCount, loading: commentsLoading } = useToolComments(toolId);
   const [processingVote, setProcessingVote] = useState<string | null>(null);
 
   const handleVote = async (voteType: 'upvote' | 'downvote') => {
@@ -67,22 +69,17 @@ export const VoteButtons = ({
         size={isCompact ? 'sm' : 'default'}
         className={cn(
           'flex items-center gap-1 px-2 relative',
-          userVote === 'downvote'
-            ? 'text-red-600 hover:text-red-700'
-            : 'text-muted-foreground hover:text-foreground',
-          (loading || processingVote === 'downvote') &&
-            'opacity-70 pointer-events-none'
+          'text-muted-foreground hover:text-foreground'
         )}
-        onClick={() => handleVote('downvote')}
-        disabled={loading || processingVote !== null}
+        onClick={() => {
+          const commentsSection = document.querySelector('.comments-section');
+          if (commentsSection) {
+            commentsSection.scrollIntoView({ behavior: 'smooth' });
+          }
+        }}
       >
-        <ThumbsDown className={cn('h-4 w-4', isCompact && 'h-3.5 w-3.5')} />
-        <span>{voteCount.downvotes}</span>
-        {processingVote === 'downvote' && (
-          <span className="absolute inset-0 flex items-center justify-center bg-background/50">
-            <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-          </span>
-        )}
+        <MessageSquare className={cn('h-4 w-4', isCompact && 'h-3.5 w-3.5')} />
+        <span>{commentsLoading ? '...' : commentCount}</span>
       </Button>
 
       {/* {!isCompact && (

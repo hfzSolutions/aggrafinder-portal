@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS public.tool_reviews (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tool_id UUID NOT NULL,
   user_id TEXT NOT NULL,
-  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  rating INTEGER NULL CHECK (rating >= 1 AND rating <= 5),
   comment TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL

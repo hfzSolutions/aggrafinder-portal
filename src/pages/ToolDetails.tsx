@@ -23,10 +23,11 @@ import Footer from '@/components/layout/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { useToolAnalytics } from '@/hooks/useToolAnalytics';
+import { useRecentlyViewedTools } from '@/hooks/useRecentlyViewedTools';
 import { AITool } from '@/types/tools';
 import { cn } from '@/lib/utils';
 import { VoteButtons } from '@/components/tools/VoteButtons';
-import { ReviewsList } from '@/components/tools/ReviewsList';
+import { CommentsList } from '@/components/tools/CommentsList';
 import ShareButton from '@/components/tools/ShareButton';
 
 const ToolDetails = () => {
@@ -40,6 +41,9 @@ const ToolDetails = () => {
   const [isImageError, setIsImageError] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+
+  // Get the addRecentlyViewed function from the hook
+  const { addRecentlyViewed } = useRecentlyViewedTools();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -90,6 +94,9 @@ const ToolDetails = () => {
         };
 
         setTool(transformedData);
+
+        // Add this tool to recently viewed tools
+        addRecentlyViewed(data.id);
       } catch (err) {
         console.error('Error fetching tool details:', err);
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -300,8 +307,8 @@ const ToolDetails = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-8">
                       <div className="space-y-8">
-                        <div className="p-6 md:p-8">
-                          <ReviewsList toolId={tool.id} />
+                        <div className="p-6 md:p-8 comments-section">
+                          <CommentsList toolId={tool.id} />
                         </div>
                       </div>
                     </div>

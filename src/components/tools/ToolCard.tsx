@@ -1,13 +1,13 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExternalLink, ImageOff, Star } from 'lucide-react';
+import { ExternalLink, ImageOff, Star, Heart } from 'lucide-react';
 import { AITool } from '@/types/tools';
 import { cn } from '@/lib/utils';
 import { CompareButton } from './CompareButton';
 import { useToolsCompare } from '@/hooks/useToolsCompare';
 import { VoteButtons } from './VoteButtons';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
@@ -19,12 +19,22 @@ import { useToolAnalytics } from '@/hooks/useToolAnalytics';
 interface ToolCardProps {
   tool: AITool;
   viewType?: 'grid' | 'list';
+  compact?: boolean;
+  onFavoriteToggle?: (toolId: string, isFavorite: boolean) => void;
+  isFavorite?: boolean;
 }
 
-export const ToolCard = ({ tool, viewType = 'grid' }: ToolCardProps) => {
+export const ToolCard = ({
+  tool,
+  viewType = 'grid',
+  compact = false,
+  onFavoriteToggle,
+  isFavorite = false,
+}: ToolCardProps) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isFavoriteState, setIsFavoriteState] = useState(isFavorite);
   const navigate = useNavigate();
   const { isToolSelected, toggleToolSelection } = useToolsCompare();
   const { trackEvent } = useToolAnalytics();
@@ -159,11 +169,33 @@ export const ToolCard = ({ tool, viewType = 'grid' }: ToolCardProps) => {
               isHovered || isToolSelected(tool.id) ? 'opacity-100' : 'opacity-0'
             )}
           >
-            <CompareButton
-              isActive={isToolSelected(tool.id)}
-              onClick={handleCompareClick}
-              buttonText="Compare"
-            />
+            <div className="flex space-x-2">
+              <CompareButton
+                isActive={isToolSelected(tool.id)}
+                onClick={handleCompareClick}
+                buttonText="Compare"
+              />
+
+              {onFavoriteToggle && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 px-3 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFavoriteState(!isFavoriteState);
+                    onFavoriteToggle(tool.id, !isFavoriteState);
+                  }}
+                >
+                  <Heart
+                    className={`h-4 w-4 mr-1 ${
+                      isFavoriteState ? 'fill-current text-red-500' : ''
+                    }`}
+                  />
+                  {isFavoriteState ? 'Saved' : 'Save'}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -238,7 +270,10 @@ export const ToolCard = ({ tool, viewType = 'grid' }: ToolCardProps) => {
             </div>
 
             <div className="flex items-center justify-between">
-              <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="flex-shrink-0"
+              >
                 <VoteButtons toolId={tool.id} variant="compact" />
               </div>
 
@@ -257,6 +292,42 @@ export const ToolCard = ({ tool, viewType = 'grid' }: ToolCardProps) => {
         </div>
 
         <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/10 rounded-xl pointer-events-none transition-all duration-300"></div>
+      </div>
+    );
+  }
+
+  // Render a compact card for recently viewed section
+  if (compact) {
+    return (
+      <div
+        className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex cursor-pointer animate-fade-in"
+        onClick={handleCardClick}
+      >
+        <div className="relative w-1/3 overflow-hidden bg-secondary/30">
+          {isImageError ? (
+            <div
+              className={`absolute inset-0 flex items-center justify-center ${getGradientForTool()}`}
+            >
+              <ImageOff className="h-6 w-6 text-primary/40" />
+            </div>
+          ) : (
+            <img
+              src={tool.imageUrl}
+              alt={tool.name}
+              className="absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105"
+              onError={handleImageError}
+            />
+          )}
+        </div>
+
+        <div className="flex-1 p-3 flex flex-col">
+          <h3 className="text-sm font-medium mb-1 line-clamp-1 group-hover:text-primary transition-colors duration-300">
+            {tool.name}
+          </h3>
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {tool.description}
+          </p>
+        </div>
       </div>
     );
   }
@@ -344,7 +415,7 @@ export const ToolCard = ({ tool, viewType = 'grid' }: ToolCardProps) => {
               </span>
             </div>
           </div>
-          
+
           <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2">
             {tool.description}
           </p>
@@ -412,14 +483,19 @@ export const ToolCard = ({ tool, viewType = 'grid' }: ToolCardProps) => {
 
           <div className="flex items-center justify-between gap-4 mt-auto">
             <div className="flex items-center gap-3">
-              <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="flex-shrink-0"
+              >
                 <VoteButtons toolId={tool.id} variant="compact" />
               </div>
-              
+
               <div
                 className={cn(
                   'transition-all duration-300',
-                  isHovered || isToolSelected(tool.id) ? 'opacity-100' : 'opacity-0'
+                  isHovered || isToolSelected(tool.id)
+                    ? 'opacity-100'
+                    : 'opacity-0'
                 )}
               >
                 <CompareButton

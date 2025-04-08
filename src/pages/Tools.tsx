@@ -8,13 +8,26 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import SearchBar from '@/components/ui/SearchBar';
 import FilterButton from '@/components/ui/FilterButton';
-import { ArrowLeft, Sliders, Plus, Grid, List } from 'lucide-react';
+import {
+  ArrowLeft,
+  Sliders,
+  Trash2,
+  Grid,
+  List,
+  Heart,
+  Clock,
+  ArrowUpDown,
+} from 'lucide-react';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { useSupabaseCategories } from '@/hooks/useSupabaseCategories';
 import { Skeleton } from '@/components/ui/skeleton';
 import { pricingOptions } from '@/data/toolsData';
 import { CompareToolsBar } from '@/components/tools/CompareToolsBar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useFavoriteTools } from '@/hooks/useFavoriteTools';
+import { useRecentlyViewedTools } from '@/hooks/useRecentlyViewedTools';
+import { useToolAnalytics } from '@/hooks/useToolAnalytics';
+import { toast } from 'sonner';
 
 const Tools = () => {
   const location = useLocation();
@@ -29,6 +42,19 @@ const Tools = () => {
   const [selectedPricing, setSelectedPricing] = useState('All');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('list');
+  const [sortOption, setSortOption] = useState<'newest' | 'popular'>('newest');
+  const [showFavorites, setShowFavorites] = useState(false);
+
+  // Custom hooks for favorites and recently viewed tools
+  const { favoriteTools, addFavorite, removeFavorite, isFavorite } =
+    useFavoriteTools();
+  const {
+    recentlyViewedTools,
+    addRecentlyViewed,
+    clearRecentlyViewed,
+    isLoading: recentToolsLoading,
+  } = useRecentlyViewedTools();
+  const { trackEvent } = useToolAnalytics();
 
   const { categories, loading: categoriesLoading } = useSupabaseCategories();
   const {
@@ -42,6 +68,13 @@ const Tools = () => {
     search: searchTerm,
     pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
     loadMore: true,
+    // Filter by favorites if showFavorites is true
+    ...(showFavorites &&
+      favoriteTools.length > 0 && {
+        customQuery: (query) => query.in('id', favoriteTools),
+      }),
+    // Sort by newest (default) or popular
+    sortBy: sortOption === 'popular' ? 'popularity' : 'created_at',
   });
 
   const observer = useRef<IntersectionObserver | null>(null);
@@ -103,6 +136,17 @@ const Tools = () => {
     setSelectedPricing(pricing);
   };
 
+  const handleFavoriteToggle = (toolId: string, isFavorite: boolean) => {
+    if (isFavorite) {
+      addFavorite(toolId);
+    } else {
+      removeFavorite(toolId);
+    }
+
+    // Track the event
+    trackEvent(toolId, 'favorite_toggle', { isFavorite });
+  };
+
   const isLoading =
     categoriesLoading || (toolsLoading && filteredTools.length === 0);
 
@@ -121,12 +165,12 @@ const Tools = () => {
 
         <main className="flex-grow pt-20 pb-20">
           <div className="bg-secondary/30 border-b border-border/20">
-            <div className="container px-4 md:px-8 mx-auto py-12 md:py-16">
-              <div className="max-w-3xl mx-auto text-center">
-                <h1 className="text-3xl md:text-4xl font-medium mb-4 animate-fade-in">
+            <div className="container px-4 md:px-8 mx-auto py-8 md:py-10">
+              <div className="max-w-3xl">
+                <h1 className="text-3xl md:text-4xl font-medium mb-3 animate-fade-in">
                   AI Tools Collection
                 </h1>
-                <p className="text-muted-foreground mb-8 animate-fade-in">
+                <p className="text-muted-foreground mb-0 animate-fade-in max-w-2xl">
                   Browse our comprehensive collection of AI tools across various
                   categories. Find the perfect tool for your specific needs.
                 </p>
@@ -135,6 +179,54 @@ const Tools = () => {
           </div>
 
           <div className="container px-4 md:px-8 mx-auto py-8">
+            {/* Recently Viewed Tools Section */}
+            {recentlyViewedTools.length > 0 && (
+              <div className="mb-8 animate-fade-in">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-medium flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
+                    Recently viewed tools
+                  </h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      clearRecentlyViewed();
+                      toast.success('Recently viewed tools cleared');
+                    }}
+                    className="text-xs"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Clear history
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {recentToolsLoading
+                    ? Array(4)
+                        .fill(0)
+                        .map((_, index) => (
+                          <div
+                            key={`recent-skeleton-${index}`}
+                            className="space-y-3 animate-pulse"
+                          >
+                            <Skeleton className="h-24 w-full rounded-lg" />
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                        ))
+                    : recentlyViewedTools.map((tool) => (
+                        <div
+                          key={`recent-${tool.id}`}
+                          className="animate-fade-in"
+                        >
+                          <ToolCard tool={tool} viewType="list" compact />
+                        </div>
+                      ))}
+                </div>
+              </div>
+            )}
+
             <div className="lg:hidden mb-4">
               <Button
                 variant="outline"
@@ -169,26 +261,56 @@ const Tools = () => {
 
                   <div className="p-4 rounded-lg border border-border/50 bg-background/50 space-y-4">
                     <h3 className="font-medium">Filters</h3>
-                    
-                    <div className="space-y-3">
-                      <FilterButton
-                        label="Category"
-                        options={categoriesLoading ? ['Loading...'] : categories}
-                        selectedOption={activeCategory}
-                        onChange={handleCategoryChange}
-                        disabled={categoriesLoading}
-                        className="w-full"
-                      />
 
-                      <FilterButton
-                        label="Pricing"
-                        options={pricingOptions}
-                        selectedOption={selectedPricing}
-                        onChange={handlePricingChange}
-                        className="w-full"
-                      />
-                    </div>
-                    
+                    {categoriesLoading ? (
+                      <div className="space-y-4 animate-pulse">
+                        <div>
+                          <Skeleton className="h-4 w-16 mb-2" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                        <div>
+                          <Skeleton className="h-4 w-16 mb-2" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                        <div>
+                          <Skeleton className="h-4 w-16 mb-2" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 animate-fade-in">
+                        <FilterButton
+                          label="Category"
+                          options={categories}
+                          selectedOption={activeCategory}
+                          onChange={handleCategoryChange}
+                          className="w-full"
+                        />
+
+                        <FilterButton
+                          label="Pricing"
+                          options={pricingOptions}
+                          selectedOption={selectedPricing}
+                          onChange={handlePricingChange}
+                          className="w-full"
+                        />
+
+                        <Button
+                          variant={showFavorites ? 'default' : 'outline'}
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => setShowFavorites(!showFavorites)}
+                        >
+                          <Heart
+                            className={`h-4 w-4 mr-2 ${
+                              showFavorites ? 'fill-current' : ''
+                            }`}
+                          />
+                          {showFavorites ? 'All Tools' : 'Favorites Only'}
+                        </Button>
+                      </div>
+                    )}
+
                     <div className="text-sm text-muted-foreground pt-2">
                       {isLoading ? (
                         <Skeleton className="h-4 w-20" />
@@ -202,30 +324,61 @@ const Tools = () => {
                   </div>
 
                   {!isMobile && (
-                    <div className="flex p-4 rounded-lg border border-border/50 bg-background/50">
-                      <div className="flex space-x-2 w-full">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`px-3 flex-1 ${
-                            view === 'list' ? 'bg-secondary/70' : ''
-                          }`}
-                          onClick={() => setView('list')}
-                        >
-                          <List className="h-4 w-4 mr-2" />
-                          List
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`px-3 flex-1 ${
-                            view === 'grid' ? 'bg-secondary/70' : ''
-                          }`}
-                          onClick={() => setView('grid')}
-                        >
-                          <Grid className="h-4 w-4 mr-2" />
-                          Grid
-                        </Button>
+                    <div className="space-y-3">
+                      <div className="flex p-4 rounded-lg border border-border/50 bg-background/50">
+                        <div className="flex space-x-2 w-full">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`px-3 flex-1 ${
+                              view === 'list' ? 'bg-secondary/70' : ''
+                            }`}
+                            onClick={() => setView('list')}
+                          >
+                            <List className="h-4 w-4 mr-2" />
+                            List
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`px-3 flex-1 ${
+                              view === 'grid' ? 'bg-secondary/70' : ''
+                            }`}
+                            onClick={() => setView('grid')}
+                          >
+                            <Grid className="h-4 w-4 mr-2" />
+                            Grid
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-lg border border-border/50 bg-background/50 space-y-2">
+                        <h3 className="text-sm font-medium flex items-center">
+                          <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
+                          Sort by
+                        </h3>
+                        <div className="flex space-x-2 w-full">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`px-3 flex-1 ${
+                              sortOption === 'newest' ? 'bg-secondary/70' : ''
+                            }`}
+                            onClick={() => setSortOption('newest')}
+                          >
+                            Newest
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`px-3 flex-1 ${
+                              sortOption === 'popular' ? 'bg-secondary/70' : ''
+                            }`}
+                            onClick={() => setSortOption('popular')}
+                          >
+                            Popular
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -353,9 +506,14 @@ const Tools = () => {
                             ? lastToolElementRef
                             : null
                         }
-                        className="animate-fade-in"
+                        className="animate-fade-in transition-all duration-300 transform hover:translate-y-[-2px]"
                       >
-                        <ToolCard tool={tool} viewType={isMobile ? 'list' : view} />
+                        <ToolCard
+                          tool={tool}
+                          viewType={isMobile ? 'list' : view}
+                          onFavoriteToggle={handleFavoriteToggle}
+                          isFavorite={isFavorite(tool.id)}
+                        />
                       </div>
                     ))}
 
