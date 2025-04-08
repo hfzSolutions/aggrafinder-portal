@@ -11,7 +11,8 @@ export interface AITool {
   tags: string[];
   userId?: string;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
-  popularity?: number; // Add popularity property for sorting
+  popularity?: number;
+  upvotes?: number; // Add upvotes property for sorting
 }
 
 export type AnalyticsAction =

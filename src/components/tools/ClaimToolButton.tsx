@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ClaimToolForm } from './ClaimToolForm';
-import { Flag } from 'lucide-react';
+import { Flag, CheckCircle } from 'lucide-react';
 
 interface ClaimToolButtonProps {
   toolId: string;
