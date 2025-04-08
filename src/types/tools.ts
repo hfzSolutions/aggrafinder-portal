@@ -1,3 +1,4 @@
+
 export interface AITool {
   id: string;
   name: string;
@@ -10,7 +11,8 @@ export interface AITool {
   tags: string[];
   userId?: string;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
-  popularity?: number; // Add popularity property for sorting
+  popularity?: number;
+  upvotes?: number; // Add upvotes property for sorting
 }
 
 export type AnalyticsAction =
@@ -39,6 +41,7 @@ export interface ToolRequest {
   submitter_name?: string;
   status: string;
   created_at: string;
-  request_type: 'new' | 'update';
+  request_type: 'new' | 'update' | 'claim';
   tool_id?: string;
+  verification_details?: string;
 }

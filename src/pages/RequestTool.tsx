@@ -26,7 +26,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { ClaimToolForm } from '@/components/tools/ClaimToolForm';
+import { useNavigate } from 'react-router-dom';
 
 // Form validation schema
 const requestToolSchema = z.object({
@@ -45,11 +55,15 @@ const requestToolSchema = z.object({
 type RequestToolFormValues = z.infer<typeof requestToolSchema>;
 
 const RequestTool = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<
     { id: number; name: string }[] | null
   >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [duplicateTool, setDuplicateTool] = useState<null | { id: string; name: string }>(null);
+  const [showClaimDialog, setShowClaimDialog] = useState(false);
+  const [claimSubmitted, setClaimSubmitted] = useState(false);
 
   const form = useForm<RequestToolFormValues>({
     resolver: zodResolver(requestToolSchema),
@@ -82,9 +96,54 @@ const RequestTool = () => {
     fetchCategories();
   }, []);
 
+  // Check if a tool with the same URL or name already exists
+  const checkDuplicateTool = async (name: string, url: string) => {
+    try {
+      // First check by URL (exact match)
+      const { data: urlMatch, error: urlError } = await (supabase as any)
+        .from('ai_tools')
+        .select('id, name')
+        .ilike('url', url)
+        .limit(1);
+
+      if (urlError) throw urlError;
+      
+      if (urlMatch && urlMatch.length > 0) {
+        return urlMatch[0];
+      }
+      
+      // Then check by name (case insensitive)
+      const { data: nameMatch, error: nameError } = await (supabase as any)
+        .from('ai_tools')
+        .select('id, name')
+        .ilike('name', name)
+        .limit(1);
+        
+      if (nameError) throw nameError;
+      
+      if (nameMatch && nameMatch.length > 0) {
+        return nameMatch[0];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error checking for duplicate tool:', error);
+      return null;
+    }
+  };
+
   const onSubmit = async (values: RequestToolFormValues) => {
     try {
       setIsSubmitting(true);
+
+      // Check for duplicate tool
+      const duplicate = await checkDuplicateTool(values.name, values.url);
+      
+      if (duplicate) {
+        setDuplicateTool(duplicate);
+        setIsSubmitting(false);
+        return;
+      }
 
       const { error } = await supabase.from('tool_requests').insert({
         name: values.name,
@@ -101,13 +160,29 @@ const RequestTool = () => {
 
       form.reset();
       setIsSubmitted(true);
-      toast('Tool request submitted successfully!');
+      toast.success('Tool request submitted successfully!');
     } catch (err) {
       console.error('Error submitting tool request:', err);
-      toast('Failed to submit tool request. Please try again.');
+      toast.error('Failed to submit tool request. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleClaimSuccess = () => {
+    setClaimSubmitted(true);
+  };
+
+  const handleCloseClaimDialog = () => {
+    setShowClaimDialog(false);
+    // If claim was submitted, reset the form and redirect to tools
+    if (claimSubmitted) {
+      form.reset();
+      setTimeout(() => {
+        navigate('/tools');
+      }, 1000);
+    }
+    setDuplicateTool(null);
   };
 
   return (
@@ -299,6 +374,95 @@ const RequestTool = () => {
           )}
         </div>
       </main>
+
+      {/* Duplicate Tool Dialog */}
+      <Dialog open={!!duplicateTool} onOpenChange={(open) => !open && setDuplicateTool(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Tool Already Exists
+            </DialogTitle>
+            <DialogDescription>
+              This tool is already listed! Want to claim it and manage the details?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="mb-4">
+              A tool with a similar name or URL already exists in our database. 
+              You can claim ownership of this tool listing to manage its information and updates.
+            </p>
+            <div className="p-4 bg-secondary/50 rounded-md">
+              <p className="font-medium">{duplicateTool?.name}</p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex sm:justify-between gap-3 flex-col sm:flex-row">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setDuplicateTool(null)}
+            >
+              Cancel
+            </Button>
+            <div className="flex gap-3">
+              <Button 
+                type="button"
+                variant="outline"
+                onClick={() => navigate(`/tools/${duplicateTool?.id}`)}
+              >
+                View Tool
+              </Button>
+              <Button 
+                type="button"
+                onClick={() => {
+                  setShowClaimDialog(true);
+                }}
+              >
+                Claim Ownership
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Claim Tool Dialog */}
+      {duplicateTool && (
+        <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
+          <DialogContent className="sm:max-w-lg">
+            {claimSubmitted ? (
+              <div className="py-6 text-center space-y-4">
+                <div className="mx-auto bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="text-lg font-medium">Claim Request Submitted</h3>
+                <p className="text-muted-foreground">
+                  Thank you for your request. Our team will review your claim and get back to you via the provided email.
+                </p>
+                <Button onClick={handleCloseClaimDialog} className="mt-4">
+                  Done
+                </Button>
+              </div>
+            ) : (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Claim Tool Ownership</DialogTitle>
+                  <DialogDescription>
+                    Request ownership of this tool listing to manage its information and updates.
+                  </DialogDescription>
+                </DialogHeader>
+                <ClaimToolForm
+                  toolId={duplicateTool.id}
+                  toolName={duplicateTool.name}
+                  onSuccess={handleClaimSuccess}
+                  onCancel={handleCloseClaimDialog}
+                />
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Footer />
     </>

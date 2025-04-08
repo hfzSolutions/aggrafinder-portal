@@ -176,6 +176,36 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       tool_analytics: {
         Row: {
           action: string
@@ -272,7 +302,7 @@ export type Database = {
           comment: string | null
           created_at: string
           id: string
-          rating: number
+          rating: number | null
           tool_id: string
           updated_at: string
           user_id: string | null
@@ -281,7 +311,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
-          rating: number
+          rating?: number | null
           tool_id: string
           updated_at?: string
           user_id?: string | null
@@ -290,7 +320,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
-          rating?: number
+          rating?: number | null
           tool_id?: string
           updated_at?: string
           user_id?: string | null
