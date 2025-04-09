@@ -1,13 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/integrations/supabase/client';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
-import { AdminMessages } from '@/components/admin/AdminMessages';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -72,25 +69,12 @@ const Admin = () => {
       <main className="flex-grow pt-20">
         <div className="container px-4 md:px-8 mx-auto py-8">
           <div className="max-w-6xl mx-auto">
-            {user && (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList>
-                  <TabsTrigger value="dashboard">Tools Dashboard</TabsTrigger>
-                  <TabsTrigger value="messages">Support Messages</TabsTrigger>
-                </TabsList>
-                <TabsContent value="dashboard">
-                  <AdminDashboard userId={user.id} />
-                </TabsContent>
-                <TabsContent value="messages">
-                  <AdminMessages />
-                </TabsContent>
-              </Tabs>
-            )}
+            {user && <AdminDashboard userId={user.id} />}
           </div>
         </div>
       </main>
     </>
   );
-}
+};
 
 export default Admin;
