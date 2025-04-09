@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSupabaseAdmin } from '@/hooks/useSupabaseAdmin';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,7 @@ import { BulkToolUpload } from './BulkToolUpload';
 import { ToolOwnershipClaims } from './ToolOwnershipClaims';
 import { SupportMessages } from './SupportMessages';
 import { ToolClaimRequests } from './ToolClaimRequests';
+import { AdminSummary } from './AdminSummary';
 import {
   Card,
   CardContent,
@@ -682,6 +684,9 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {/* Add the AdminSummary component at the top */}
+      <AdminSummary />
+      
       <Card>
         <CardHeader>
           <CardTitle>Admin Dashboard</CardTitle>
