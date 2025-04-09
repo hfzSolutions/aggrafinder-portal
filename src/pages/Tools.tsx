@@ -480,12 +480,6 @@ const Tools = () => {
                       >
                         Reset filters
                       </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate('/request-tool')}
-                      >
-                        Request a new tool
-                      </Button>
                     </div>
                   </div>
                 )}

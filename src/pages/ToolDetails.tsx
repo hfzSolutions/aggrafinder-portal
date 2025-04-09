@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { VoteButtons } from '@/components/tools/VoteButtons';
 import { CommentsList } from '@/components/tools/CommentsList';
 import ShareButton from '@/components/tools/ShareButton';
+import { ClaimToolButton } from '@/components/tools/ClaimToolButton';
 
 const ToolDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -91,6 +92,7 @@ const ToolDetails = () => {
           featured: data.featured,
           pricing: data.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: data.tags,
+          isAdminAdded: data.is_admin_added || false,
         };
 
         setTool(transformedData);
@@ -335,6 +337,13 @@ const ToolDetails = () => {
                             className="action-button"
                             showText={true}
                           />
+
+                          {tool.isAdminAdded && (
+                            <ClaimToolButton
+                              toolId={tool.id}
+                              toolName={tool.name}
+                            />
+                          )}
 
                           <Button
                             variant="outline"

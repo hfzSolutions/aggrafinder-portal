@@ -1,4 +1,3 @@
-
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -10,7 +9,7 @@ import Tools from './pages/Tools';
 import ToolDetails from './pages/ToolDetails';
 import CompareTools from './pages/CompareTools';
 import Resources from './pages/Resources';
-import RequestTool from './pages/RequestTool';
+
 import Outcomes from './pages/Outcomes';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
@@ -53,7 +52,7 @@ const App = () => (
             <Route path="/tools/:id" element={<ToolDetails />} />
             <Route path="/tools/compare/:ids" element={<CompareTools />} />
             <Route path="/resources" element={<Resources />} />
-            <Route path="/request-tool" element={<RequestTool />} />
+
             <Route path="/outcomes" element={<Outcomes />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />

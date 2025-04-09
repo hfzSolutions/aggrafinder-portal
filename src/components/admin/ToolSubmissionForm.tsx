@@ -2,9 +2,17 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -73,7 +81,13 @@ export function ToolSubmissionForm({
     toolToEdit?.category || []
   );
   const [tagsInput, setTagsInput] = useState('');
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>(propCategories || []);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>(
+    propCategories || []
+  );
+  const [duplicateTool, setDuplicateTool] = useState<null | {
+    id: string;
+    name: string;
+  }>(null);
   const {
     submitTool,
     updateTool,
@@ -89,15 +103,15 @@ export function ToolSubmissionForm({
           .from('categories')
           .select('*')
           .order('name', { ascending: true });
-        
+
         if (error) {
           console.error('Error fetching categories:', error);
           return;
         }
-        
+
         setCategories(data || []);
       };
-      
+
       fetchCategories();
     }
   }, [propCategories]);
@@ -155,9 +169,57 @@ export function ToolSubmissionForm({
     );
   };
 
+  // Check if a tool with the same URL or name already exists
+  const checkDuplicateTool = async (name: string, url: string) => {
+    try {
+      // First check by URL (exact match)
+      const { data: urlMatch, error: urlError } = await (supabase as any)
+        .from('ai_tools')
+        .select('id, name')
+        .ilike('url', url)
+        .limit(1);
+
+      if (urlError) throw urlError;
+
+      if (urlMatch && urlMatch.length > 0) {
+        return urlMatch[0];
+      }
+
+      // Then check by name (case insensitive)
+      const { data: nameMatch, error: nameError } = await (supabase as any)
+        .from('ai_tools')
+        .select('id, name')
+        .ilike('name', name)
+        .limit(1);
+
+      if (nameError) throw nameError;
+
+      if (nameMatch && nameMatch.length > 0) {
+        return nameMatch[0];
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error checking for duplicate tool:', error);
+      return null;
+    }
+  };
+
   const onSubmit = async (values: FormValues) => {
     try {
       setIsSubmitting(true);
+
+      // Skip duplicate check in edit mode
+      if (!editMode) {
+        // Check for duplicate tool
+        const duplicate = await checkDuplicateTool(values.name, values.url);
+
+        if (duplicate) {
+          setDuplicateTool(duplicate);
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
       let finalImageUrl: string = '';
       if (values.imageUrl instanceof File) {
@@ -165,6 +227,10 @@ export function ToolSubmissionForm({
       } else if (typeof values.imageUrl === 'string') {
         finalImageUrl = values.imageUrl;
       }
+
+      // Determine if this tool is being added from the admin interface
+      // Check if the component path includes 'admin' to determine if it's admin-added
+      const isAdminAdded = window.location.pathname.includes('/admin');
 
       const toolData = {
         name: values.name,
@@ -176,6 +242,7 @@ export function ToolSubmissionForm({
         featured: values.featured,
         tags: values.tags,
         user_id: userId,
+        is_admin_added: isAdminAdded, // Set based on whether it's submitted from admin page
       };
 
       let result;
@@ -211,227 +278,281 @@ export function ToolSubmissionForm({
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tool Name</FormLabel>
-              <FormControl>
-                <Input placeholder="AI Tool Name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Describe what this AI tool does..."
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="url"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tool URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tool Image</FormLabel>
-              <FormControl>
-                <FileUpload
-                  onFileChange={(file) => {
-                    if (file) {
-                      form.setValue('imageUrl', file);
-                    } else {
-                      form.setValue('imageUrl', '');
-                    }
-                  }}
-                  value={
-                    typeof field.value === 'string' ? field.value : undefined
-                  }
-                  accept="image/*"
-                  maxSize={5}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="category"
-          render={() => (
-            <FormItem>
-              <FormLabel>Categories</FormLabel>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {categories && categories.length > 0 ? (
-                  categories.map((category) => (
-                    <div
-                      key={category.id}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={`category-${category.id}`}
-                        checked={selectedCategories.includes(category.name)}
-                        onCheckedChange={() =>
-                          handleCategoryToggle(category.name)
-                        }
-                      />
-                      <label
-                        htmlFor={`category-${category.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {category.name}
-                      </label>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">Loading categories...</p>
-                )}
-              </div>
-              {form.formState.errors.category && (
-                <p className="text-sm font-medium text-destructive mt-2">
-                  {form.formState.errors.category.message}
-                </p>
-              )}
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="pricing"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Pricing</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tool Name</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select pricing model" />
-                  </SelectTrigger>
+                  <Input placeholder="AI Tool Name" {...field} />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="Free">Free</SelectItem>
-                  <SelectItem value="Freemium">Freemium</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Free Trial">Free Trial</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="featured"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Featured Tool</FormLabel>
-                <p className="text-sm text-muted-foreground">
-                  Featured tools will be highlighted on the homepage
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="tags"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tags</FormLabel>
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Add a tag"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  className="flex-1"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                />
-                <Button type="button" onClick={handleAddTag} variant="outline">
-                  Add
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {field.value.map((tag) => (
-                  <div
-                    key={tag}
-                    className="flex items-center bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="ml-2 text-secondary-foreground/70 hover:text-secondary-foreground"
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isSubmitting || adminActionLoading}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {editMode ? 'Updating...' : 'Submitting...'}
-              </>
-            ) : editMode ? (
-              'Update Tool'
-            ) : (
-              'Submit Tool'
+                <FormMessage />
+              </FormItem>
             )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Describe what this AI tool does..."
+                    className="min-h-[100px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tool URL</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tool Image</FormLabel>
+                <FormControl>
+                  <FileUpload
+                    onFileChange={(file) => {
+                      if (file) {
+                        form.setValue('imageUrl', file);
+                      } else {
+                        form.setValue('imageUrl', '');
+                      }
+                    }}
+                    value={
+                      typeof field.value === 'string' ? field.value : undefined
+                    }
+                    accept="image/*"
+                    maxSize={5}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="category"
+            render={() => (
+              <FormItem>
+                <FormLabel>Categories</FormLabel>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {categories && categories.length > 0 ? (
+                    categories.map((category) => (
+                      <div
+                        key={category.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <Checkbox
+                          id={`category-${category.id}`}
+                          checked={selectedCategories.includes(category.name)}
+                          onCheckedChange={() =>
+                            handleCategoryToggle(category.name)
+                          }
+                        />
+                        <label
+                          htmlFor={`category-${category.id}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {category.name}
+                        </label>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Loading categories...
+                    </p>
+                  )}
+                </div>
+                {form.formState.errors.category && (
+                  <p className="text-sm font-medium text-destructive mt-2">
+                    {form.formState.errors.category.message}
+                  </p>
+                )}
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="pricing"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pricing</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select pricing model" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Free">Free</SelectItem>
+                    <SelectItem value="Freemium">Freemium</SelectItem>
+                    <SelectItem value="Paid">Paid</SelectItem>
+                    <SelectItem value="Free Trial">Free Trial</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="featured"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Featured Tool</FormLabel>
+                  <p className="text-sm text-muted-foreground">
+                    Featured tools will be highlighted on the homepage
+                  </p>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="tags"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tags</FormLabel>
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="Add a tag"
+                    value={tagsInput}
+                    onChange={(e) => setTagsInput(e.target.value)}
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleAddTag}
+                    variant="outline"
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {field.value.map((tag) => (
+                    <div
+                      key={tag}
+                      className="flex items-center bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-2 text-secondary-foreground/70 hover:text-secondary-foreground"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex justify-end pt-4">
+            <Button type="submit" disabled={isSubmitting || adminActionLoading}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {editMode ? 'Updating...' : 'Submitting...'}
+                </>
+              ) : editMode ? (
+                'Update Tool'
+              ) : (
+                'Submit Tool'
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
+
+      {/* Duplicate Tool Dialog */}
+      <Dialog
+        open={!!duplicateTool}
+        onOpenChange={(open) => !open && setDuplicateTool(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Tool Already Exists
+            </DialogTitle>
+            <DialogDescription>
+              This tool is already listed in our database.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <p className="mb-4">
+              A tool with a similar name or URL already exists in our database.
+              You may want to view the existing tool or modify your submission.
+            </p>
+            <div className="p-4 bg-secondary/50 rounded-md">
+              <p className="font-medium">{duplicateTool?.name}</p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex sm:justify-between gap-3 flex-col sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDuplicateTool(null)}
+            >
+              Go Back
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                window.open(`/tools/${duplicateTool?.id}`, '_blank');
+              }}
+            >
+              View Existing Tool
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

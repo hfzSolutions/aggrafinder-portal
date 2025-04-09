@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -40,7 +39,7 @@ interface UseSupabaseAdminReturn {
     tags: string[];
     user_id: string;
   }) => Promise<{ success: boolean; error?: string }>;
-  
+
   updateTool: (
     id: string,
     toolData: {
@@ -55,7 +54,7 @@ interface UseSupabaseAdminReturn {
       user_id?: string;
     }
   ) => Promise<{ success: boolean; error?: string }>;
-  
+
   bulkSubmitTools: (
     toolsData: {
       name: string;
@@ -69,16 +68,12 @@ interface UseSupabaseAdminReturn {
       user_id?: string;
     }[]
   ) => Promise<{ success: boolean; error?: string; count: number }>;
-  
+
   deleteTool: (id: string) => Promise<{ success: boolean; error?: string }>;
 
   // Direct tool approval management
-  approveTool: (
-    id: string
-  ) => Promise<{ success: boolean; error?: string }>;
-  rejectTool: (
-    id: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  approveTool: (id: string) => Promise<{ success: boolean; error?: string }>;
+  rejectTool: (id: string) => Promise<{ success: boolean; error?: string }>;
 
   // Loading state
   loading: boolean;
@@ -290,6 +285,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     featured: boolean;
     tags: string[];
     user_id: string;
+    is_admin_added?: boolean; // Add optional parameter to control is_admin_added flag
   }): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
@@ -332,10 +328,13 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
         }
       }
 
-      // Insert the tool with the image URL
+      // Insert the tool with the image URL and set is_admin_added based on context
+      // If is_admin_added is explicitly provided in toolData, use that value
+      // Otherwise, default to false (user-submitted)
       const { error } = await supabase.from('ai_tools').insert({
         ...toolData,
         image_url: imageUrl,
+        is_admin_added: toolData.is_admin_added !== undefined ? toolData.is_admin_added : false,
       });
 
       if (error) throw error;
@@ -529,6 +528,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
       featured: boolean;
       tags: string[];
       user_id?: string;
+      is_admin_added?: boolean;
     }[]
   ): Promise<{ success: boolean; error?: string; count: number }> => {
     try {
@@ -540,7 +540,19 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       // Process tools in batches
       for (let i = 0; i < toolsData.length; i += batchSize) {
-        const batch = toolsData.slice(i, i + batchSize);
+        const batch = toolsData.slice(i, i + batchSize).map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          url: tool.url,
+          image_url: tool.image_url,
+          category: tool.category,
+          pricing: tool.pricing,
+          featured: tool.featured || false,
+          tags: tool.tags || [],
+          user_id: tool.user_id || null,
+          approval_status: 'approved', // Auto-approve bulk uploads
+          is_admin_added: true, // Mark all bulk uploaded tools as admin-added
+        }));
 
         // Insert the batch of tools
         const { error } = await supabase.from('ai_tools').insert(batch);
@@ -628,11 +640,11 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     updateTool,
     deleteTool,
     bulkSubmitTools,
-    
+
     // Direct tool approval management
     approveTool,
     rejectTool,
-    
+
     loading,
   };
 };
