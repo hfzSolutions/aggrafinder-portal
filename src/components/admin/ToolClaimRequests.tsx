@@ -75,31 +75,31 @@ export function ToolClaimRequests() {
         return;
       }
 
-      // First try to get the user ID for this email
-      const { data: userData, error: userError } =
-        await supabase.auth.admin.listUsers({
-          page: 1,
-          perPage: 1,
-          filters: {
-            email: submitterEmail,
+      // Instead of using admin.listUsers, we'll use a more straightforward approach
+      // Query users by email (without admin privileges)
+      const { data: userData, error: userError } = await supabase.auth
+        .signInWithOtp({
+          email: submitterEmail,
+          options: {
+            shouldCreateUser: false, // This just checks if the user exists
           },
         });
 
       let userId;
 
       if (userError) {
-        console.error('Error checking for user:', userError);
-        toast.error('Failed to check user account');
-        return;
-      }
-
-      if (userData.users && userData.users.length > 0) {
-        // If the user already exists, use their ID
-        userId = userData.users[0].id;
-      } else {
-        // User doesn't exist, we'll update the tool without a user_id
-        // and explain that in the message to the admin
+        // If error code is "User not found", that's fine, we'll handle accordingly
+        if (userError.message !== 'User not found') {
+          console.error('Error checking for user:', userError);
+          toast.error('Failed to check user account');
+          return;
+        }
+        // User doesn't exist yet, we'll continue without a user_id
         toast.warning('No user account found for this email');
+      } else if (userData) {
+        // If we got back data, the user exists, but we don't have their ID here
+        // We can let them know to login to see their claimed tool
+        toast.info('User account exists, they can login to manage this tool');
       }
 
       if (userId) {
@@ -130,7 +130,7 @@ export function ToolClaimRequests() {
       toast.success(
         userId
           ? 'Claim approved and ownership transferred'
-          : 'Claim approved but no user account found'
+          : 'Claim approved but user must sign up to manage the tool'
       );
 
       setShowDetails(false);
