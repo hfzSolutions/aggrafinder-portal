@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './button';
 import { Input } from './input';
 import { Loader2, Upload, X } from 'lucide-react';
@@ -29,6 +30,15 @@ export function FileUpload({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Update preview when value or previewUrl changes
+  useEffect(() => {
+    if (typeof value === 'string') {
+      setPreview(value);
+    } else if (previewUrl) {
+      setPreview(previewUrl);
+    }
+  }, [value, previewUrl]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setError(null);
@@ -53,6 +63,7 @@ export function FileUpload({
     reader.readAsDataURL(file);
 
     onFileChange(file);
+    console.log('File selected:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
   };
 
   const handleRemove = () => {
@@ -61,6 +72,7 @@ export function FileUpload({
     }
     onFileChange(null);
     setPreview(null);
+    setError(null);
   };
 
   return (
@@ -113,6 +125,11 @@ export function FileUpload({
             src={preview}
             alt="Preview"
             className="max-h-[200px] w-auto object-contain"
+            onError={(e) => {
+              console.error('Image failed to load');
+              setError('Failed to load image preview');
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
           />
         </div>
       )}

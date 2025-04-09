@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,15 +56,17 @@ export function ClaimToolForm({
     try {
       setIsSubmitting(true);
 
-      // Insert into the dedicated tool_ownership_claims table
-      const { error } = await supabase.from('tool_ownership_claims').insert({
-        tool_id: toolId,
-        user_id: userId, // Use the authenticated user's ID
-        submitter_name: values.name,
-        submitter_email: values.email,
-        verification_details: values.verification,
-        status: 'pending',
-      });
+      // Insert the claim request directly without using RPC
+      const { error } = await supabase
+        .from('tool_ownership_claims')
+        .insert({
+          tool_id: toolId,
+          user_id: userId,
+          submitter_name: values.name,
+          submitter_email: values.email,
+          verification_details: values.verification,
+          status: 'pending'
+        });
 
       if (error) throw error;
 

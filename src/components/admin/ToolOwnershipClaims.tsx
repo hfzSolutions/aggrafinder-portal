@@ -41,6 +41,8 @@ interface ToolOwnershipClaim {
   created_at: string;
   updated_at: string;
   admin_feedback?: string | null;
+  tool_name?: string;
+  tool_url?: string;
   ai_tools?: {
     name: string;
   };
@@ -58,9 +60,21 @@ export function ToolOwnershipClaims() {
   const fetchClaims = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('tool_ownership_claims')
-        .select('*, ai_tools(name)')
+      
+      const { data, error } = await supabase.from('tool_ownership_claims')
+        .select(`
+          id,
+          tool_id,
+          user_id,
+          submitter_name,
+          submitter_email,
+          verification_details,
+          status,
+          created_at,
+          updated_at,
+          admin_feedback,
+          ai_tools:tool_id(name)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -90,19 +104,17 @@ export function ToolOwnershipClaims() {
     try {
       setProcessingId(claimId);
 
-      // Update the claim status
       const { error } = await supabase
         .from('tool_ownership_claims')
         .update({
-          status,
-          updated_at: new Date().toISOString(),
+          status: status,
           admin_feedback: feedback || null,
+          updated_at: new Date().toISOString()
         })
         .eq('id', claimId);
 
       if (error) throw error;
 
-      // If approved, update the tool's user_id and set is_admin_added to false
       if (status === 'approved') {
         const claim = claims.find((c) => c.id === claimId);
         if (claim) {
@@ -110,17 +122,11 @@ export function ToolOwnershipClaims() {
             .from('ai_tools')
             .update({
               user_id: claim.user_id,
-              is_admin_added: false, // Set to false to prevent claim button from showing again
+              is_admin_added: false
             })
             .eq('id', claim.tool_id);
 
           if (toolUpdateError) throw toolUpdateError;
-
-          // Send notification or email to the user (placeholder for future implementation)
-          // This could be implemented with a serverless function or a webhook
-          console.log(
-            `Ownership transferred to user ${claim.user_id} for tool ${claim.tool_id}`
-          );
         }
       }
 
@@ -260,7 +266,6 @@ export function ToolOwnershipClaims() {
                                 <Button
                                   variant="outline"
                                   onClick={(e) => {
-                                    // Find the closest dialog container and close it
                                     const dialogContainer = (
                                       e.target as HTMLElement
                                     ).closest('[role="dialog"]');
@@ -426,9 +431,7 @@ export function ToolOwnershipClaims() {
                           <Button
                             variant="outline"
                             onClick={(e) => {
-                              // Close the dialog
                               setShowDetailsDialog(false);
-                              // Find and close the nested dialog if it exists
                               const dialogContainer = (
                                 e.target as HTMLElement
                               ).closest('[role="dialog"]');
