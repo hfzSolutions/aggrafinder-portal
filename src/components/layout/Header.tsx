@@ -102,10 +102,12 @@ const Header = () => {
               )}
             </Button>
 
-            {/* Always display login button regardless of user state */}
-            <Button asChild variant="default" size="sm">
-              <Link to="/auth">Login</Link>
-            </Button>
+            {/* Only display login button if user is not logged in */}
+            {!isLoading && !user && (
+              <Button asChild variant="default" size="sm">
+                <Link to="/auth">Login</Link>
+              </Button>
+            )}
           </div>
         </nav>
 
@@ -167,13 +169,15 @@ const Header = () => {
             )}
           </button>
 
-          {/* Always display login link in mobile menu */}
-          <Link
-            to="/auth"
-            className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
-          >
-            <span>Login</span>
-          </Link>
+          {/* Only display login link in mobile menu if user is not logged in */}
+          {!isLoading && !user && (
+            <Link
+              to="/auth"
+              className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
+            >
+              <span>Login</span>
+            </Link>
+          )}
         </nav>
       </div>
     </header>
