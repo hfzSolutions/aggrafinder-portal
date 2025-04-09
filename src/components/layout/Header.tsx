@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Plus, Image, Sun, Moon } from 'lucide-react';
@@ -69,11 +70,6 @@ const Header = () => {
     );
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-
   return (
     <header
       className={`fixed w-full top-0 z-50 transition-all ${
@@ -106,15 +102,10 @@ const Header = () => {
               )}
             </Button>
 
-            {!isLoading && user ? (
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Logout
-              </Button>
-            ) : (
-              <Button asChild variant="default" size="sm">
-                <Link to="/auth">Login</Link>
-              </Button>
-            )}
+            {/* Always display login button regardless of user state */}
+            <Button asChild variant="default" size="sm">
+              <Link to="/auth">Login</Link>
+            </Button>
           </div>
         </nav>
 
@@ -176,21 +167,13 @@ const Header = () => {
             )}
           </button>
 
-          {!isLoading && user ? (
-            <button
-              onClick={handleLogout}
-              className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
-            >
-              <span>Logout</span>
-            </button>
-          ) : (
-            <Link
-              to="/auth"
-              className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
-            >
-              <span>Login</span>
-            </Link>
-          )}
+          {/* Always display login link in mobile menu */}
+          <Link
+            to="/auth"
+            className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
+          >
+            <span>Login</span>
+          </Link>
         </nav>
       </div>
     </header>
