@@ -11,7 +11,7 @@ import {
   CheckCircle2, 
   HelpCircle,
   MessageSquare,
-  Tool,
+  Wrench,
   User
 } from 'lucide-react';
 
@@ -54,14 +54,17 @@ export function AdminSummary() {
         if (messagesError) throw messagesError;
         setSupportMessages(messagesCount || 0);
 
-        // Fetch pending ownership claims count
-        const { count: claimsCount, error: claimsError } = await supabase
-          .from('tool_ownership_claims')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'pending');
+        // Check if tool_ownership_claims table exists and fetch count
+        // Using raw query to avoid type errors
+        const { data: claimsData, error: claimsError } = await supabase
+          .rpc('count_pending_claims');
 
-        if (claimsError) throw claimsError;
-        setPendingClaims(claimsCount || 0);
+        if (claimsError) {
+          console.error('Error fetching claims count:', claimsError);
+          setPendingClaims(0);
+        } else {
+          setPendingClaims(claimsData || 0);
+        }
 
       } catch (error) {
         console.error('Error fetching counts:', error);
@@ -100,7 +103,7 @@ export function AdminSummary() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
               <div className="flex items-center">
-                <Tool className="w-5 h-5 text-primary mr-2" />
+                <Wrench className="w-5 h-5 text-primary mr-2" />
                 <span className="font-medium">Pending Tools</span>
                 {pendingTools > 0 && (
                   <Badge variant="destructive" className="ml-auto">

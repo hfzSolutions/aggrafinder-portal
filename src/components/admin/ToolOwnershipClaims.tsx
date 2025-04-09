@@ -58,10 +58,8 @@ export function ToolOwnershipClaims() {
   const fetchClaims = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('tool_ownership_claims')
-        .select('*, ai_tools(name)')
-        .order('created_at', { ascending: false });
+      
+      const { data, error } = await supabase.rpc('get_tool_ownership_claims_with_tools');
 
       if (error) throw error;
       setClaims(data as ToolOwnershipClaim[]);
@@ -90,37 +88,22 @@ export function ToolOwnershipClaims() {
     try {
       setProcessingId(claimId);
 
-      // Update the claim status
-      const { error } = await supabase
-        .from('tool_ownership_claims')
-        .update({
-          status,
-          updated_at: new Date().toISOString(),
-          admin_feedback: feedback || null,
-        })
-        .eq('id', claimId);
+      const { error } = await supabase.rpc('update_tool_ownership_claim_status', {
+        p_claim_id: claimId,
+        p_status: status,
+        p_admin_feedback: feedback || null
+      });
 
       if (error) throw error;
 
-      // If approved, update the tool's user_id and set is_admin_added to false
       if (status === 'approved') {
         const claim = claims.find((c) => c.id === claimId);
         if (claim) {
-          const { error: toolUpdateError } = await supabase
-            .from('ai_tools')
-            .update({
-              user_id: claim.user_id,
-              is_admin_added: false, // Set to false to prevent claim button from showing again
-            })
-            .eq('id', claim.tool_id);
+          const { error: toolUpdateError } = await supabase.rpc('approve_tool_ownership_claim', {
+            p_claim_id: claimId
+          });
 
           if (toolUpdateError) throw toolUpdateError;
-
-          // Send notification or email to the user (placeholder for future implementation)
-          // This could be implemented with a serverless function or a webhook
-          console.log(
-            `Ownership transferred to user ${claim.user_id} for tool ${claim.tool_id}`
-          );
         }
       }
 
@@ -260,7 +243,6 @@ export function ToolOwnershipClaims() {
                                 <Button
                                   variant="outline"
                                   onClick={(e) => {
-                                    // Find the closest dialog container and close it
                                     const dialogContainer = (
                                       e.target as HTMLElement
                                     ).closest('[role="dialog"]');
@@ -426,9 +408,7 @@ export function ToolOwnershipClaims() {
                           <Button
                             variant="outline"
                             onClick={(e) => {
-                              // Close the dialog
                               setShowDetailsDialog(false);
-                              // Find and close the nested dialog if it exists
                               const dialogContainer = (
                                 e.target as HTMLElement
                               ).closest('[role="dialog"]');

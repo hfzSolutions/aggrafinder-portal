@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
@@ -28,7 +29,7 @@ export const useSupabaseTools = ({
   excludeId,
   userId,
   includeUnapproved = false,
-  sortBy,
+  sortBy = 'created_at',
   customQuery,
 }: UseSupabaseToolsOptions = {}) => {
   const [tools, setTools] = useState<AITool[]>([]);
@@ -75,6 +76,8 @@ export const useSupabaseTools = ({
       excludeId,
       userId,
       includeUnapproved,
+      sortBy,
+      customQuery,
     };
 
     const fetchTools = async () => {
@@ -123,8 +126,8 @@ export const useSupabaseTools = ({
 
         // Apply sorting
         if (sortBy === 'popularity') {
-          // Join with tool_vote_counts to get upvotes for sorting by popularity
-          query = query.select('*, tool_vote_counts(upvotes)');
+          // We'll handle popularity sorting after fetching the data
+          query = query.order('created_at', { ascending: false });
         } else if (sortBy === 'name') {
           query = query.order('name', { ascending: true });
         } else {
@@ -149,6 +152,29 @@ export const useSupabaseTools = ({
           return;
         }
 
+        // First, get all the tool IDs to fetch their vote counts
+        const toolIds = data.map(tool => tool.id);
+        
+        // Fetch the vote counts for these tools
+        let voteCountsMap: Record<string, number> = {};
+        
+        try {
+          const { data: voteCounts, error: voteCountsError } = await supabase
+            .from('tool_vote_counts')
+            .select('tool_id, upvotes')
+            .in('tool_id', toolIds);
+            
+          if (!voteCountsError && voteCounts) {
+            voteCountsMap = voteCounts.reduce((acc, item) => {
+              acc[item.tool_id] = item.upvotes || 0;
+              return acc;
+            }, {} as Record<string, number>);
+          }
+        } catch (err) {
+          console.error('Error fetching vote counts:', err);
+          // Continue without the vote counts if there's an error
+        }
+
         let transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
@@ -166,7 +192,8 @@ export const useSupabaseTools = ({
             | 'pending'
             | 'approved'
             | 'rejected',
-          upvotes: item.tool_vote_counts?.[0]?.upvotes || 0,
+          upvotes: voteCountsMap[item.id] || 0,
+          isAdminAdded: item.is_admin_added || false,
         }));
 
         // Sort by upvotes if sortBy is popularity
