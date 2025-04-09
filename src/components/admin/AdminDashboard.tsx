@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { ToolSubmissionForm } from './ToolSubmissionForm';
 import { BulkToolUpload } from './BulkToolUpload';
 import { ToolOwnershipClaims } from './ToolOwnershipClaims';
+import { SupportMessages } from './SupportMessages';
+import { ToolClaimRequests } from './ToolClaimRequests';
 import {
   Card,
   CardContent,
@@ -699,6 +701,8 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="requests">Tool Requests</TabsTrigger>
               <TabsTrigger value="claims">Ownership Claims</TabsTrigger>
+              <TabsTrigger value="support">Support Messages</TabsTrigger>
+              <TabsTrigger value="toolclaims">Tool Claims</TabsTrigger>
             </TabsList>
 
             {/* Tools Tab */}
@@ -1362,6 +1366,18 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                 Manage Tool Ownership Claims
               </h3>
               <ToolOwnershipClaims />
+            </TabsContent>
+
+            {/* Support Messages Tab */}
+            <TabsContent value="support" className="space-y-4">
+              <h3 className="text-lg font-medium">Support Messages</h3>
+              <SupportMessages />
+            </TabsContent>
+
+            {/* Tool Claims Tab */}
+            <TabsContent value="toolclaims" className="space-y-4">
+              <h3 className="text-lg font-medium">Tool Claim Requests</h3>
+              <ToolClaimRequests />
             </TabsContent>
           </Tabs>
         </CardContent>

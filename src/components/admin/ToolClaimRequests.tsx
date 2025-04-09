@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ToolRequest } from '@/types/tools';
@@ -27,7 +26,9 @@ import { formatDistanceToNow } from 'date-fns';
 export function ToolClaimRequests() {
   const [claimRequests, setClaimRequests] = useState<ToolRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState<ToolRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<ToolRequest | null>(
+    null
+  );
   const [showDetails, setShowDetails] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -62,36 +63,36 @@ export function ToolClaimRequests() {
 
   const handleApprove = async () => {
     if (!selectedRequest) return;
-    
+
     try {
       setProcessingId(selectedRequest.id);
-      
+
       // Get the email of the person claiming the tool
       const submitterEmail = selectedRequest.submitter_email;
-      
+
       if (!submitterEmail) {
         toast.error('Submitter email is missing');
         return;
       }
-      
+
       // First try to get the user ID for this email
-      const { data: userData, error: userError } = await supabase.auth
-        .admin.listUsers({
+      const { data: userData, error: userError } =
+        await supabase.auth.admin.listUsers({
           page: 1,
           perPage: 1,
           filters: {
             email: submitterEmail,
           },
         });
-      
+
       let userId;
-      
+
       if (userError) {
         console.error('Error checking for user:', userError);
         toast.error('Failed to check user account');
         return;
       }
-      
+
       if (userData.users && userData.users.length > 0) {
         // If the user already exists, use their ID
         userId = userData.users[0].id;
@@ -100,36 +101,38 @@ export function ToolClaimRequests() {
         // and explain that in the message to the admin
         toast.warning('No user account found for this email');
       }
-      
+
       if (userId) {
         // Update the tool's user_id to give ownership
         const { error: updateError } = await (supabase as any)
           .from('ai_tools')
-          .update({ 
-            user_id: userId 
+          .update({
+            user_id: userId,
           })
           .eq('id', selectedRequest.tool_id);
-          
+
         if (updateError) throw updateError;
       }
-      
+
       // Update the request status
       const { error: requestError } = await (supabase as any)
         .from('tool_requests')
-        .update({ 
-          status: 'approved' 
+        .update({
+          status: 'approved',
         })
         .eq('id', selectedRequest.id);
-        
+
       if (requestError) throw requestError;
-      
+
       // Refresh the list
       await fetchClaimRequests();
-      
-      toast.success(userId 
-        ? 'Claim approved and ownership transferred' 
-        : 'Claim approved but no user account found');
-      
+
+      toast.success(
+        userId
+          ? 'Claim approved and ownership transferred'
+          : 'Claim approved but no user account found'
+      );
+
       setShowDetails(false);
     } catch (error) {
       console.error('Error approving claim:', error);
@@ -141,22 +144,22 @@ export function ToolClaimRequests() {
 
   const handleReject = async () => {
     if (!selectedRequest) return;
-    
+
     try {
       setProcessingId(selectedRequest.id);
-      
+
       const { error } = await (supabase as any)
         .from('tool_requests')
-        .update({ 
-          status: 'rejected' 
+        .update({
+          status: 'rejected',
         })
         .eq('id', selectedRequest.id);
-        
+
       if (error) throw error;
-      
+
       await fetchClaimRequests();
       toast.success('Claim request rejected');
-      
+
       setShowDetails(false);
     } catch (error) {
       console.error('Error rejecting claim:', error);
@@ -197,7 +200,7 @@ export function ToolClaimRequests() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Tool Claim Requests</h2>
+        <h3 className="text-lg font-medium">Tool Claim Requests</h3>
         <Button variant="outline" size="sm" onClick={fetchClaimRequests}>
           Refresh
         </Button>
@@ -225,7 +228,9 @@ export function ToolClaimRequests() {
                   <TableCell className="font-medium">{request.name}</TableCell>
                   <TableCell>{request.submitter_name}</TableCell>
                   <TableCell>
-                    {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(request.created_at), {
+                      addSuffix: true,
+                    })}
                   </TableCell>
                   <TableCell>{getStatusBadge(request.status)}</TableCell>
                   <TableCell className="text-right">
@@ -269,29 +274,43 @@ export function ToolClaimRequests() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Status
+                  </p>
                   <div>{getStatusBadge(selectedRequest.status)}</div>
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <p className="text-sm font-medium text-muted-foreground">Submitted</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Submitted
+                  </p>
                   <p>{new Date(selectedRequest.created_at).toLocaleString()}</p>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Tool Name</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Tool Name
+                </p>
                 <p className="font-medium">{selectedRequest.name}</p>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Claimant</p>
-                <p>{selectedRequest.submitter_name} ({selectedRequest.submitter_email})</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Claimant
+                </p>
+                <p>
+                  {selectedRequest.submitter_name} (
+                  {selectedRequest.submitter_email})
+                </p>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Verification Details</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Verification Details
+                </p>
                 <div className="p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
-                  {selectedRequest.verification_details || 'No verification details provided'}
+                  {selectedRequest.verification_details ||
+                    'No verification details provided'}
                 </div>
               </div>
 
@@ -321,10 +340,7 @@ export function ToolClaimRequests() {
                   ) : null}
                   Reject
                 </Button>
-                <Button
-                  onClick={handleApprove}
-                  disabled={!!processingId}
-                >
+                <Button onClick={handleApprove} disabled={!!processingId}>
                   {processingId === selectedRequest?.id ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : (
