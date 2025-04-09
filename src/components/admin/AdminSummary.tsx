@@ -47,9 +47,11 @@ export function AdminSummary() {
       if (supportError) throw supportError;
       setPendingSupportCount(supportCount || 0);
 
-      // Get count of pending ownership claims using the RPC function
-      const { data: claimsCount, error: claimsError } = await supabase
-        .rpc('count_pending_claims');
+      // Get count of pending ownership claims using a direct query instead of RPC
+      const { count: claimsCount, error: claimsError } = await supabase
+        .from('tool_ownership_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
 
       if (claimsError) throw claimsError;
       setPendingClaimsCount(claimsCount || 0);
