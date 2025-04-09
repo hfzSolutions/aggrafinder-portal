@@ -141,8 +141,8 @@ export const ToolCard = ({
 
           <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-          {tool.featured && (
-            <div className="absolute top-3 left-3 z-10">
+          <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+            {tool.featured && (
               <Badge
                 variant="secondary"
                 className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border border-yellow-200"
@@ -150,8 +150,16 @@ export const ToolCard = ({
                 <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />{' '}
                 Featured
               </Badge>
-            </div>
-          )}
+            )}
+            {tool.isAdminAdded && (
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200"
+              >
+                Admin Information
+              </Badge>
+            )}
+          </div>
 
           <div className="absolute top-3 right-3 z-10">
             <span
@@ -376,8 +384,8 @@ export const ToolCard = ({
             />
           )}
 
-          {tool.featured && (
-            <div className="absolute top-3 left-3 z-10">
+          <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+            {tool.featured && (
               <Badge
                 variant="secondary"
                 className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border border-yellow-200"
@@ -385,8 +393,16 @@ export const ToolCard = ({
                 <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />{' '}
                 Featured
               </Badge>
-            </div>
-          )}
+            )}
+            {tool.isAdminAdded && (
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200"
+              >
+                Admin Information
+              </Badge>
+            )}
+          </div>
 
           <div className="absolute top-3 right-3 z-10 sm:hidden">
             <span

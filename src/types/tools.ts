@@ -1,4 +1,3 @@
-
 export interface AITool {
   id: string;
   name: string;
@@ -13,6 +12,7 @@ export interface AITool {
   approvalStatus?: 'pending' | 'approved' | 'rejected';
   popularity?: number;
   upvotes?: number; // Add upvotes property for sorting
+  isAdminAdded?: boolean; // Flag to indicate if the tool was added by an admin
 }
 
 export type AnalyticsAction =

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,11 +30,18 @@ interface ClaimToolFormProps {
   toolName: string;
   onSuccess: () => void;
   onCancel: () => void;
+  userId: string; // Add userId prop to pass the authenticated user's ID
 }
 
-export function ClaimToolForm({ toolId, toolName, onSuccess, onCancel }: ClaimToolFormProps) {
+export function ClaimToolForm({
+  toolId,
+  toolName,
+  onSuccess,
+  onCancel,
+  userId,
+}: ClaimToolFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const form = useForm<ClaimToolFormValues>({
     resolver: zodResolver(claimToolSchema),
     defaultValues: {
@@ -48,26 +54,20 @@ export function ClaimToolForm({ toolId, toolName, onSuccess, onCancel }: ClaimTo
   const onSubmit = async (values: ClaimToolFormValues) => {
     try {
       setIsSubmitting(true);
-      
-      // Use "any" type to bypass TypeScript's type checking for the table name
-      const { error } = await (supabase as any)
-        .from('tool_requests')
-        .insert({
-          name: toolName,
-          description: `Ownership claim request by ${values.name} (${values.email})`,
-          url: '', // Required field but not needed for claim requests
-          category: [], // Required field but not needed for claim requests
-          request_type: 'claim',
-          tool_id: toolId,
-          status: 'pending',
-          submitter_name: values.name,
-          submitter_email: values.email,
-          verification_details: values.verification,
-        });
+
+      // Insert into the dedicated tool_ownership_claims table
+      const { error } = await supabase.from('tool_ownership_claims').insert({
+        tool_id: toolId,
+        user_id: userId, // Use the authenticated user's ID
+        submitter_name: values.name,
+        submitter_email: values.email,
+        verification_details: values.verification,
+        status: 'pending',
+      });
 
       if (error) throw error;
-      
-      toast.success('Claim request submitted successfully');
+
+      toast.success('Claim Request Submitted\nThank you for your request.');
       onSuccess();
     } catch (error) {
       console.error('Error submitting claim request:', error);
@@ -81,12 +81,14 @@ export function ClaimToolForm({ toolId, toolName, onSuccess, onCancel }: ClaimTo
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="mb-4">
-          <h3 className="text-lg font-medium">Claim ownership of "{toolName}"</h3>
+          <h3 className="text-lg font-medium">
+            Claim ownership of "{toolName}"
+          </h3>
           <p className="text-sm text-muted-foreground mt-1">
             Please provide information to verify your ownership of this tool.
           </p>
         </div>
-        
+
         <FormField
           control={form.control}
           name="name"
@@ -100,7 +102,7 @@ export function ClaimToolForm({ toolId, toolName, onSuccess, onCancel }: ClaimTo
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="email"
@@ -108,13 +110,17 @@ export function ClaimToolForm({ toolId, toolName, onSuccess, onCancel }: ClaimTo
             <FormItem>
               <FormLabel>Your Email*</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="email@example.com" {...field} />
+                <Input
+                  type="email"
+                  placeholder="email@example.com"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="verification"
@@ -122,7 +128,7 @@ export function ClaimToolForm({ toolId, toolName, onSuccess, onCancel }: ClaimTo
             <FormItem>
               <FormLabel>Verification Details*</FormLabel>
               <FormControl>
-                <Textarea 
+                <Textarea
                   placeholder="Please provide details to verify your ownership (e.g., your position, contact information on the official website, etc.)"
                   className="min-h-[100px]"
                   {...field}
@@ -132,7 +138,7 @@ export function ClaimToolForm({ toolId, toolName, onSuccess, onCancel }: ClaimTo
             </FormItem>
           )}
         />
-        
+
         <div className="flex justify-end space-x-2 pt-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel

@@ -6,6 +6,7 @@ import { AIOucome } from '@/types/outcomes';
 import { toast } from 'sonner';
 import { ToolSubmissionForm } from './ToolSubmissionForm';
 import { BulkToolUpload } from './BulkToolUpload';
+import { ToolOwnershipClaims } from './ToolOwnershipClaims';
 import {
   Card,
   CardContent,
@@ -81,7 +82,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   // State for tools management
   const [tools, setTools] = useState<AITool[]>([]);
   const [toolsLoading, setToolsLoading] = useState(true);
-  
+
   // State for pending tools
   const [pendingTools, setPendingTools] = useState<AITool[]>([]);
   const [pendingToolsLoading, setPendingToolsLoading] = useState(true);
@@ -190,7 +191,11 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags,
           userId: item.user_id,
-          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
+          approvalStatus: item.approval_status as
+            | 'pending'
+            | 'approved'
+            | 'rejected',
+          isAdminAdded: item.is_admin_added || false,
         }));
 
         setHasMore(data.length === TOOLS_PER_PAGE);
@@ -235,7 +240,11 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags,
           userId: item.user_id,
-          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
+          approvalStatus: item.approval_status as
+            | 'pending'
+            | 'approved'
+            | 'rejected',
+          isAdminAdded: item.is_admin_added || false,
         }));
 
         setPendingTools(transformedData);
@@ -352,9 +361,12 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         if (error) throw error;
 
         // Make sure the request_type is either 'new' or 'update'
-        const typedData = data.map(item => ({
+        const typedData = data.map((item) => ({
           ...item,
-          request_type: item.request_type === 'new' ? 'new' : 'update' as 'new' | 'update'
+          request_type:
+            item.request_type === 'new'
+              ? 'new'
+              : ('update' as 'new' | 'update'),
         }));
 
         setToolRequests(typedData);
@@ -534,7 +546,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
         tags: item.tags,
         userId: item.user_id,
-        approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
+        approvalStatus: item.approval_status as
+          | 'pending'
+          | 'approved'
+          | 'rejected',
       }));
 
       setHasMore(data.length === TOOLS_PER_PAGE);
@@ -577,14 +592,14 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
       // Update local state for pending tools
       setPendingTools((prev) => prev.filter((tool) => tool.id !== id));
-      
+
       // Also refresh the pending tools list
       const { data: pendingData, error: pendingError } = await supabase
         .from('ai_tools')
         .select('*')
         .eq('approval_status', 'pending')
         .order('created_at', { ascending: false });
-      
+
       if (!pendingError && pendingData) {
         const transformedPendingData: AITool[] = pendingData.map((item) => ({
           id: item.id,
@@ -597,12 +612,15 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags,
           userId: item.user_id,
-          approvalStatus: item.approval_status as "pending" | "approved" | "rejected",
+          approvalStatus: item.approval_status as
+            | 'pending'
+            | 'approved'
+            | 'rejected',
         }));
-        
+
         setPendingTools(transformedPendingData);
       }
-      
+
       // Refresh the main tools list to include the newly approved tool
       refreshToolsList();
 
@@ -670,13 +688,17 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="tools" onValueChange={(value) => setActiveTab(value)}>
+          <Tabs
+            defaultValue="tools"
+            onValueChange={(value) => setActiveTab(value)}
+          >
             <TabsList className="mb-4">
               <TabsTrigger value="tools">Tools</TabsTrigger>
               <TabsTrigger value="pending">Pending Approval</TabsTrigger>
               <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="requests">Tool Requests</TabsTrigger>
+              <TabsTrigger value="claims">Ownership Claims</TabsTrigger>
             </TabsList>
 
             {/* Tools Tab */}
@@ -950,9 +972,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                   {pendingTools.map((tool) => (
                     <Card key={tool.id}>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base">
-                          {tool.name}
-                        </CardTitle>
+                        <CardTitle className="text-base">{tool.name}</CardTitle>
                         <CardDescription className="line-clamp-2">
                           {tool.description}
                         </CardDescription>
@@ -971,9 +991,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                               }
                             />
                           ) : (
-                            <div
-                              className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20"
-                            >
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
                               <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
                               <span className="text-xs text-primary/60 font-medium">
                                 Preview not available
@@ -983,8 +1001,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                         </div>
                         <div className="text-sm space-y-1">
                           <div>
-                            <span className="font-medium">URL:</span>{' '}
-                            {tool.url}
+                            <span className="font-medium">URL:</span> {tool.url}
                           </div>
                           <div>
                             <span className="font-medium">Categories:</span>{' '}
@@ -1337,6 +1354,14 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* Tool Ownership Claims Tab */}
+            <TabsContent value="claims" className="space-y-4">
+              <h3 className="text-lg font-medium">
+                Manage Tool Ownership Claims
+              </h3>
+              <ToolOwnershipClaims />
             </TabsContent>
           </Tabs>
         </CardContent>

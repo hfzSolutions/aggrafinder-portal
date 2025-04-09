@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -9,7 +8,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ClaimToolForm } from './ClaimToolForm';
-import { Flag, CheckCircle } from 'lucide-react';
+import { Flag, CheckCircle, LogIn } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface ClaimToolButtonProps {
   toolId: string;
@@ -19,6 +21,18 @@ interface ClaimToolButtonProps {
 export function ClaimToolButton({ toolId, toolName }: ClaimToolButtonProps) {
   const [showClaimDialog, setShowClaimDialog] = useState(false);
   const [claimSubmitted, setClaimSubmitted] = useState(false);
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
 
   const handleSuccess = () => {
     setClaimSubmitted(true);
@@ -32,13 +46,22 @@ export function ClaimToolButton({ toolId, toolName }: ClaimToolButtonProps) {
     }, 300);
   };
 
+  const handleClaimClick = () => {
+    if (!user) {
+      toast.error('Please sign in to claim this tool');
+      navigate('/auth');
+      return;
+    }
+    setShowClaimDialog(true);
+  };
+
   return (
     <>
       <Button
         variant="outline"
         size="sm"
         className="flex gap-1 items-center"
-        onClick={() => setShowClaimDialog(true)}
+        onClick={handleClaimClick}
       >
         <Flag className="h-4 w-4" />
         <span>Claim this tool</span>
@@ -53,7 +76,9 @@ export function ClaimToolButton({ toolId, toolName }: ClaimToolButtonProps) {
               </div>
               <h3 className="text-lg font-medium">Claim Request Submitted</h3>
               <p className="text-muted-foreground">
-                Thank you for your request. Our team will review your claim and get back to you via the provided email.
+                Thank you for your request. Our team will review your claim and
+                get back to you via the provided email. If approved, the tool
+                will be transferred to your account.
               </p>
               <Button onClick={handleClose} className="mt-4">
                 Close
@@ -64,7 +89,8 @@ export function ClaimToolButton({ toolId, toolName }: ClaimToolButtonProps) {
               <DialogHeader>
                 <DialogTitle>Claim Tool Ownership</DialogTitle>
                 <DialogDescription>
-                  Request ownership of this tool listing to manage its information and updates.
+                  Request ownership of this tool listing to manage its
+                  information and updates.
                 </DialogDescription>
               </DialogHeader>
               <ClaimToolForm
@@ -72,6 +98,7 @@ export function ClaimToolButton({ toolId, toolName }: ClaimToolButtonProps) {
                 toolName={toolName}
                 onSuccess={handleSuccess}
                 onCancel={handleClose}
+                userId={user?.id || ''}
               />
             </>
           )}

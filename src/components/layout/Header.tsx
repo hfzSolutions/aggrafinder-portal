@@ -105,32 +105,16 @@ const Header = () => {
                 <Sun className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-            >
-              <Link to="/request-tool">
-                <Plus className="h-3.5 w-3.5" />
-                <span>Request Tool</span>
-              </Link>
-            </Button>
 
-            {/* {!isLoading && user && (
+            {!isLoading && user ? (
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
+            ) : (
+              <Button asChild variant="default" size="sm">
+                <Link to="/auth">Login</Link>
+              </Button>
             )}
-            <Button asChild variant="ghost" size="sm" className="rounded-full">
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                GitHub
-              </a>
-            </Button> */}
           </div>
         </nav>
 
@@ -174,13 +158,7 @@ const Header = () => {
               Dashboard
             </Link>
           )}
-          <Link
-            to="/request-tool"
-            className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Request Tool</span>
-          </Link>
+
           <button
             onClick={toggleTheme}
             className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
@@ -198,22 +176,21 @@ const Header = () => {
             )}
           </button>
 
-          {/* {!isLoading && user && (
+          {!isLoading && user ? (
             <button
               onClick={handleLogout}
               className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
             >
               <span>Logout</span>
             </button>
-          )} */}
-          {/* <a
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-3 hover:bg-secondary/50 rounded-md"
-          >
-            GitHub
-          </a> */}
+          ) : (
+            <Link
+              to="/auth"
+              className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
+            >
+              <span>Login</span>
+            </Link>
+          )}
         </nav>
       </div>
     </header>
