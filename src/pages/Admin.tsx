@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -11,6 +10,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     const checkUser = async () => {
@@ -57,7 +57,7 @@ const Admin = () => {
   return (
     <>
       <Helmet>
-        <title>Admin Dashboard | AI Showcase</title>
+        <title>Admin Dashboard | AggraFinder</title>
         <meta
           name="description"
           content="Manage your AI tools, outcomes, categories, and tool requests."

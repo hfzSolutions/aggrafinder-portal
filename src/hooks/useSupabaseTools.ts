@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
@@ -29,7 +28,7 @@ export const useSupabaseTools = ({
   excludeId,
   userId,
   includeUnapproved = false,
-  sortBy = 'created_at',
+  sortBy,
   customQuery,
 }: UseSupabaseToolsOptions = {}) => {
   const [tools, setTools] = useState<AITool[]>([]);
@@ -76,8 +75,6 @@ export const useSupabaseTools = ({
       excludeId,
       userId,
       includeUnapproved,
-      sortBy,
-      customQuery,
     };
 
     const fetchTools = async () => {
@@ -126,8 +123,8 @@ export const useSupabaseTools = ({
 
         // Apply sorting
         if (sortBy === 'popularity') {
-          // For popularity sorting, we'll need to handle this after fetching
-          query = query.order('created_at', { ascending: false });
+          // Join with tool_vote_counts to get upvotes for sorting by popularity
+          query = query.select('*, tool_vote_counts(upvotes)');
         } else if (sortBy === 'name') {
           query = query.order('name', { ascending: true });
         } else {
@@ -152,42 +149,25 @@ export const useSupabaseTools = ({
           return;
         }
 
-        // If we're sorting by popularity, fetch upvotes separately
-        let transformedData: AITool[] = await Promise.all(
-          data.map(async (item) => {
-            // For popularity sorting, get vote counts
-            let upvotes = 0;
-            if (sortBy === 'popularity') {
-              const { data: voteData } = await supabase
-                .from('tool_vote_counts')
-                .select('upvotes')
-                .eq('tool_id', item.id)
-                .single();
-              
-              upvotes = voteData?.upvotes || 0;
-            }
-
-            return {
-              id: item.id,
-              name: item.name,
-              description: item.description,
-              imageUrl: item.image_url
-                ? `${import.meta.env.VITE_STORAGE_URL}/${item.image_url}`
-                : '',
-              category: item.category,
-              url: item.url,
-              featured: item.featured,
-              pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
-              tags: item.tags || [],
-              userId: item.user_id,
-              approvalStatus: item.approval_status as
-                | 'pending'
-                | 'approved'
-                | 'rejected',
-              upvotes: upvotes,
-            };
-          })
-        );
+        let transformedData: AITool[] = data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          imageUrl: item.image_url
+            ? `${import.meta.env.VITE_STORAGE_URL}/${item.image_url}`
+            : '',
+          category: item.category,
+          url: item.url,
+          featured: item.featured,
+          pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
+          tags: item.tags || [],
+          userId: item.user_id,
+          approvalStatus: item.approval_status as
+            | 'pending'
+            | 'approved'
+            | 'rejected',
+          upvotes: item.tool_vote_counts?.[0]?.upvotes || 0,
+        }));
 
         // Sort by upvotes if sortBy is popularity
         if (sortBy === 'popularity') {

@@ -83,7 +83,6 @@ export type Database = {
           featured: boolean
           id: string
           image_url: string | null
-          is_admin_added: boolean | null
           name: string
           pricing: string
           tags: string[]
@@ -98,7 +97,6 @@ export type Database = {
           featured?: boolean
           id?: string
           image_url?: string | null
-          is_admin_added?: boolean | null
           name: string
           pricing: string
           tags: string[]
@@ -113,7 +111,6 @@ export type Database = {
           featured?: boolean
           id?: string
           image_url?: string | null
-          is_admin_added?: boolean | null
           name?: string
           pricing?: string
           tags?: string[]
@@ -237,53 +234,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tool_analytics_tool_id_fkey"
-            columns: ["tool_id"]
-            isOneToOne: false
-            referencedRelation: "ai_tools"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tool_ownership_claims: {
-        Row: {
-          admin_feedback: string | null
-          created_at: string
-          id: string
-          status: string
-          submitter_email: string
-          submitter_name: string
-          tool_id: string
-          updated_at: string
-          user_id: string
-          verification_details: string
-        }
-        Insert: {
-          admin_feedback?: string | null
-          created_at?: string
-          id?: string
-          status?: string
-          submitter_email: string
-          submitter_name: string
-          tool_id: string
-          updated_at?: string
-          user_id: string
-          verification_details: string
-        }
-        Update: {
-          admin_feedback?: string | null
-          created_at?: string
-          id?: string
-          status?: string
-          submitter_email?: string
-          submitter_name?: string
-          tool_id?: string
-          updated_at?: string
-          user_id?: string
-          verification_details?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tool_ownership_claims_tool_id_fkey"
             columns: ["tool_id"]
             isOneToOne: false
             referencedRelation: "ai_tools"
