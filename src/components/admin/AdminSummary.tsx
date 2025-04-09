@@ -21,31 +21,31 @@ export function AdminSummary() {
     setIsLoading(true);
     try {
       // Get count of pending tools
-      const { data: pendingTools, error: toolsError } = await supabase
+      const { count: toolsCount, error: toolsError } = await supabase
         .from('ai_tools')
         .select('id', { count: 'exact', head: true })
         .eq('approval_status', 'pending');
 
       if (toolsError) throw toolsError;
-      setPendingToolsCount(pendingTools.count || 0);
+      setPendingToolsCount(toolsCount || 0);
 
       // Get count of pending tool requests
-      const { data: pendingRequests, error: requestsError } = await supabase
+      const { count: requestsCount, error: requestsError } = await supabase
         .from('tool_requests')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending');
 
       if (requestsError) throw requestsError;
-      setPendingRequestsCount(pendingRequests.count || 0);
+      setPendingRequestsCount(requestsCount || 0);
 
       // Get count of pending support messages
-      const { data: pendingSupport, error: supportError } = await supabase
+      const { count: supportCount, error: supportError } = await supabase
         .from('support_messages')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending');
 
       if (supportError) throw supportError;
-      setPendingSupportCount(pendingSupport.count || 0);
+      setPendingSupportCount(supportCount || 0);
 
       // Get count of pending ownership claims using the RPC function
       const { data: claimsCount, error: claimsError } = await supabase

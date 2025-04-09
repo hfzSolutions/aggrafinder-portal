@@ -41,6 +41,8 @@ interface ToolOwnershipClaim {
   created_at: string;
   updated_at: string;
   admin_feedback?: string | null;
+  tool_name?: string;
+  tool_url?: string;
   ai_tools?: {
     name: string;
   };
@@ -59,7 +61,21 @@ export function ToolOwnershipClaims() {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.rpc('get_tool_ownership_claims_with_tools');
+      const { data, error } = await supabase.from('tool_ownership_claims')
+        .select(`
+          id,
+          tool_id,
+          user_id,
+          submitter_name,
+          submitter_email,
+          verification_details,
+          status,
+          created_at,
+          updated_at,
+          admin_feedback,
+          ai_tools:tool_id(name)
+        `)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setClaims(data as ToolOwnershipClaim[]);
@@ -88,20 +104,27 @@ export function ToolOwnershipClaims() {
     try {
       setProcessingId(claimId);
 
-      const { error } = await supabase.rpc('update_tool_ownership_claim_status', {
-        p_claim_id: claimId,
-        p_status: status,
-        p_admin_feedback: feedback || null
-      });
+      const { error } = await supabase
+        .from('tool_ownership_claims')
+        .update({
+          status: status,
+          admin_feedback: feedback || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', claimId);
 
       if (error) throw error;
 
       if (status === 'approved') {
         const claim = claims.find((c) => c.id === claimId);
         if (claim) {
-          const { error: toolUpdateError } = await supabase.rpc('approve_tool_ownership_claim', {
-            p_claim_id: claimId
-          });
+          const { error: toolUpdateError } = await supabase
+            .from('ai_tools')
+            .update({
+              user_id: claim.user_id,
+              is_admin_added: false
+            })
+            .eq('id', claim.tool_id);
 
           if (toolUpdateError) throw toolUpdateError;
         }

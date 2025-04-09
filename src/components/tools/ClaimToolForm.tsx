@@ -56,14 +56,17 @@ export function ClaimToolForm({
     try {
       setIsSubmitting(true);
 
-      // Insert the claim request using a raw query approach to avoid type issues
-      const { error } = await supabase.rpc('create_tool_ownership_claim', {
-        p_tool_id: toolId,
-        p_user_id: userId,
-        p_submitter_name: values.name,
-        p_submitter_email: values.email,
-        p_verification_details: values.verification
-      });
+      // Insert the claim request directly without using RPC
+      const { error } = await supabase
+        .from('tool_ownership_claims')
+        .insert({
+          tool_id: toolId,
+          user_id: userId,
+          submitter_name: values.name,
+          submitter_email: values.email,
+          verification_details: values.verification,
+          status: 'pending'
+        });
 
       if (error) throw error;
 
