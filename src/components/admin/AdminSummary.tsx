@@ -1,155 +1,151 @@
 
 import { useEffect, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  Card, 
-  CardContent 
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  AlertTriangle, 
+  AlertCircle, 
   CheckCircle2, 
-  HelpCircle,
-  MessageSquare,
-  Wrench,
-  User
+  Clock, 
+  MessageSquare, 
+  Wrench 
 } from 'lucide-react';
 
 export function AdminSummary() {
-  const [pendingTools, setPendingTools] = useState(0);
-  const [pendingRequests, setPendingRequests] = useState(0);
-  const [pendingClaims, setPendingClaims] = useState(0);
-  const [supportMessages, setSupportMessages] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [pendingToolsCount, setPendingToolsCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [pendingSupportCount, setPendingSupportCount] = useState(0);
+  const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadCounts = async () => {
+    setIsLoading(true);
+    try {
+      // Get count of pending tools
+      const { data: pendingTools, error: toolsError } = await supabase
+        .from('ai_tools')
+        .select('id', { count: 'exact', head: true })
+        .eq('approval_status', 'pending');
+
+      if (toolsError) throw toolsError;
+      setPendingToolsCount(pendingTools.count || 0);
+
+      // Get count of pending tool requests
+      const { data: pendingRequests, error: requestsError } = await supabase
+        .from('tool_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      if (requestsError) throw requestsError;
+      setPendingRequestsCount(pendingRequests.count || 0);
+
+      // Get count of pending support messages
+      const { data: pendingSupport, error: supportError } = await supabase
+        .from('support_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      if (supportError) throw supportError;
+      setPendingSupportCount(pendingSupport.count || 0);
+
+      // Get count of pending ownership claims using the RPC function
+      const { data: claimsCount, error: claimsError } = await supabase
+        .rpc('count_pending_claims');
+
+      if (claimsError) throw claimsError;
+      setPendingClaimsCount(claimsCount || 0);
+    } catch (error) {
+      console.error('Error loading admin summary counts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        setLoading(true);
-
-        // Fetch pending tools count
-        const { count: toolsCount, error: toolsError } = await supabase
-          .from('ai_tools')
-          .select('id', { count: 'exact', head: true })
-          .eq('approval_status', 'pending');
-
-        if (toolsError) throw toolsError;
-        setPendingTools(toolsCount || 0);
-
-        // Fetch pending tool requests count
-        const { count: requestsCount, error: requestsError } = await supabase
-          .from('tool_requests')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'pending');
-
-        if (requestsError) throw requestsError;
-        setPendingRequests(requestsCount || 0);
-
-        // Fetch unread support messages count
-        const { count: messagesCount, error: messagesError } = await supabase
-          .from('support_messages')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'pending');
-
-        if (messagesError) throw messagesError;
-        setSupportMessages(messagesCount || 0);
-
-        // Check if tool_ownership_claims table exists and fetch count
-        // Using raw query to avoid type errors
-        const { data: claimsData, error: claimsError } = await supabase
-          .rpc('count_pending_claims');
-
-        if (claimsError) {
-          console.error('Error fetching claims count:', claimsError);
-          setPendingClaims(0);
-        } else {
-          setPendingClaims(claimsData || 0);
-        }
-
-      } catch (error) {
-        console.error('Error fetching counts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCounts();
-
-    // Set up a refresh interval - every 5 minutes
-    const intervalId = setInterval(fetchCounts, 5 * 60 * 1000);
+    loadCounts();
     
-    return () => clearInterval(intervalId);
+    // Refresh counts every 5 minutes
+    const interval = setInterval(loadCounts, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, []);
 
-  const totalPending = pendingTools + pendingRequests + pendingClaims + supportMessages;
-
   return (
-    <Card className="mb-6 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-l-4 border-l-primary">
-      <CardContent className="pt-6">
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">Dashboard Summary</h3>
-            {totalPending > 0 ? (
-              <Badge variant="destructive" className="px-3 py-1 text-sm font-medium">
-                {totalPending} Pending {totalPending === 1 ? 'Item' : 'Items'}
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
-                All Clear
-              </Badge>
-            )}
+    <div className="mb-8">
+      <h2 className="text-2xl font-bold mb-4">Dashboard Overview</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryCard 
+          title="Pending Tools" 
+          count={pendingToolsCount} 
+          icon={<Wrench className="h-5 w-5 text-blue-600" />} 
+          description="Tools awaiting approval"
+          isLoading={isLoading}
+        />
+        <SummaryCard 
+          title="Pending Requests" 
+          count={pendingRequestsCount} 
+          icon={<Clock className="h-5 w-5 text-amber-600" />} 
+          description="Tool update/add requests"
+          isLoading={isLoading}
+        />
+        <SummaryCard 
+          title="Support Messages" 
+          count={pendingSupportCount} 
+          icon={<MessageSquare className="h-5 w-5 text-purple-600" />} 
+          description="Unanswered support requests"
+          isLoading={isLoading}
+        />
+        <SummaryCard 
+          title="Ownership Claims" 
+          count={pendingClaimsCount} 
+          icon={<AlertCircle className="h-5 w-5 text-red-600" />} 
+          description="Claims awaiting verification"
+          isLoading={isLoading}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface SummaryCardProps {
+  title: string;
+  count: number;
+  icon: React.ReactNode;
+  description: string;
+  isLoading: boolean;
+}
+
+function SummaryCard({ title, count, icon, description, isLoading }: SummaryCardProps) {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+            <h3 className="text-2xl font-bold">
+              {isLoading ? '...' : count}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">{description}</p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center">
-                <Wrench className="w-5 h-5 text-primary mr-2" />
-                <span className="font-medium">Pending Tools</span>
-                {pendingTools > 0 && (
-                  <Badge variant="destructive" className="ml-auto">
-                    {pendingTools}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center">
-                <HelpCircle className="w-5 h-5 text-amber-500 mr-2" />
-                <span className="font-medium">Tool Requests</span>
-                {pendingRequests > 0 && (
-                  <Badge variant="destructive" className="ml-auto">
-                    {pendingRequests}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center">
-                <MessageSquare className="w-5 h-5 text-blue-500 mr-2" />
-                <span className="font-medium">Support Messages</span>
-                {supportMessages > 0 && (
-                  <Badge variant="destructive" className="ml-auto">
-                    {supportMessages}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center">
-                <User className="w-5 h-5 text-green-500 mr-2" />
-                <span className="font-medium">Ownership Claims</span>
-                {pendingClaims > 0 && (
-                  <Badge variant="destructive" className="ml-auto">
-                    {pendingClaims}
-                  </Badge>
-                )}
-              </div>
-            </div>
+          <div className="p-2 bg-background rounded-full border">
+            {icon}
           </div>
         </div>
+        {count > 0 && !isLoading && (
+          <div className="mt-4 text-xs">
+            <span className="flex items-center text-amber-600">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Requires attention
+            </span>
+          </div>
+        )}
+        {count === 0 && !isLoading && (
+          <div className="mt-4 text-xs">
+            <span className="flex items-center text-green-600">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              All caught up
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

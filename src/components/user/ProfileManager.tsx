@@ -10,6 +10,18 @@ import { sanitizeFilename } from '@/utils/fileUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Trash2, Upload } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfileManagerProps {
   userId: string;
@@ -34,7 +46,10 @@ export function ProfileManager({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const handleDeleteAvatar = async () => {
     if (!avatarUrl) return;
@@ -42,14 +57,12 @@ export function ProfileManager({
     setIsLoading(true);
 
     try {
-      // Delete the existing avatar from storage
       const { error: deleteError } = await supabase.storage
         .from('assets')
         .remove([avatarUrl]);
 
       if (deleteError) throw deleteError;
 
-      // Update profile to remove avatar_url
       const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
@@ -57,7 +70,6 @@ export function ProfileManager({
 
       if (error) throw error;
 
-      // Update local state
       setAvatarUrl(null);
       setAvatarFile(null);
       setAvatarPreview(null);
@@ -78,29 +90,22 @@ export function ProfileManager({
     try {
       let newAvatarUrl = avatarUrl;
 
-      // Upload avatar if a new file was selected
       if (avatarFile) {
-        // Compress the image before uploading
         const compressedFile = await compressImage(avatarFile, {
           maxSizeMB: 1,
           maxWidthOrHeight: 500,
         });
 
-        // Always create a new path with the current timestamp and filename
-        // If user already has an avatar, keep the same directory structure
         let filePath;
-        // Sanitize the filename to prevent 'InvalidKey' errors
         const sanitizedFilename = sanitizeFilename(avatarFile.name);
 
         if (avatarUrl) {
-          // Extract the directory path from the existing avatar URL
           const dirPath = avatarUrl.split('/').slice(0, -1).join('/');
           filePath = `${dirPath}/${Date.now()}-${sanitizedFilename}`;
         } else {
           filePath = `avatars/${userId}/${Date.now()}-${sanitizedFilename}`;
         }
 
-        // Delete existing avatar if there is one and we're using a new path
         if (avatarUrl && avatarUrl !== filePath) {
           const { error: deleteError } = await supabase.storage
             .from('assets')
@@ -108,22 +113,18 @@ export function ProfileManager({
 
           if (deleteError) {
             console.error('Error deleting old avatar:', deleteError);
-            // Continue with upload even if delete fails
           }
         }
 
-        // Upload the compressed file to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('assets')
           .upload(filePath, compressedFile, { upsert: true });
 
         if (uploadError) throw uploadError;
 
-        // Store the file path
         newAvatarUrl = filePath;
       }
 
-      // Update profile with new data
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -143,13 +144,44 @@ export function ProfileManager({
         toast.success('Profile updated successfully');
         onProfileUpdate?.();
         setAvatarUrl(newAvatarUrl);
-        setAvatarPreview(null); // Reset preview after successful upload
+        setAvatarPreview(null);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    
+    try {
+      if (avatarUrl) {
+        const { error: deleteStorageError } = await supabase.storage
+          .from('assets')
+          .remove([avatarUrl]);
+          
+        if (deleteStorageError) {
+          console.error('Error deleting avatar:', deleteStorageError);
+        }
+      }
+      
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (error) throw error;
+      
+      await supabase.auth.signOut();
+      
+      toast.success('Your account has been deleted successfully');
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast.error('Failed to delete your account. Please try again or contact support.');
+    } finally {
+      setIsDeletingAccount(false);
+      setIsDeleteAccountDialogOpen(false);
     }
   };
 
@@ -240,15 +272,11 @@ export function ProfileManager({
         </div>
 
         <div className="w-full max-w-sm">
-          {/* <div className="flex justify-end items-center mb-2">
-            <span className="text-xs text-muted-foreground">Max size: 2MB</span>
-          </div> */}
           <div className="hidden">
             <FileUpload
               id="avatar-upload"
               onFileChange={(file) => {
                 setAvatarFile(file);
-                // If a file is selected, create a preview URL
                 if (file) {
                   const reader = new FileReader();
                   reader.onload = () => {
@@ -266,7 +294,7 @@ export function ProfileManager({
                   : undefined
               }
               accept="image/*"
-              maxSize={2} // 2MB limit
+              maxSize={2}
               className="hidden"
             />
           </div>
@@ -294,6 +322,43 @@ export function ProfileManager({
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? 'Updating...' : 'Update Profile'}
       </Button>
+      
+      <div className="pt-6 mt-6 border-t border-border">
+        <h3 className="text-lg font-medium text-destructive mb-2">Danger Zone</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Once you delete your account, there is no going back. This action cannot be undone.
+        </p>
+        
+        <AlertDialog 
+          open={isDeleteAccountDialogOpen} 
+          onOpenChange={setIsDeleteAccountDialogOpen}
+        >
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="w-full">
+              Delete Account
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your account
+                and remove all your data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAccount}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isDeletingAccount}
+              >
+                {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </form>
   );
 }
