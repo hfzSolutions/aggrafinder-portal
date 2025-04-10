@@ -10,6 +10,7 @@ import {
   Clock,
   Star,
   ImageOff,
+  Youtube,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,6 +91,7 @@ const ToolDetails = () => {
             : '',
           category: data.category,
           url: data.url,
+          youtubeUrl: data.youtube_url || '',
           featured: data.featured,
           pricing: data.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: data.tags,
@@ -314,6 +316,25 @@ const ToolDetails = () => {
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-8">
+                      {tool.youtubeUrl && (
+                        <div className="p-6 md:p-8 bg-secondary/5 border border-border/10 rounded-xl">
+                          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <Youtube className="h-5 w-5 text-red-600" />
+                            Demo Video
+                          </h2>
+                          <div className="aspect-video w-full rounded-xl overflow-hidden">
+                            <iframe
+                              src={tool.youtubeUrl
+                                .replace('watch?v=', 'embed/')
+                                .replace('youtu.be/', 'youtube.com/embed/')}
+                              title={`${tool.name} demo video`}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="w-full h-full"
+                            />
+                          </div>
+                        </div>
+                      )}
                       <div className="space-y-8">
                         <div className="p-6 md:p-8 comments-section">
                           <CommentsList toolId={tool.id} />

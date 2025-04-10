@@ -184,6 +184,7 @@ export const useSupabaseTools = ({
             : '',
           category: item.category,
           url: item.url,
+          youtubeUrl: item.youtube_url || '',
           featured: item.featured,
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags || [],
