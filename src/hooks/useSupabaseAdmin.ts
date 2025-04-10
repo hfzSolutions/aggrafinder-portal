@@ -32,12 +32,14 @@ interface UseSupabaseAdminReturn {
     name: string;
     description: string;
     url: string;
-    image_url: string;
+    youtube_url?: string; // Add YouTube URL
+    image_url: string | File;
     category: string[];
     pricing: string;
     featured: boolean;
     tags: string[];
     user_id: string;
+    is_admin_added?: boolean;
   }) => Promise<{ success: boolean; error?: string }>;
 
   updateTool: (
@@ -46,6 +48,7 @@ interface UseSupabaseAdminReturn {
       name: string;
       description: string;
       url: string;
+      youtube_url?: string; // Add YouTube URL
       image_url: string | File;
       category: string[];
       pricing: string;
@@ -60,6 +63,7 @@ interface UseSupabaseAdminReturn {
       name: string;
       description: string;
       url: string;
+      youtube_url?: string; // Add YouTube URL
       image_url: string;
       category: string[];
       pricing: string;
@@ -279,13 +283,14 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     name: string;
     description: string;
     url: string;
+    youtube_url?: string; // Add YouTube URL
     image_url: string | File;
     category: string[];
     pricing: string;
     featured: boolean;
     tags: string[];
     user_id: string;
-    is_admin_added?: boolean; // Add optional parameter to control is_admin_added flag
+    is_admin_added?: boolean;
   }): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
@@ -352,7 +357,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  // Tool management functions
   const deleteTool = async (
     id: string
   ): Promise<{ success: boolean; error?: string }> => {
@@ -400,13 +404,13 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  // Update tool function
   const updateTool = async (
     id: string,
     toolData: {
       name: string;
       description: string;
       url: string;
+      youtube_url?: string; // Add YouTube URL
       image_url: string | File;
       category: string[];
       pricing: string;
@@ -502,12 +506,12 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  // Bulk tool submission function
   const bulkSubmitTools = async (
     toolsData: {
       name: string;
       description: string;
       url: string;
+      youtube_url?: string; // Add YouTube URL
       image_url: string;
       category: string[];
       pricing: string;
@@ -526,28 +530,22 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       // Process tools in batches
       for (let i = 0; i < toolsData.length; i += batchSize) {
-        const batch = toolsData.slice(i, i + batchSize).map((tool) => {
-          // Create the base tool object
-          const toolObject: any = {
-            name: tool.name,
-            description: tool.description,
-            url: tool.url,
-            category: tool.category,
-            pricing: tool.pricing,
-            featured: tool.featured || false,
-            tags: tool.tags || [],
-            user_id: tool.user_id || null,
-            approval_status: 'approved', // Auto-approve bulk uploads
-            is_admin_added: true, // Mark all bulk uploaded tools as admin-added
-          };
 
-          // Only add image_url if it's not empty
-          if (tool.image_url) {
-            toolObject.image_url = tool.image_url;
-          }
+        const batch = toolsData.slice(i, i + batchSize).map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          url: tool.url,
+          youtube_url: tool.youtube_url, // Include YouTube URL
+          image_url: tool.image_url,
+          category: tool.category,
+          pricing: tool.pricing,
+          featured: tool.featured || false,
+          tags: tool.tags || [],
+          user_id: tool.user_id || null,
+          approval_status: 'approved', // Auto-approve bulk uploads
+          is_admin_added: true, // Mark all bulk uploaded tools as admin-added
+        }));
 
-          return toolObject;
-        });
 
         // Insert the batch of tools
         const { error } = await supabase.from('ai_tools').insert(batch);
@@ -570,7 +568,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  // New functions for direct tool approval
   const approveTool = async (
     id: string
   ): Promise<{ success: boolean; error?: string }> => {

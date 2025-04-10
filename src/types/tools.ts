@@ -1,3 +1,4 @@
+
 export interface AITool {
   id: string;
   name: string;
@@ -6,6 +7,7 @@ export interface AITool {
   imageUrl: string;
   category: string[];
   url: string;
+  youtubeUrl?: string; // YouTube URL field
   featured: boolean;
   pricing: 'Free' | 'Freemium' | 'Paid' | 'Free Trial';
   tags: string[];
@@ -29,7 +31,8 @@ export type AnalyticsAction =
   | 'downvote'
   | 'submit_review'
   | 'submit_outcome'
-  | 'favorite_toggle';
+  | 'favorite_toggle'
+  | 'watch_demo'; // Add this new analytics action type
 
 export interface ToolRequest {
   id: string;
@@ -37,6 +40,7 @@ export interface ToolRequest {
   description: string;
   tagline: string;
   url: string;
+  youtubeUrl?: string; // YouTube URL field
   category: string[];
   pricing?: string;
   submitter_email?: string;

@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Youtube } from 'lucide-react';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +21,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -50,6 +52,13 @@ const formSchema = z.object({
     .min(10, 'Description must be at least 10 characters')
     .max(500, 'Description must be less than 500 characters'),
   url: z.string().url('Please enter a valid URL').min(5, 'URL is required'),
+  youtubeUrl: z
+    .string()
+    .url('Please enter a valid YouTube URL')
+    .startsWith('https://www.youtube.com/', 'Must be a valid YouTube URL')
+    .or(z.string().startsWith('https://youtu.be/', 'Must be a valid YouTube URL'))
+    .or(z.string().length(0))
+    .optional(),
   imageUrl: z.union([
     z
       .string()
@@ -127,6 +136,7 @@ export function ToolSubmissionForm({
       tagline: editMode && toolToEdit ? toolToEdit.tagline : '',
       description: editMode && toolToEdit ? toolToEdit.description : '',
       url: editMode && toolToEdit ? toolToEdit.url : '',
+      youtubeUrl: editMode && toolToEdit ? toolToEdit.youtubeUrl || '' : '',
       imageUrl: editMode && toolToEdit ? toolToEdit.imageUrl : '',
       category: editMode && toolToEdit ? toolToEdit.category : [],
       pricing: editMode && toolToEdit ? toolToEdit.pricing : 'Free',
@@ -138,8 +148,11 @@ export function ToolSubmissionForm({
   useEffect(() => {
     if (editMode && toolToEdit) {
       setSelectedCategories(toolToEdit.category);
+      
+      // Ensure we update the YouTube URL field properly when editing
+      form.setValue('youtubeUrl', toolToEdit.youtubeUrl || '');
     }
-  }, [editMode, toolToEdit]);
+  }, [editMode, toolToEdit, form]);
 
   useEffect(() => {
     form.setValue('category', selectedCategories);
@@ -235,7 +248,8 @@ export function ToolSubmissionForm({
         tagline: values.tagline,
         description: values.description,
         url: values.url,
-        image_url: values.imageUrl,
+        youtube_url: values.youtubeUrl, // Make sure we're using the correct property name for the API
+        image_url: finalImageUrl,
         category: values.category,
         pricing: values.pricing,
         featured: values.featured,
@@ -338,6 +352,29 @@ export function ToolSubmissionForm({
                 <FormControl>
                   <Input placeholder="https://example.com" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="youtubeUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>YouTube Demo URL (Optional)</FormLabel>
+                <FormControl>
+                  <div className="flex items-center space-x-2">
+                    <Youtube className="h-5 w-5 text-red-600" />
+                    <Input 
+                      placeholder="https://www.youtube.com/watch?v=..." 
+                      {...field} 
+                    />
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Add a YouTube video that demonstrates your tool in action
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

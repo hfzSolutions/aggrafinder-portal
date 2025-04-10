@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
@@ -177,13 +178,14 @@ export const useSupabaseTools = ({
         let transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
-          tagline: item.tagline,
+          tagline: item.tagline || '', // Add tagline with fallback
           description: item.description,
           imageUrl: item.image_url
             ? `${import.meta.env.VITE_STORAGE_URL}/${item.image_url}`
             : '',
           category: item.category,
           url: item.url,
+          youtubeUrl: item.youtube_url || '', // Fix: Use youtube_url from database
           featured: item.featured,
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags || [],

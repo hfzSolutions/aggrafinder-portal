@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      accounts_pending_deletion: {
+        Row: {
+          deletion_reason: string | null
+          id: string
+          is_processed: boolean | null
+          requested_at: string | null
+          scheduled_deletion_at: string | null
+        }
+        Insert: {
+          deletion_reason?: string | null
+          id: string
+          is_processed?: boolean | null
+          requested_at?: string | null
+          scheduled_deletion_at?: string | null
+        }
+        Update: {
+          deletion_reason?: string | null
+          id?: string
+          is_processed?: boolean | null
+          requested_at?: string | null
+          scheduled_deletion_at?: string | null
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -86,9 +110,11 @@ export type Database = {
           is_admin_added: boolean | null
           name: string
           pricing: string
+          tagline: string | null
           tags: string[]
           url: string
           user_id: string | null
+          youtube_url: string | null
         }
         Insert: {
           approval_status?: string
@@ -101,9 +127,11 @@ export type Database = {
           is_admin_added?: boolean | null
           name: string
           pricing: string
+          tagline?: string | null
           tags: string[]
           url: string
           user_id?: string | null
+          youtube_url?: string | null
         }
         Update: {
           approval_status?: string
@@ -116,9 +144,11 @@ export type Database = {
           is_admin_added?: boolean | null
           name?: string
           pricing?: string
+          tagline?: string | null
           tags?: string[]
           url?: string
           user_id?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -306,6 +336,7 @@ export type Database = {
           submitter_name: string | null
           tool_id: string | null
           url: string
+          youtube_url: string | null
         }
         Insert: {
           category: string[]
@@ -321,6 +352,7 @@ export type Database = {
           submitter_name?: string | null
           tool_id?: string | null
           url: string
+          youtube_url?: string | null
         }
         Update: {
           category?: string[]
@@ -336,6 +368,7 @@ export type Database = {
           submitter_name?: string | null
           tool_id?: string | null
           url?: string
+          youtube_url?: string | null
         }
         Relationships: [
           {
@@ -462,6 +495,14 @@ export type Database = {
     Functions: {
       approve_tool: {
         Args: { tool_id: string }
+        Returns: undefined
+      }
+      mark_account_for_deletion: {
+        Args: { user_id: string; deletion_reason?: string }
+        Returns: boolean
+      }
+      process_accounts_pending_deletion: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       reject_tool: {
