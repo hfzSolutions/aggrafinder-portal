@@ -1,4 +1,3 @@
-
 // Admin client with service role key for administrative operations
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
@@ -23,20 +22,3 @@ export const supabaseAdmin = createClient<Database>(
     },
   }
 );
-
-// Define custom functions specifically for the admin client
-export const adminFunctions = {
-  // Tool management functions
-  approveToolFunction: (toolId: string) => supabaseAdmin.rpc('approve_tool', { tool_id: toolId }),
-  rejectToolFunction: (toolId: string) => supabaseAdmin.rpc('reject_tool', { tool_id: toolId }),
-  
-  // Account management functions
-  markAccountForDeletion: (userId: string, deletionReason?: string) => 
-    supabaseAdmin.rpc('mark_account_for_deletion', { 
-      user_id: userId, 
-      deletion_reason: deletionReason 
-    }),
-  
-  processAccountsPendingDeletion: () => 
-    supabaseAdmin.rpc('process_accounts_pending_deletion')
-};

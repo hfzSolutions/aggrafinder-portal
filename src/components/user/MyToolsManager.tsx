@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
@@ -53,14 +52,13 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
       const tools: AITool[] = data.map((tool) => ({
         id: tool.id,
         name: tool.name,
-        tagline: tool.tagline || '', // Add tagline with fallback
+        tagline: tool.tagline,
         description: tool.description,
         imageUrl: tool.image_url
           ? `${import.meta.env.VITE_STORAGE_URL}/${tool.image_url}`
           : '',
         category: tool.category,
         url: tool.url,
-        youtubeUrl: tool.youtube_url || '', // Add YouTube URL with fallback
         featured: tool.featured,
         pricing: tool.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
         tags: tool.tags || [],
