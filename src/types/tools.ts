@@ -31,7 +31,8 @@ export type AnalyticsAction =
   | 'downvote'
   | 'submit_review'
   | 'submit_outcome'
-  | 'favorite_toggle';
+  | 'favorite_toggle'
+  | 'watch_demo'; // Add this new analytics action type
 
 export interface ToolRequest {
   id: string;
