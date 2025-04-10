@@ -43,6 +43,7 @@ const ToolDetails = () => {
   const [isImageError, setIsImageError] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [showYoutubeVideo, setShowYoutubeVideo] = useState(false);
 
   const { addRecentlyViewed } = useRecentlyViewedTools();
 
@@ -154,6 +155,14 @@ const ToolDetails = () => {
     if (id) {
       trackEvent(id, 'click_url');
     }
+  };
+
+  const handleWatchDemo = () => {
+    setShowYoutubeVideo(true);
+    if (id) {
+      trackEvent(id, 'watch_demo');
+    }
+    toast.success('Loading video demo');
   };
 
   return (
@@ -273,7 +282,7 @@ const ToolDetails = () => {
                               <Button
                                 variant="outline"
                                 className="action-button"
-                                onClick={() => window.open(tool.youtubeUrl, '_blank')}
+                                onClick={handleWatchDemo}
                               >
                                 <Youtube className="h-4 w-4 mr-2" />
                                 Watch Demo
@@ -296,7 +305,7 @@ const ToolDetails = () => {
                           </div>
                         </div>
 
-                        {tool.youtubeUrl && getYoutubeVideoId(tool.youtubeUrl) && (
+                        {tool.youtubeUrl && showYoutubeVideo && getYoutubeVideoId(tool.youtubeUrl) && (
                           <div className="mt-8 rounded-xl overflow-hidden shadow-md">
                             <div className="aspect-video">
                               <iframe
@@ -377,7 +386,7 @@ const ToolDetails = () => {
                             <Button
                               variant="outline"
                               className="action-button"
-                              onClick={() => window.open(tool.youtubeUrl, '_blank')}
+                              onClick={handleWatchDemo}
                             >
                               <Youtube className="h-4 w-4 mr-2" />
                               Watch Demo
