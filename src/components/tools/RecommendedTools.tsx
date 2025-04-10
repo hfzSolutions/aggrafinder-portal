@@ -97,7 +97,7 @@ export function RecommendedTools({
           imageUrl: item.image_url,
           category: item.category,
           url: item.url,
-          youtubeUrl: item.youtube_url || '', // Add YouTube URL with fallback
+          youtubeUrl: item.youtube_url || '', // Fix: Use youtube_url from database
           featured: item.featured,
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags,

@@ -60,7 +60,7 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
           : '',
         category: tool.category,
         url: tool.url,
-        youtubeUrl: tool.youtube_url || '', // Add YouTube URL with fallback
+        youtubeUrl: tool.youtube_url || '', // Fix: Use youtube_url from database
         featured: tool.featured,
         pricing: tool.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
         tags: tool.tags || [],
