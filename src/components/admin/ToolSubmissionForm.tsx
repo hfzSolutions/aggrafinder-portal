@@ -239,13 +239,6 @@ export function ToolSubmissionForm({
         }
       }
 
-      let finalImageUrl: string = '';
-      if (values.imageUrl instanceof File) {
-        finalImageUrl = '';
-      } else if (typeof values.imageUrl === 'string') {
-        finalImageUrl = values.imageUrl;
-      }
-
       // Determine if this tool is being added from the admin interface
       // Check if the component path includes 'admin' to determine if it's admin-added
       const isAdminAdded = window.location.pathname.includes('/admin');
