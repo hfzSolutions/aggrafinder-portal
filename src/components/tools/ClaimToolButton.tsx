@@ -60,7 +60,7 @@ export function ClaimToolButton({ toolId, toolName }: ClaimToolButtonProps) {
       <Button
         variant="outline"
         size="sm"
-        className="flex gap-1 items-center"
+        className="action-button"
         onClick={handleClaimClick}
       >
         <Flag className="h-4 w-4" />

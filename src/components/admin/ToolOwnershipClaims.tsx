@@ -60,9 +60,11 @@ export function ToolOwnershipClaims() {
   const fetchClaims = async () => {
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase.from('tool_ownership_claims')
-        .select(`
+
+      const { data, error } = await supabase
+        .from('tool_ownership_claims')
+        .select(
+          `
           id,
           tool_id,
           user_id,
@@ -74,7 +76,8 @@ export function ToolOwnershipClaims() {
           updated_at,
           admin_feedback,
           ai_tools:tool_id(name)
-        `)
+        `
+        )
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -109,7 +112,7 @@ export function ToolOwnershipClaims() {
         .update({
           status: status,
           admin_feedback: feedback || null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', claimId);
 
@@ -122,7 +125,7 @@ export function ToolOwnershipClaims() {
             .from('ai_tools')
             .update({
               user_id: claim.user_id,
-              is_admin_added: false
+              is_admin_added: false,
             })
             .eq('id', claim.tool_id);
 
@@ -169,12 +172,6 @@ export function ToolOwnershipClaims() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Tool Ownership Claims</CardTitle>
-        <CardDescription>
-          Review and manage ownership claims for AI tools
-        </CardDescription>
-      </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex justify-center py-8">

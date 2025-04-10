@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/admin-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,8 +47,10 @@ export function ProfileManager({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
+  const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] =
+    useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -155,33 +158,37 @@ export function ProfileManager({
   };
 
   const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== 'DELETE') {
+      toast.error('Please type DELETE to confirm account deletion');
+      return;
+    }
+
     setIsDeletingAccount(true);
-    
+
     try {
-      if (avatarUrl) {
-        const { error: deleteStorageError } = await supabase.storage
-          .from('assets')
-          .remove([avatarUrl]);
-          
-        if (deleteStorageError) {
-          console.error('Error deleting avatar:', deleteStorageError);
-        }
-      }
-      
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      
+      // Mark the account for deletion using the new database function
+      const { data, error } = await supabase.rpc('mark_account_for_deletion', {
+        user_id: userId,
+        deletion_reason: 'User requested deletion',
+      });
+
       if (error) throw error;
-      
+
       await supabase.auth.signOut();
-      
-      toast.success('Your account has been deleted successfully');
+
+      toast.success(
+        'Your account has been marked for deletion and will be permanently removed in 30 days'
+      );
       navigate('/');
     } catch (error) {
-      console.error('Error deleting account:', error);
-      toast.error('Failed to delete your account. Please try again or contact support.');
+      console.error('Error marking account for deletion:', error);
+      toast.error(
+        'Failed to delete your account. Please try again or contact support.'
+      );
     } finally {
       setIsDeletingAccount(false);
       setIsDeleteAccountDialogOpen(false);
+      setDeleteConfirmation('');
     }
   };
 
@@ -319,18 +326,22 @@ export function ProfileManager({
           placeholder="Choose a username"
         />
       </div>
+
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? 'Updating...' : 'Update Profile'}
       </Button>
-      
+
       <div className="pt-6 mt-6 border-t border-border">
-        <h3 className="text-lg font-medium text-destructive mb-2">Danger Zone</h3>
+        <h3 className="text-lg font-medium text-destructive mb-2">
+          Danger Zone
+        </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Once you delete your account, there is no going back. This action cannot be undone.
+          Once you delete your account, there is no going back. This action
+          cannot be undone.
         </p>
-        
-        <AlertDialog 
-          open={isDeleteAccountDialogOpen} 
+
+        <AlertDialog
+          open={isDeleteAccountDialogOpen}
           onOpenChange={setIsDeleteAccountDialogOpen}
         >
           <AlertDialogTrigger asChild>
@@ -342,16 +353,36 @@ export function ProfileManager({
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete your account
-                and remove all your data from our servers.
+                This action cannot be undone. This will permanently delete your
+                account and remove all your data from our servers.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="deleteConfirmation"
+                  className="text-sm font-medium"
+                >
+                  Please type <span className="font-bold">DELETE</span> to
+                  confirm
+                </Label>
+                <Input
+                  id="deleteConfirmation"
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  className="border-destructive/50 focus:border-destructive"
+                />
+              </div>
+            </div>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setDeleteConfirmation('')}>
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteAccount}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                disabled={isDeletingAccount}
+                disabled={isDeletingAccount || deleteConfirmation !== 'DELETE'}
               >
                 {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
               </AlertDialogAction>

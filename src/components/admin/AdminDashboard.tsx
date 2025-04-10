@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSupabaseAdmin } from '@/hooks/useSupabaseAdmin';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,6 @@ import { ToolSubmissionForm } from './ToolSubmissionForm';
 import { BulkToolUpload } from './BulkToolUpload';
 import { ToolOwnershipClaims } from './ToolOwnershipClaims';
 import { SupportMessages } from './SupportMessages';
-import { ToolClaimRequests } from './ToolClaimRequests';
 import { AdminSummary } from './AdminSummary';
 import {
   Card,
@@ -58,25 +56,6 @@ interface AdminDashboardProps {
   userId: string;
 }
 
-interface ToolRequest {
-  id: string;
-  name: string;
-  description: string;
-  url: string;
-  category: string[];
-  pricing: string | null;
-  status: string;
-  submitter_name: string | null;
-  submitter_email: string | null;
-  created_at: string;
-  request_type: 'new' | 'update';
-  tool_id: string | null;
-  migrated?: boolean;
-  ai_tools?: {
-    name: string;
-  };
-}
-
 interface Category {
   id: number;
   name: string;
@@ -101,10 +80,6 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
-
-  // State for tool requests management
-  const [toolRequests, setToolRequests] = useState<ToolRequest[]>([]);
-  const [toolRequestsLoading, setToolRequestsLoading] = useState(true);
 
   // State for tool submission dialog
   const [toolSubmissionOpen, setToolSubmissionOpen] = useState(false);
@@ -187,6 +162,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         const transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
+          tagline: item.tagline,
           description: item.description,
           imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
           category: item.category,
@@ -236,6 +212,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         const transformedData: AITool[] = data.map((item) => ({
           id: item.id,
           name: item.name,
+          tagline: item.tagline,
           description: item.description,
           imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
           category: item.category,
@@ -352,41 +329,6 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   }, [isAdmin]);
 
-  // Fetch tool requests
-  useEffect(() => {
-    const fetchToolRequests = async () => {
-      try {
-        setToolRequestsLoading(true);
-        const { data, error } = await supabase
-          .from('tool_requests')
-          .select('*, ai_tools!tool_requests_tool_id_fkey(name)')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // Make sure the request_type is either 'new' or 'update'
-        const typedData = data.map((item) => ({
-          ...item,
-          request_type:
-            item.request_type === 'new'
-              ? 'new'
-              : ('update' as 'new' | 'update'),
-        }));
-
-        setToolRequests(typedData);
-      } catch (error) {
-        console.error('Error fetching tool requests:', error);
-        toast.error('Failed to load tool requests');
-      } finally {
-        setToolRequestsLoading(false);
-      }
-    };
-
-    if (isAdmin) {
-      fetchToolRequests();
-    }
-  }, [isAdmin]);
-
   // Handle outcome delete
   const handleDeleteOutcome = async (id: string) => {
     if (!confirm('Are you sure you want to delete this outcome?')) return;
@@ -455,74 +397,6 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   };
 
-  // Handle tool request approval
-  const handleApproveToolRequest = async (id: string) => {
-    if (!confirm('Are you sure you want to approve this tool request?')) return;
-
-    try {
-      const { success, error } = await approveToolRequest(id);
-
-      if (!success) throw new Error(error);
-
-      // Update local state
-      setToolRequests((prev) =>
-        prev.map((request) =>
-          request.id === id ? { ...request, status: 'approved' } : request
-        )
-      );
-
-      // Refresh tools list
-      const { data, error: fetchError } = await supabase
-        .from('ai_tools')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (fetchError) throw fetchError;
-
-      const transformedData: AITool[] = data.map((item) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        imageUrl: item.image_url,
-        category: item.category,
-        url: item.url,
-        featured: item.featured,
-        pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
-        tags: item.tags,
-      }));
-
-      setTools(transformedData);
-
-      toast.success('Tool request approved successfully');
-    } catch (error: any) {
-      console.error('Error approving tool request:', error);
-      toast.error(error.message || 'Failed to approve tool request');
-    }
-  };
-
-  // Handle tool request rejection
-  const handleRejectToolRequest = async (id: string) => {
-    if (!confirm('Are you sure you want to reject this tool request?')) return;
-
-    try {
-      const { success, error } = await rejectToolRequest(id);
-
-      if (!success) throw new Error(error);
-
-      // Update local state
-      setToolRequests((prev) =>
-        prev.map((request) =>
-          request.id === id ? { ...request, status: 'rejected' } : request
-        )
-      );
-
-      toast.success('Tool request rejected successfully');
-    } catch (error: any) {
-      console.error('Error rejecting tool request:', error);
-      toast.error(error.message || 'Failed to reject tool request');
-    }
-  };
-
   // Refresh tools list function to avoid code duplication - modified to respect approval status
   const refreshToolsList = async () => {
     try {
@@ -542,6 +416,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       const transformedData: AITool[] = data.map((item) => ({
         id: item.id,
         name: item.name,
+        tagline: item.tagline,
         description: item.description,
         imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
         category: item.category,
@@ -608,6 +483,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         const transformedPendingData: AITool[] = pendingData.map((item) => ({
           id: item.id,
           name: item.name,
+          tagline: item.tagline,
           description: item.description,
           imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
           category: item.category,
@@ -686,7 +562,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     <div className="space-y-6">
       {/* Add the AdminSummary component at the top */}
       <AdminSummary />
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Admin Dashboard</CardTitle>
@@ -702,12 +578,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
             <TabsList className="mb-4">
               <TabsTrigger value="tools">Tools</TabsTrigger>
               <TabsTrigger value="pending">Pending Approval</TabsTrigger>
+              <TabsTrigger value="claims">Ownership Claims</TabsTrigger>
               <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
               <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="requests">Tool Requests</TabsTrigger>
-              <TabsTrigger value="claims">Ownership Claims</TabsTrigger>
               <TabsTrigger value="support">Support Messages</TabsTrigger>
-              <TabsTrigger value="toolclaims">Tool Claims</TabsTrigger>
             </TabsList>
 
             {/* Tools Tab */}
@@ -1053,6 +927,14 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               )}
             </TabsContent>
 
+            {/* Tool Ownership Claims Tab */}
+            <TabsContent value="claims" className="space-y-4">
+              <h3 className="text-lg font-medium">
+                Manage Tool Ownership Claims
+              </h3>
+              <ToolOwnershipClaims />
+            </TabsContent>
+
             {/* Outcomes Tab */}
             <TabsContent value="outcomes" className="space-y-4">
               <h3 className="text-lg font-medium">Manage User Outcomes</h3>
@@ -1255,134 +1137,9 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               )}
             </TabsContent>
 
-            {/* Tool Requests Tab */}
-            <TabsContent value="requests" className="space-y-4">
-              <h3 className="text-lg font-medium">Manage Tool Requests</h3>
-
-              {toolRequestsLoading ? (
-                <div className="flex items-center justify-center p-4">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  <span className="ml-2">Loading tool requests...</span>
-                </div>
-              ) : toolRequests.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <InboxIcon className="h-12 w-12 text-gray-400" />
-                    <h3 className="font-semibold">No Tool Requests</h3>
-                    <p className="text-sm text-gray-500">
-                      New tool requests from users will appear here.
-                    </p>
-                  </div>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {toolRequests.map((request) => (
-                    <Card key={request.id}>
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-base">
-                            {request.name}
-                          </CardTitle>
-                          <div
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              request.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : request.status === 'approved'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {request.status.charAt(0).toUpperCase() +
-                              request.status.slice(1)}
-                          </div>
-                        </div>
-                        <CardDescription className="line-clamp-2">
-                          {request.description}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <div className="text-sm space-y-1">
-                          <div>
-                            <span className="font-medium">Request Type:</span>{' '}
-                            {request.request_type === 'new'
-                              ? 'New Tool'
-                              : 'Update Request'}
-                          </div>
-                          {request.request_type === 'update' &&
-                            request.tool_id && (
-                              <div>
-                                <span className="font-medium">
-                                  Updating Tool:
-                                </span>{' '}
-                                {request.ai_tools?.name || 'Unknown Tool'}
-                              </div>
-                            )}
-                          <div>
-                            <span className="font-medium">URL:</span>{' '}
-                            {request.url}
-                          </div>
-                          <div>
-                            <span className="font-medium">Categories:</span>{' '}
-                            {request.category.join(', ')}
-                          </div>
-                          <div>
-                            <span className="font-medium">Pricing:</span>{' '}
-                            {request.pricing || 'Not specified'}
-                          </div>
-                          <div>
-                            <span className="font-medium">Submitter:</span>{' '}
-                            {request.submitter_name || 'Anonymous'}
-                          </div>
-                          <div>
-                            <span className="font-medium">Date:</span>{' '}
-                            {new Date(request.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </CardContent>
-                      {request.status === 'pending' && (
-                        <CardFooter className="flex justify-end space-x-2 pt-0">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleApproveToolRequest(request.id)}
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleRejectToolRequest(request.id)}
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
-                        </CardFooter>
-                      )}
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Tool Ownership Claims Tab */}
-            <TabsContent value="claims" className="space-y-4">
-              <h3 className="text-lg font-medium">
-                Manage Tool Ownership Claims
-              </h3>
-              <ToolOwnershipClaims />
-            </TabsContent>
-
             {/* Support Messages Tab */}
             <TabsContent value="support" className="space-y-4">
-              <h3 className="text-lg font-medium">Support Messages</h3>
               <SupportMessages />
-            </TabsContent>
-
-            {/* Tool Claims Tab */}
-            <TabsContent value="toolclaims" className="space-y-4">
-              <h3 className="text-lg font-medium">Tool Claim Requests</h3>
-              <ToolClaimRequests />
             </TabsContent>
           </Tabs>
         </CardContent>

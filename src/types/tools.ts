@@ -1,8 +1,8 @@
-
 export interface AITool {
   id: string;
   name: string;
   description: string;
+  tagline: string;
   imageUrl: string;
   category: string[];
   url: string;
@@ -35,6 +35,7 @@ export interface ToolRequest {
   id: string;
   name: string;
   description: string;
+  tagline: string;
   url: string;
   category: string[];
   pricing?: string;

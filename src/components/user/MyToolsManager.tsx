@@ -52,6 +52,7 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
       const tools: AITool[] = data.map((tool) => ({
         id: tool.id,
         name: tool.name,
+        tagline: tool.tagline,
         description: tool.description,
         imageUrl: tool.image_url
           ? `${import.meta.env.VITE_STORAGE_URL}/${tool.image_url}`
@@ -194,6 +195,11 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
                     <div className="flex justify-between">
                       <div>
                         <h3 className="font-medium text-lg">{tool.name}</h3>
+                        {tool.tagline && (
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {tool.tagline}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground line-clamp-1">
                           {tool.description}
                         </p>
