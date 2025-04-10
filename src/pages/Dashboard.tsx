@@ -1,326 +1,533 @@
 import { useState, useEffect } from 'react';
-import { useUser } from '@supabase/auth-helpers-react';
+import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 import { supabase } from '@/integrations/supabase/client';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import {
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+  LogOut,
+  Settings,
+  ShieldAlert,
+} from 'lucide-react';
+import { AdminLink } from '@/components/user/AdminLink';
+import Header from '@/components/layout/Header';
+import { AIOucome } from '@/types/outcomes';
+import OutcomeSubmissionForm from '@/components/outcomes/OutcomeSubmissionForm';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { UserPreferences } from '@/components/user/UserPreferences';
 import { ProfileManager } from '@/components/user/ProfileManager';
 import { MyToolsManager } from '@/components/user/MyToolsManager';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  User,
-  Settings,
-  LogOut,
-  Tool,
-  Heart,
-  Bell,
-  Bookmark,
-} from 'lucide-react';
 
-export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('profile');
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
-  const user = useUser();
+const Dashboard = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [userOutcomes, setUserOutcomes] = useState<AIOucome[]>([]);
+  const [isOutcomesLoading, setIsOutcomesLoading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingOutcome, setEditingOutcome] = useState<AIOucome | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [outcomeToDelete, setOutcomeToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is authenticated
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    const fetchProfile = async () => {
+    const checkUser = async () => {
       try {
-        setLoading(true);
-        const { data, error } = await supabase
+        const { data, error } = await supabase.auth.getUser();
+        if (error || !data.user) {
+          navigate('/auth');
+          return;
+        }
+        setUser(data.user);
+
+        // Fetch user profile
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', data.user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') {
-          throw error;
+        if (!profileError) {
+          setProfile(profileData);
         }
 
-        if (data) {
-          setProfile(data);
-        } else {
-          // Create a new profile if one doesn't exist
-          const newProfile = {
-            id: user.id,
-            username: user.email?.split('@')[0] || '',
-            full_name: '',
-            avatar_url: '',
-            updated_at: new Date().toISOString(),
-          };
-
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert(newProfile);
-
-          if (insertError) throw insertError;
-          setProfile(newProfile);
-        }
-      } catch (error: any) {
-        toast.error(`Error loading profile: ${error.message}`);
-      } finally {
         setLoading(false);
+      } catch (error) {
+        console.error('Error checking authentication', error);
+        navigate('/auth');
       }
     };
 
-    fetchProfile();
-  }, [user, navigate]);
+    checkUser();
+
+    // Set up auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          navigate('/auth');
+        } else if (session?.user) {
+          setUser(session.user);
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    const fetchUserOutcomes = async () => {
+      if (!user) return;
+
+      setIsOutcomesLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('ai_outcomes')
+          .select('*, ai_tools(name)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const transformedData: AIOucome[] = data.map((item) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          imageUrl: item.image_url,
+          toolId: item.tool_id,
+          toolName: item.ai_tools?.name || 'Unknown Tool',
+          createdAt: item.created_at,
+          submitterName: item.submitter_name,
+          submitterEmail: item.submitter_email,
+          userId: item.user_id,
+        }));
+
+        setUserOutcomes(transformedData);
+      } catch (err) {
+        console.error('Error fetching user outcomes:', err);
+        toast.error('Failed to load your creations');
+      } finally {
+        setIsOutcomesLoading(false);
+      }
+    };
+
+    fetchUserOutcomes();
+  }, [user]);
 
   const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const handleEditOutcome = (outcome: AIOucome) => {
+    setEditingOutcome(outcome);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (outcomeId: string) => {
+    setOutcomeToDelete(outcomeId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteOutcome = async () => {
+    if (!outcomeToDelete) return;
+
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase
+        .from('ai_outcomes')
+        .delete()
+        .eq('id', outcomeToDelete);
+
       if (error) throw error;
-      navigate('/');
-    } catch (error: any) {
-      toast.error(`Error signing out: ${error.message}`);
+
+      setUserOutcomes(
+        userOutcomes.filter((outcome) => outcome.id !== outcomeToDelete)
+      );
+      toast.success('Creation deleted successfully');
+    } catch (err) {
+      console.error('Error deleting outcome:', err);
+      toast.error('Failed to delete creation');
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setOutcomeToDelete(null);
     }
   };
 
-  const handleProfileUpdate = () => {
-    // Refresh profile data after update
+  const handleSubmitSuccess = () => {
+    setIsDialogOpen(false);
+    setEditingOutcome(null);
+
+    // Refresh the user outcomes list
     if (user) {
+      setIsOutcomesLoading(true);
       supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+        .from('ai_outcomes')
+        .select('*, ai_tools(name)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
         .then(({ data, error }) => {
           if (!error && data) {
-            setProfile(data);
+            const transformedData: AIOucome[] = data.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              imageUrl: item.image_url,
+              toolId: item.tool_id,
+              toolName: item.ai_tools?.name || 'Unknown Tool',
+              createdAt: item.created_at,
+              submitterName: item.submitter_name,
+              submitterEmail: item.submitter_email,
+              userId: item.user_id,
+            }));
+
+            setUserOutcomes(transformedData);
           }
+          setIsOutcomesLoading(false);
         });
     }
   };
 
   if (loading) {
     return (
-      <div className="container py-10">
-        <div className="grid gap-8 md:grid-cols-[240px_1fr]">
-          <div>
-            <Skeleton className="h-8 w-32 mb-4" />
-            <div className="space-y-2">
-              {Array(5)
-                .fill(0)
-                .map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
-                ))}
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow pt-20">
+          <div className="container px-4 md:px-8 mx-auto py-8">
+            <div className="max-w-[90vw] mx-auto overflow-y-auto">
+              <Tabs defaultValue="creations" className="space-y-6">
+                <TabsList>
+                  <TabsTrigger value="creations">My Creations</TabsTrigger>
+                  <TabsTrigger value="profile">Profile</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="profile" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Profile Settings</CardTitle>
+                      <CardDescription>
+                        Manage your profile information
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ProfileManager
+                        userId={user?.id}
+                        initialProfile={profile}
+                        onProfileUpdate={() => {
+                          // Refresh profile data
+                          if (user) {
+                            supabase
+                              .from('profiles')
+                              .select('*')
+                              .eq('id', user.id)
+                              .single()
+                              .then(({ data, error }) => {
+                                if (!error && data) {
+                                  setProfile(data);
+                                }
+                              });
+                          }
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="creations"></TabsContent>
+              </Tabs>
+              <Skeleton className="h-12 w-60 mb-8" />
+              <Skeleton className="h-40 w-full mb-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-40 w-full" />
+              </div>
             </div>
           </div>
-          <div>
-            <Skeleton className="h-8 w-48 mb-4" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="container py-10">
-      <div className="grid gap-8 md:grid-cols-[240px_1fr]">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Dashboard</h2>
-          <div className="space-y-1">
-            <Button
-              variant={activeTab === 'overview' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveTab('overview')}
-            >
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              Overview
-            </Button>
-            <Button
-              variant={activeTab === 'profile' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveTab('profile')}
-            >
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </Button>
-            <Button
-              variant={activeTab === 'my-tools' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveTab('my-tools')}
-            >
-              <Tool className="mr-2 h-4 w-4" />
-              My Tools
-            </Button>
-            <Button
-              variant={activeTab === 'favorites' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveTab('favorites')}
-            >
-              <Heart className="mr-2 h-4 w-4" />
-              Favorites
-            </Button>
-            <Button
-              variant={activeTab === 'notifications' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveTab('notifications')}
-            >
-              <Bell className="mr-2 h-4 w-4" />
-              Notifications
-            </Button>
-            <Button
-              variant={activeTab === 'settings' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveTab('settings')}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-red-500 hover:text-red-500 hover:bg-red-50"
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-        <div>
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold tracking-tight">
-                Welcome back, {profile?.full_name || profile?.username || 'User'}
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      My Tools
-                    </CardTitle>
-                    <Tool className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-xs text-muted-foreground">
-                      Tools you've submitted
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Favorites
-                    </CardTitle>
-                    <Heart className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-xs text-muted-foreground">
-                      Tools you've favorited
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Saved
-                    </CardTitle>
-                    <Bookmark className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-xs text-muted-foreground">
-                      Tools you've saved for later
-                    </p>
-                  </CardContent>
-                </Card>
+    <>
+      <Helmet>
+        <title>Dashboard | AI Showcase</title>
+      </Helmet>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow pt-20">
+          <div className="container px-4 md:px-8 mx-auto py-8">
+            <div className="max-w-[90vw] mx-auto overflow-y-auto">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage
+                      src={
+                        profile?.avatar_url
+                          ? `${import.meta.env.VITE_STORAGE_URL}/${
+                              profile.avatar_url
+                            }`
+                          : undefined
+                      }
+                    />
+                    <AvatarFallback>
+                      {user?.email?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h1 className="text-2xl font-bold">
+                      {profile?.full_name || user?.email}
+                    </h1>
+                    <p className="text-muted-foreground">{user?.email}</p>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
 
-          {activeTab === 'profile' && (
-            <ProfileManager />
-          )}
-
-          {activeTab === 'my-tools' && user && (
-            <MyToolsManager userId={user.id} />
-          )}
-
-          {activeTab === 'favorites' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold tracking-tight">Favorites</h2>
-              <p className="text-muted-foreground">
-                Tools you've favorited will appear here.
-              </p>
-              <div className="bg-muted p-8 rounded-md flex items-center justify-center">
-                <p className="text-muted-foreground">
-                  You haven't favorited any tools yet.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold tracking-tight">
-                Notifications
-              </h2>
-              <p className="text-muted-foreground">
-                Your notifications will appear here.
-              </p>
-              <div className="bg-muted p-8 rounded-md flex items-center justify-center">
-                <p className="text-muted-foreground">
-                  You don't have any notifications.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-              <Tabs defaultValue="account">
-                <TabsList>
-                  <TabsTrigger value="account">Account</TabsTrigger>
-                  <TabsTrigger value="preferences">Preferences</TabsTrigger>
-                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <Tabs defaultValue="tools">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="tools">My Tools</TabsTrigger>
+                  <TabsTrigger value="creations">My Creations</TabsTrigger>
+                  <TabsTrigger value="profile">Profile</TabsTrigger>
                 </TabsList>
-                <TabsContent value="account">
-                  <ProfileManager />
+
+                <TabsContent value="tools">
+                  <div className="bg-card border rounded-lg shadow-sm mb-6">
+                    <div className="p-6">
+                      {user && <MyToolsManager userId={user.id} />}
+                    </div>
+                  </div>
                 </TabsContent>
-                <TabsContent value="preferences">
+
+                <TabsContent value="creations">
+                  <div className="bg-card border rounded-lg shadow-sm mb-6">
+                    <div className="p-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold">
+                          Your AI Creations
+                        </h2>
+                        <Dialog
+                          open={isDialogOpen}
+                          onOpenChange={setIsDialogOpen}
+                        >
+                          <DialogTrigger asChild>
+                            <Button>
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add New Creation
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>
+                                {editingOutcome
+                                  ? 'Edit AI Creation'
+                                  : 'Share New AI Creation'}
+                              </DialogTitle>
+                              <DialogDescription>
+                                {editingOutcome
+                                  ? 'Update your AI-generated content'
+                                  : 'Showcase your amazing AI-generated content with the community'}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <OutcomeSubmissionForm
+                              onSuccess={handleSubmitSuccess}
+                              initialData={editingOutcome || undefined}
+                              userId={user?.id}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+
+                      {isOutcomesLoading ? (
+                        <div className="space-y-4">
+                          {[1, 2, 3].map((_, i) => (
+                            <Skeleton key={i} className="h-24 w-full" />
+                          ))}
+                        </div>
+                      ) : userOutcomes.length === 0 ? (
+                        <div className="text-center p-8 border border-dashed rounded-lg bg-muted/50">
+                          <h3 className="text-lg font-medium mb-2">
+                            No creations yet
+                          </h3>
+                          <p className="text-muted-foreground mb-4">
+                            Share your AI-generated creations with the community
+                          </p>
+                          <Button
+                            onClick={() => setIsDialogOpen(true)}
+                            variant="default"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Your First Creation
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {userOutcomes.map((outcome) => (
+                            <div
+                              key={outcome.id}
+                              className="border rounded-lg p-4 flex gap-4 bg-background hover:bg-secondary/10 transition-colors"
+                            >
+                              <div className="h-20 w-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                                {outcome.imageUrl ? (
+                                  <img
+                                    src={outcome.imageUrl}
+                                    alt={outcome.title}
+                                    className="w-full h-full object-contain max-h-[80vh] max-w-full w-full"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500">
+                                    <span className="text-xs text-white font-medium">
+                                      No Image
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-grow overflow-hidden">
+                                <h3 className="font-medium text-base truncate">
+                                  {outcome.title}
+                                </h3>
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {outcome.description}
+                                </p>
+                                <div className="flex items-center mt-1 text-xs text-muted-foreground">
+                                  <span>Made with {outcome.toolName}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-2 ml-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditOutcome(outcome)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteClick(outcome.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Dialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                  >
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Delete Creation</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to delete this creation? This
+                          action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex justify-end gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsDeleteDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={handleDeleteOutcome}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </TabsContent>
+
+                <TabsContent value="profile">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Preferences</CardTitle>
+                      <CardTitle>Profile Settings</CardTitle>
+                      <CardDescription>
+                        Update your profile information here
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground">
-                        Preference settings coming soon.
-                      </p>
+                      <ProfileManager
+                        userId={user?.id}
+                        initialProfile={profile}
+                        onProfileUpdate={() => {
+                          // Refresh profile data
+                          if (user) {
+                            supabase
+                              .from('profiles')
+                              .select('*')
+                              .eq('id', user.id)
+                              .single()
+                              .then(({ data, error }) => {
+                                if (!error && data) {
+                                  setProfile(data);
+                                }
+                              });
+                          }
+                        }}
+                      />
                     </CardContent>
-                  </Card>
-                </TabsContent>
-                <TabsContent value="notifications">
-                  <Card>
                     <CardHeader>
-                      <CardTitle>Notification Settings</CardTitle>
+                      <CardTitle>Your Preferences</CardTitle>
+                      <CardDescription>
+                        Customize your experience to get personalized AI tool
+                        recommendations
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground">
-                        Notification settings coming soon.
-                      </p>
+                      {user && (
+                        <UserPreferences
+                          userId={user.id}
+                          onPreferencesSaved={() =>
+                            toast.success('Preferences saved successfully')
+                          }
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
               </Tabs>
             </div>
-          )}
-        </div>
+          </div>
+        </main>
       </div>
-    </div>
+    </>
   );
-}
+};
+
+export default Dashboard;

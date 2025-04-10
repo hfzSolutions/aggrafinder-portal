@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { useUser } from '@supabase/auth-helpers-react';
+import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useRouter } from 'next/router';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,8 @@ export function ProfileManager() {
   const [deletionReason, setDeletionReason] = useState('');
 
   const user = useUser();
+  const router = useRouter();
+  const supabaseClient = useSupabaseClient();
 
   useEffect(() => {
     const getProfile = async () => {
@@ -37,7 +39,7 @@ export function ProfileManager() {
         setLoading(true);
         if (!user) throw new Error('No user found');
 
-        let { data, error, status } = await supabase
+        let { data, error, status } = await supabaseClient
           .from('profiles')
           .select(`full_name, username, avatar_url`)
           .eq('id', user.id)
@@ -60,7 +62,7 @@ export function ProfileManager() {
     };
 
     getProfile();
-  }, [user]);
+  }, [user, supabaseClient]);
 
   async function updateProfile({
     username,
@@ -83,7 +85,7 @@ export function ProfileManager() {
         updated_at: new Date().toISOString(),
       };
 
-      let { error } = await supabase.from('profiles').upsert(updates);
+      let { error } = await supabaseClient.from('profiles').upsert(updates);
 
       if (error) {
         throw error;
