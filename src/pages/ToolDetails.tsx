@@ -10,6 +10,7 @@ import {
   Clock,
   Star,
   ImageOff,
+  Youtube,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,7 +44,6 @@ const ToolDetails = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
-  // Get the addRecentlyViewed function from the hook
   const { addRecentlyViewed } = useRecentlyViewedTools();
 
   useEffect(() => {
@@ -93,12 +93,12 @@ const ToolDetails = () => {
           featured: data.featured,
           pricing: data.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: data.tags,
+          youtubeUrl: data.youtube_url || '',
           isAdminAdded: data.is_admin_added || false,
         };
 
         setTool(transformedData);
 
-        // Add this tool to recently viewed tools
         addRecentlyViewed(data.id);
       } catch (err) {
         console.error('Error fetching tool details:', err);
@@ -110,6 +110,18 @@ const ToolDetails = () => {
 
     fetchToolDetails();
   }, [id]);
+
+  const getYoutubeVideoId = (url: string) => {
+    if (!url) return null;
+    
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    
+    if (match && match[2].length === 11) {
+      return match[2];
+    }
+    return null;
+  };
 
   const getPricingColor = (pricing: string) => {
     switch (pricing) {
@@ -257,6 +269,17 @@ const ToolDetails = () => {
                               <ExternalLink className="h-4 w-4" />
                             </Button>
 
+                            {tool.youtubeUrl && (
+                              <Button
+                                variant="outline"
+                                className="action-button"
+                                onClick={() => window.open(tool.youtubeUrl, '_blank')}
+                              >
+                                <Youtube className="h-4 w-4 mr-2" />
+                                Watch Demo
+                              </Button>
+                            )}
+
                             <ShareButton
                               toolId={tool.id}
                               toolName={tool.name}
@@ -272,6 +295,20 @@ const ToolDetails = () => {
                             </div>
                           </div>
                         </div>
+
+                        {tool.youtubeUrl && getYoutubeVideoId(tool.youtubeUrl) && (
+                          <div className="mt-8 rounded-xl overflow-hidden shadow-md">
+                            <div className="aspect-video">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${getYoutubeVideoId(tool.youtubeUrl)}`}
+                                title={`${tool.name} Demo Video`}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="w-full h-full border-0"
+                              ></iframe>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="order-first lg:order-last lg:col-span-4">
@@ -335,6 +372,17 @@ const ToolDetails = () => {
                             <ExternalLink className="h-4 w-4 mr-2" />
                             Visit Website
                           </Button>
+
+                          {tool.youtubeUrl && (
+                            <Button
+                              variant="outline"
+                              className="action-button"
+                              onClick={() => window.open(tool.youtubeUrl, '_blank')}
+                            >
+                              <Youtube className="h-4 w-4 mr-2" />
+                              Watch Demo
+                            </Button>
+                          )}
 
                           <ShareButton
                             toolId={tool.id}
