@@ -18,6 +18,7 @@ interface ToolUploadData {
   description: string;
   tagline?: string;
   url: string;
+  youtubeUrl?: string;
   imageUrl: string;
   category: string[];
   pricing: 'Free' | 'Freemium' | 'Paid' | 'Free Trial';
@@ -67,6 +68,14 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
       errors.push(
         `Row ${rowIndex}: URL must be a valid URL starting with http:// or https://`
       );
+    }
+
+    // YouTube URL validation (if provided)
+    if (
+      data.youtubeUrl &&
+      !/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/.+/.test(data.youtubeUrl)
+    ) {
+      errors.push(`Row ${rowIndex}: YouTube URL must be a valid YouTube URL`);
     }
 
     // Image URL validation (if provided)
@@ -212,6 +221,7 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
         name: tool.name,
         description: tool.description,
         url: tool.url,
+        youtube_url: tool.youtubeUrl, // Include YouTube URL
         image_url: tool.imageUrl,
         category: tool.category,
         pricing: tool.pricing,
@@ -249,8 +259,9 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
         />
         <p className="text-sm text-muted-foreground">
           Upload a CSV file with the following headers: name, description, url,
-          imageUrl (optional), category (semicolon-separated), pricing
-          (optional), featured (optional), tags (optional, semicolon-separated)
+          youtubeUrl (optional), imageUrl (optional), category
+          (semicolon-separated), pricing (optional), featured (optional), tags
+          (optional, semicolon-separated)
         </p>
       </div>
 
@@ -296,6 +307,7 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
                 <tr>
                   <th className="p-2 text-left">Name</th>
                   <th className="p-2 text-left">URL</th>
+                  <th className="p-2 text-left">YouTube URL</th>
                   <th className="p-2 text-left">Categories</th>
                   <th className="p-2 text-left">Pricing</th>
                 </tr>
@@ -305,6 +317,7 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
                   <tr key={index} className="border-t">
                     <td className="p-2">{tool.name}</td>
                     <td className="p-2">{tool.url}</td>
+                    <td className="p-2">{tool.youtubeUrl || '-'}</td>
                     <td className="p-2">{tool.category.join(', ')}</td>
                     <td className="p-2">{tool.pricing}</td>
                   </tr>

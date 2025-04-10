@@ -15,6 +15,7 @@ The `sample_bulk_upload.csv` file in this directory provides a template with exa
 
 ### Optional Fields
 
+- **youtubeUrl**: URL to a YouTube video about the tool (must be a valid YouTube URL)
 - **imageUrl**: URL to the tool's image (must start with http:// or https://). If not provided, a placeholder image will be used.
 - **pricing**: Must be one of: "Free", "Freemium", "Paid", or "Free Trial". Defaults to "Free" if not specified.
 - **featured**: Set to "true" or "false" to indicate if the tool should be featured. Defaults to "false" if not specified.
@@ -25,6 +26,7 @@ The `sample_bulk_upload.csv` file in this directory provides a template with exa
 1. **Categories and Tags**: Multiple values must be separated by semicolons (;) without spaces, e.g., `AI Assistant;Natural Language Processing`
 2. **Featured**: Use the string "true" or "false" (lowercase)
 3. **URLs**: All URLs must include the protocol (http:// or https://)
+4. **YouTube URLs**: Must be valid YouTube URLs (e.g., https://www.youtube.com/watch?v=videoId or https://youtu.be/videoId)
 
 ## Example
 
