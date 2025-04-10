@@ -148,8 +148,11 @@ export function ToolSubmissionForm({
   useEffect(() => {
     if (editMode && toolToEdit) {
       setSelectedCategories(toolToEdit.category);
+      
+      // Ensure we update the YouTube URL field properly when editing
+      form.setValue('youtubeUrl', toolToEdit.youtubeUrl || '');
     }
-  }, [editMode, toolToEdit]);
+  }, [editMode, toolToEdit, form]);
 
   useEffect(() => {
     form.setValue('category', selectedCategories);
@@ -252,7 +255,7 @@ export function ToolSubmissionForm({
         tagline: values.tagline,
         description: values.description,
         url: values.url,
-        youtube_url: values.youtubeUrl, // Add YouTube URL to submission
+        youtube_url: values.youtubeUrl, // Make sure we're using the correct property name for the API
         image_url: finalImageUrl,
         category: values.category,
         pricing: values.pricing,

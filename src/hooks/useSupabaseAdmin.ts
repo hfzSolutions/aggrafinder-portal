@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,7 +33,7 @@ interface UseSupabaseAdminReturn {
     description: string;
     url: string;
     youtube_url?: string; // Add YouTube URL
-    image_url: string;
+    image_url: string | File;
     category: string[];
     pricing: string;
     featured: boolean;
@@ -291,7 +290,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     featured: boolean;
     tags: string[];
     user_id: string;
-    is_admin_added?: boolean; // Add optional parameter to control is_admin_added flag
+    is_admin_added?: boolean;
   }): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
@@ -357,7 +356,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  // Tool management functions
   const deleteTool = async (
     id: string
   ): Promise<{ success: boolean; error?: string }> => {
@@ -405,7 +403,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  // Update tool function
   const updateTool = async (
     id: string,
     toolData: {
@@ -523,7 +520,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  // Bulk tool submission function
   const bulkSubmitTools = async (
     toolsData: {
       name: string;
@@ -584,7 +580,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
-  // New functions for direct tool approval
   const approveTool = async (
     id: string
   ): Promise<{ success: boolean; error?: string }> => {
