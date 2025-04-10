@@ -32,7 +32,7 @@ const Auth = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && isMounted) {
-        navigate('/');
+        navigate('/dashboard');
       }
       setIsCheckingSession(false);
     });
@@ -58,7 +58,7 @@ const Auth = () => {
       toast.success(
         'Account created! Please check your email for verification.'
       );
-      navigate('/');
+      navigate('/dashboard');
     } catch (error: any) {
       toast.error(error.message || 'Error signing up');
     } finally {
@@ -79,7 +79,7 @@ const Auth = () => {
       if (error) throw error;
 
       toast.success('Signed in successfully!');
-      navigate('/');
+      navigate('/dashboard');
     } catch (error: any) {
       toast.error(error.message || 'Error signing in');
     } finally {

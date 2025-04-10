@@ -41,6 +41,10 @@ const formSchema = z.object({
     .string()
     .min(3, 'Name must be at least 3 characters')
     .max(100, 'Name must be less than 100 characters'),
+  tagline: z
+    .string()
+    .max(100, 'Tagline must be less than 100 characters')
+    .optional(),
   description: z
     .string()
     .min(10, 'Description must be at least 10 characters')
@@ -120,6 +124,7 @@ export function ToolSubmissionForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: editMode && toolToEdit ? toolToEdit.name : '',
+      tagline: editMode && toolToEdit ? toolToEdit.tagline : '',
       description: editMode && toolToEdit ? toolToEdit.description : '',
       url: editMode && toolToEdit ? toolToEdit.url : '',
       imageUrl: editMode && toolToEdit ? toolToEdit.imageUrl : '',
@@ -234,6 +239,7 @@ export function ToolSubmissionForm({
 
       const toolData = {
         name: values.name,
+        tagline: values.tagline,
         description: values.description,
         url: values.url,
         image_url: finalImageUrl,
@@ -289,6 +295,23 @@ export function ToolSubmissionForm({
                 <FormLabel>Tool Name</FormLabel>
                 <FormControl>
                   <Input placeholder="AI Tool Name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="tagline"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tagline</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="A short, catchy description of your tool"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

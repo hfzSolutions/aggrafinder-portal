@@ -16,6 +16,7 @@ interface BulkToolUploadProps {
 interface ToolUploadData {
   name: string;
   description: string;
+  tagline?: string;
   url: string;
   imageUrl: string;
   category: string[];

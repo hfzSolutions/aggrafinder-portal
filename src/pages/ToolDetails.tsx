@@ -83,6 +83,7 @@ const ToolDetails = () => {
         const transformedData: AITool = {
           id: data.id,
           name: data.name,
+          tagline: data.tagline,
           description: data.description,
           imageUrl: data.image_url
             ? `${import.meta.env.VITE_STORAGE_URL}/${data.image_url}`
@@ -234,9 +235,14 @@ const ToolDetails = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
                       <div className="lg:col-span-8">
                         <div className="space-y-4">
-                          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient">
+                          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
                             {tool.name}
                           </h1>
+                          {tool.tagline && (
+                            <p className="text-md md:text-lg font-medium mb-2">
+                              {tool.tagline}
+                            </p>
+                          )}
                           <p className="text-lg text-muted-foreground leading-relaxed">
                             {tool.description}
                           </p>

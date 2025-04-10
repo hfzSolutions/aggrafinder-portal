@@ -1,18 +1,16 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  AlertCircle, 
-  CheckCircle2, 
-  Clock, 
-  MessageSquare, 
-  Wrench 
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  MessageSquare,
+  Wrench,
 } from 'lucide-react';
 
 export function AdminSummary() {
   const [pendingToolsCount, setPendingToolsCount] = useState(0);
-  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [pendingSupportCount, setPendingSupportCount] = useState(0);
   const [pendingClaimsCount, setPendingClaimsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,15 +26,6 @@ export function AdminSummary() {
 
       if (toolsError) throw toolsError;
       setPendingToolsCount(toolsCount || 0);
-
-      // Get count of pending tool requests
-      const { count: requestsCount, error: requestsError } = await supabase
-        .from('tool_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending');
-
-      if (requestsError) throw requestsError;
-      setPendingRequestsCount(requestsCount || 0);
 
       // Get count of pending support messages
       const { count: supportCount, error: supportError } = await supabase
@@ -64,10 +53,10 @@ export function AdminSummary() {
 
   useEffect(() => {
     loadCounts();
-    
+
     // Refresh counts every 5 minutes
     const interval = setInterval(loadCounts, 5 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -75,32 +64,25 @@ export function AdminSummary() {
     <div className="mb-8">
       <h2 className="text-2xl font-bold mb-4">Dashboard Overview</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard 
-          title="Pending Tools" 
-          count={pendingToolsCount} 
-          icon={<Wrench className="h-5 w-5 text-blue-600" />} 
+        <SummaryCard
+          title="Pending Tools"
+          count={pendingToolsCount}
+          icon={<Wrench className="h-5 w-5 text-blue-600" />}
           description="Tools awaiting approval"
           isLoading={isLoading}
         />
-        <SummaryCard 
-          title="Pending Requests" 
-          count={pendingRequestsCount} 
-          icon={<Clock className="h-5 w-5 text-amber-600" />} 
-          description="Tool update/add requests"
-          isLoading={isLoading}
-        />
-        <SummaryCard 
-          title="Support Messages" 
-          count={pendingSupportCount} 
-          icon={<MessageSquare className="h-5 w-5 text-purple-600" />} 
-          description="Unanswered support requests"
-          isLoading={isLoading}
-        />
-        <SummaryCard 
-          title="Ownership Claims" 
-          count={pendingClaimsCount} 
-          icon={<AlertCircle className="h-5 w-5 text-red-600" />} 
+        <SummaryCard
+          title="Ownership Claims"
+          count={pendingClaimsCount}
+          icon={<AlertCircle className="h-5 w-5 text-red-600" />}
           description="Claims awaiting verification"
+          isLoading={isLoading}
+        />
+        <SummaryCard
+          title="Support Messages"
+          count={pendingSupportCount}
+          icon={<MessageSquare className="h-5 w-5 text-purple-600" />}
+          description="Unanswered support requests"
           isLoading={isLoading}
         />
       </div>
@@ -116,21 +98,25 @@ interface SummaryCardProps {
   isLoading: boolean;
 }
 
-function SummaryCard({ title, count, icon, description, isLoading }: SummaryCardProps) {
+function SummaryCard({
+  title,
+  count,
+  icon,
+  description,
+  isLoading,
+}: SummaryCardProps) {
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
-            <h3 className="text-2xl font-bold">
-              {isLoading ? '...' : count}
-            </h3>
+            <p className="text-sm font-medium text-muted-foreground mb-1">
+              {title}
+            </p>
+            <h3 className="text-2xl font-bold">{isLoading ? '...' : count}</h3>
             <p className="text-xs text-muted-foreground mt-1">{description}</p>
           </div>
-          <div className="p-2 bg-background rounded-full border">
-            {icon}
-          </div>
+          <div className="p-2 bg-background rounded-full border">{icon}</div>
         </div>
         {count > 0 && !isLoading && (
           <div className="mt-4 text-xs">

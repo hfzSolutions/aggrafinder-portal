@@ -151,14 +151,14 @@ export const ToolCard = ({
                 Featured
               </Badge>
             )}
-            {tool.isAdminAdded && (
+            {/* {tool.isAdminAdded && (
               <Badge
                 variant="secondary"
                 className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200"
               >
                 Admin Information
               </Badge>
-            )}
+            )} */}
           </div>
 
           <div className="absolute top-3 right-3 z-10">
@@ -211,10 +211,12 @@ export const ToolCard = ({
           <h3 className="text-lg font-medium mb-2 group-hover:text-primary transition-colors duration-300">
             {tool.name}
           </h3>
+          {tool.tagline && (
+            <p className="text-sm mb-2 line-clamp-2">{tool.tagline}</p>
+          )}
           <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-3">
             {tool.description}
           </p>
-
           <div className="mb-3">
             <div className="flex flex-wrap gap-1.5">
               {tool.category &&
@@ -248,9 +250,8 @@ export const ToolCard = ({
               )}
             </div>
           </div>
-
           <div className="mt-auto">
-            <div className="flex flex-wrap gap-1 mb-4">
+            {/* <div className="flex flex-wrap gap-1 mb-4">
               {tool.tags.slice(0, 3).map((tag, index) => (
                 <span
                   key={index}
@@ -275,7 +276,7 @@ export const ToolCard = ({
                   </Tooltip>
                 </TooltipProvider>
               )}
-            </div>
+            </div> */}
 
             <div className="flex items-center justify-between">
               <div
@@ -332,6 +333,9 @@ export const ToolCard = ({
           <h3 className="text-sm font-medium mb-1 line-clamp-1 group-hover:text-primary transition-colors duration-300">
             {tool.name}
           </h3>
+          {tool.tagline && (
+            <p className="text-xs mb-1 line-clamp-1">{tool.tagline}</p>
+          )}
           <p className="text-xs text-muted-foreground line-clamp-2">
             {tool.description}
           </p>
@@ -394,14 +398,14 @@ export const ToolCard = ({
                 Featured
               </Badge>
             )}
-            {tool.isAdminAdded && (
+            {/* {tool.isAdminAdded && (
               <Badge
                 variant="secondary"
                 className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200"
               >
                 Admin Information
               </Badge>
-            )}
+            )} */}
           </div>
 
           <div className="absolute top-3 right-3 z-10 sm:hidden">
@@ -431,6 +435,10 @@ export const ToolCard = ({
               </span>
             </div>
           </div>
+
+          {tool.tagline && (
+            <p className="text-sm mb-2 line-clamp-1">{tool.tagline}</p>
+          )}
 
           <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2">
             {tool.description}
@@ -470,7 +478,7 @@ export const ToolCard = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1 mb-4">
+          {/* <div className="flex flex-wrap gap-1 mb-4">
             {tool.tags.slice(0, 4).map((tag, index) => (
               <span
                 key={index}
@@ -495,7 +503,7 @@ export const ToolCard = ({
                 </Tooltip>
               </TooltipProvider>
             )}
-          </div>
+          </div> */}
 
           <div className="flex items-center justify-between gap-4 mt-auto">
             <div className="flex items-center gap-3">
