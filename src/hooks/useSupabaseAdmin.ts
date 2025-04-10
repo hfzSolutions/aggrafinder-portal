@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -32,12 +33,14 @@ interface UseSupabaseAdminReturn {
     name: string;
     description: string;
     url: string;
+    youtube_url?: string; // Add YouTube URL
     image_url: string;
     category: string[];
     pricing: string;
     featured: boolean;
     tags: string[];
     user_id: string;
+    is_admin_added?: boolean;
   }) => Promise<{ success: boolean; error?: string }>;
 
   updateTool: (
@@ -46,6 +49,7 @@ interface UseSupabaseAdminReturn {
       name: string;
       description: string;
       url: string;
+      youtube_url?: string; // Add YouTube URL
       image_url: string | File;
       category: string[];
       pricing: string;
@@ -60,6 +64,7 @@ interface UseSupabaseAdminReturn {
       name: string;
       description: string;
       url: string;
+      youtube_url?: string; // Add YouTube URL
       image_url: string;
       category: string[];
       pricing: string;
@@ -279,6 +284,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     name: string;
     description: string;
     url: string;
+    youtube_url?: string; // Add YouTube URL
     image_url: string | File;
     category: string[];
     pricing: string;
@@ -406,6 +412,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
       name: string;
       description: string;
       url: string;
+      youtube_url?: string; // Add YouTube URL
       image_url: string | File;
       category: string[];
       pricing: string;
@@ -522,6 +529,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
       name: string;
       description: string;
       url: string;
+      youtube_url?: string; // Add YouTube URL
       image_url: string;
       category: string[];
       pricing: string;
@@ -544,6 +552,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
           name: tool.name,
           description: tool.description,
           url: tool.url,
+          youtube_url: tool.youtube_url, // Include YouTube URL
           image_url: tool.image_url,
           category: tool.category,
           pricing: tool.pricing,
