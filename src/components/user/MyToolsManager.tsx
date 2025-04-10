@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
@@ -11,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Pencil, Trash2, Eye, AlertCircle, Youtube } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Eye, AlertCircle } from 'lucide-react';
 import { ToolSubmissionForm } from '@/components/admin/ToolSubmissionForm';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -53,14 +52,13 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
       const tools: AITool[] = data.map((tool) => ({
         id: tool.id,
         name: tool.name,
-        tagline: tool.tagline || '', // Add tagline with fallback
+        tagline: tool.tagline,
         description: tool.description,
         imageUrl: tool.image_url
           ? `${import.meta.env.VITE_STORAGE_URL}/${tool.image_url}`
           : '',
         category: tool.category,
         url: tool.url,
-        youtubeUrl: tool.youtube_url || '', // Ensure YouTube URL is properly mapped
         featured: tool.featured,
         pricing: tool.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
         tags: tool.tags || [],
@@ -205,12 +203,6 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
                         <p className="text-sm text-muted-foreground line-clamp-1">
                           {tool.description}
                         </p>
-                        {tool.youtubeUrl && (
-                          <div className="mt-1 flex items-center text-xs text-blue-500">
-                            <Youtube className="h-3 w-3 mr-1" />
-                            <span>Has demo video</span>
-                          </div>
-                        )}
                       </div>
                       <div>{getStatusBadge(tool.approvalStatus)}</div>
                     </div>

@@ -114,7 +114,6 @@ export type Database = {
           tags: string[]
           url: string
           user_id: string | null
-          youtube_url: string | null
         }
         Insert: {
           approval_status?: string
@@ -131,7 +130,6 @@ export type Database = {
           tags: string[]
           url: string
           user_id?: string | null
-          youtube_url?: string | null
         }
         Update: {
           approval_status?: string
@@ -148,7 +146,6 @@ export type Database = {
           tags?: string[]
           url?: string
           user_id?: string | null
-          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -336,7 +333,6 @@ export type Database = {
           submitter_name: string | null
           tool_id: string | null
           url: string
-          youtube_url: string | null
         }
         Insert: {
           category: string[]
@@ -352,7 +348,6 @@ export type Database = {
           submitter_name?: string | null
           tool_id?: string | null
           url: string
-          youtube_url?: string | null
         }
         Update: {
           category?: string[]
@@ -368,7 +363,6 @@ export type Database = {
           submitter_name?: string | null
           tool_id?: string | null
           url?: string
-          youtube_url?: string | null
         }
         Relationships: [
           {
