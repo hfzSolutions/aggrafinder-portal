@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -33,7 +34,7 @@ interface UseSupabaseAdminReturn {
     description: string;
     url: string;
     youtube_url?: string; // Add YouTube URL
-    image_url: string | File;
+    image_url: string;
     category: string[];
     pricing: string;
     featured: boolean;
@@ -290,14 +291,14 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     featured: boolean;
     tags: string[];
     user_id: string;
-    is_admin_added?: boolean;
+    is_admin_added?: boolean; // Add optional parameter to control is_admin_added flag
   }): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
 
       let imageUrl = '';
-      let shouldUpdateImage = true;
 
+      // Handle image upload if image_url is a File
       if (toolData.image_url instanceof File) {
         // Compress the image before uploading
         const file = await compressImage(toolData.image_url, {
@@ -321,27 +322,26 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
         // Store just the path - the public URL will be constructed when fetching
         imageUrl = filePath;
-      }
-
-      // Create a data object without the image_url property
-      const dataToInsert = {
-        ...toolData,
-        is_admin_added:
-          toolData.is_admin_added !== undefined
-            ? toolData.is_admin_added
-            : false,
-      };
-
-      // Only add image_url to the data if we should update it
-      if (shouldUpdateImage) {
-        dataToInsert.image_url = imageUrl;
       } else {
-        // Remove image_url from the data if we shouldn't update it
-        delete dataToInsert.image_url;
+        // If it's already a URL string, use it directly
+        // Check if it's a full URL or just a path
+        if (toolData.image_url.startsWith('http')) {
+          // It's already a full URL, use as is
+          imageUrl = toolData.image_url;
+        } else {
+          // It's a path, keep as is
+          imageUrl = toolData.image_url;
+        }
       }
 
-      // Insert the tool with the prepared data
-      const { error } = await supabase.from('ai_tools').insert(dataToInsert);
+      // Insert the tool with the image URL and set is_admin_added based on context
+      // If is_admin_added is explicitly provided in toolData, use that value
+      // Otherwise, default to false (user-submitted)
+      const { error } = await supabase.from('ai_tools').insert({
+        ...toolData,
+        image_url: imageUrl,
+        is_admin_added: toolData.is_admin_added !== undefined ? toolData.is_admin_added : false,
+      });
 
       if (error) throw error;
 
@@ -357,6 +357,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
+  // Tool management functions
   const deleteTool = async (
     id: string
   ): Promise<{ success: boolean; error?: string }> => {
@@ -404,6 +405,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
+  // Update tool function
   const updateTool = async (
     id: string,
     toolData: {
@@ -433,11 +435,9 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       const currentImageUrl = currentTool?.image_url || '';
       let imageUrl = '';
-      let shouldUpdateImage = false;
 
+      // Handle image upload if image_url is a File
       if (toolData.image_url instanceof File) {
-        shouldUpdateImage = true;
-
         // Compress the image before uploading
         const file = await compressImage(toolData.image_url, {
           maxSizeMB: 1, // Limit to 1MB
@@ -472,24 +472,41 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
             // We don't throw here as the update can still proceed
           }
         }
-      }
-
-      // Create a data object from toolData
-      const dataToUpdate = { ...toolData };
-
-      // Handle the image_url property based on shouldUpdateImage flag
-      if (shouldUpdateImage) {
-        // Add the new image URL if we should update the image
-        dataToUpdate.image_url = imageUrl;
       } else {
-        // Remove image_url from the data if we shouldn't update it
-        delete dataToUpdate.image_url;
+        // If it's already a URL string, use it directly
+        // Check if it's a full URL or just a path
+        if (toolData.image_url.startsWith('http')) {
+          // If the URL has changed and old one was a storage path, delete the old image
+          if (
+            toolData.image_url !== currentImageUrl &&
+            currentImageUrl &&
+            !currentImageUrl.startsWith('http')
+          ) {
+            const { error: deleteError } = await supabase.storage
+              .from('assets')
+              .remove([currentImageUrl]);
+
+            if (deleteError) {
+              console.error('Error deleting old tool image:', deleteError);
+              // We don't throw here as the update can still proceed
+            }
+          }
+
+          // Use the new URL
+          imageUrl = toolData.image_url;
+        } else {
+          // It's a path, keep as is
+          imageUrl = toolData.image_url;
+        }
       }
 
-      // Update the tool with the prepared data
+      // Update the tool with the image URL
       const { error } = await supabase
         .from('ai_tools')
-        .update(dataToUpdate)
+        .update({
+          ...toolData,
+          image_url: imageUrl,
+        })
         .eq('id', id);
 
       if (error) throw error;
@@ -506,6 +523,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
+  // Bulk tool submission function
   const bulkSubmitTools = async (
     toolsData: {
       name: string;
@@ -530,7 +548,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       // Process tools in batches
       for (let i = 0; i < toolsData.length; i += batchSize) {
-
         const batch = toolsData.slice(i, i + batchSize).map((tool) => ({
           name: tool.name,
           description: tool.description,
@@ -545,7 +562,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
           approval_status: 'approved', // Auto-approve bulk uploads
           is_admin_added: true, // Mark all bulk uploaded tools as admin-added
         }));
-
 
         // Insert the batch of tools
         const { error } = await supabase.from('ai_tools').insert(batch);
@@ -568,6 +584,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     }
   };
 
+  // New functions for direct tool approval
   const approveTool = async (
     id: string
   ): Promise<{ success: boolean; error?: string }> => {

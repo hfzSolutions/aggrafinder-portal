@@ -4,12 +4,13 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 // This client should only be used in admin-specific contexts
+// The service role key must be set in your environment variables
 const SUPABASE_URL = 'https://ozqlpdsmjwrhjyceyskd.supabase.co';
 
-// We need to provide a fallback value for the service role key to prevent runtime errors
-// In production, this should be set as an environment variable
+// NOTE: You need to add your service role key to your environment variables
+// This is a placeholder and will not work until you set the actual key
 const SUPABASE_SERVICE_ROLE_KEY =
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'PLACEHOLDER_SERVICE_KEY_FOR_CLIENT_SIDE';
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Create a separate admin client with the service role key
 export const supabaseAdmin = createClient<Database>(

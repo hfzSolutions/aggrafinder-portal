@@ -148,11 +148,8 @@ export function ToolSubmissionForm({
   useEffect(() => {
     if (editMode && toolToEdit) {
       setSelectedCategories(toolToEdit.category);
-      
-      // Ensure we update the YouTube URL field properly when editing
-      form.setValue('youtubeUrl', toolToEdit.youtubeUrl || '');
     }
-  }, [editMode, toolToEdit, form]);
+  }, [editMode, toolToEdit]);
 
   useEffect(() => {
     form.setValue('category', selectedCategories);
@@ -239,6 +236,13 @@ export function ToolSubmissionForm({
         }
       }
 
+      let finalImageUrl: string = '';
+      if (values.imageUrl instanceof File) {
+        finalImageUrl = '';
+      } else if (typeof values.imageUrl === 'string') {
+        finalImageUrl = values.imageUrl;
+      }
+
       // Determine if this tool is being added from the admin interface
       // Check if the component path includes 'admin' to determine if it's admin-added
       const isAdminAdded = window.location.pathname.includes('/admin');
@@ -248,7 +252,7 @@ export function ToolSubmissionForm({
         tagline: values.tagline,
         description: values.description,
         url: values.url,
-        youtube_url: values.youtubeUrl, // Make sure we're using the correct property name for the API
+        youtube_url: values.youtubeUrl, // Add YouTube URL to submission
         image_url: finalImageUrl,
         category: values.category,
         pricing: values.pricing,
