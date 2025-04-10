@@ -14,7 +14,7 @@ import {
   User,
   Settings,
   LogOut,
-  Wrench,
+  Tool,
   Heart,
   Bell,
   Bookmark,
@@ -152,7 +152,7 @@ export default function Dashboard() {
               className="w-full justify-start"
               onClick={() => setActiveTab('my-tools')}
             >
-              <Wrench className="mr-2 h-4 w-4" />
+              <Tool className="mr-2 h-4 w-4" />
               My Tools
             </Button>
             <Button
@@ -201,7 +201,7 @@ export default function Dashboard() {
                     <CardTitle className="text-sm font-medium">
                       My Tools
                     </CardTitle>
-                    <Wrench className="h-4 w-4 text-muted-foreground" />
+                    <Tool className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">0</div>
