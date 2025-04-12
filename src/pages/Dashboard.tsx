@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -29,6 +30,7 @@ import {
   LogOut,
   Settings,
   ShieldAlert,
+  Gift,
 } from 'lucide-react';
 import { AdminLink } from '@/components/user/AdminLink';
 import Header from '@/components/layout/Header';
@@ -39,9 +41,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserPreferences } from '@/components/user/UserPreferences';
 import { ProfileManager } from '@/components/user/ProfileManager';
 import { MyToolsManager } from '@/components/user/MyToolsManager';
+import { AffiliateManager } from '@/components/user/AffiliateManager';
+import { trackEvent } from '@/utils/analytics';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +56,14 @@ const Dashboard = () => {
   const [editingOutcome, setEditingOutcome] = useState<AIOucome | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [outcomeToDelete, setOutcomeToDelete] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('tools');
+
+  useEffect(() => {
+    const initialTab = searchParams.get('tab');
+    if (initialTab && ['tools', 'profile', 'affiliate'].includes(initialTab)) {
+      setActiveTab(initialTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -311,10 +324,13 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <Tabs defaultValue="tools">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-4">
                   <TabsTrigger value="tools">My Tools</TabsTrigger>
-                  {/* <TabsTrigger value="creations">My Creations</TabsTrigger> */}
+                  <TabsTrigger value="affiliate" onClick={() => trackEvent('affiliate', 'tab_view')}>
+                    <Gift className="h-4 w-4 mr-2" />
+                    Affiliate Program
+                  </TabsTrigger>
                   <TabsTrigger value="profile">Profile</TabsTrigger>
                 </TabsList>
 
@@ -326,152 +342,13 @@ const Dashboard = () => {
                   </div>
                 </TabsContent>
 
-                {/* <TabsContent value="creations">
+                <TabsContent value="affiliate">
                   <div className="bg-card border rounded-lg shadow-sm mb-6">
                     <div className="p-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold">
-                          Your AI Creations
-                        </h2>
-                        <Dialog
-                          open={isDialogOpen}
-                          onOpenChange={setIsDialogOpen}
-                        >
-                          <DialogTrigger asChild>
-                            <Button>
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add New Creation
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>
-                                {editingOutcome
-                                  ? 'Edit AI Creation'
-                                  : 'Share New AI Creation'}
-                              </DialogTitle>
-                              <DialogDescription>
-                                {editingOutcome
-                                  ? 'Update your AI-generated content'
-                                  : 'Showcase your amazing AI-generated content with the community'}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <OutcomeSubmissionForm
-                              onSuccess={handleSubmitSuccess}
-                              initialData={editingOutcome || undefined}
-                              userId={user?.id}
-                            />
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-
-                      {isOutcomesLoading ? (
-                        <div className="space-y-4">
-                          {[1, 2, 3].map((_, i) => (
-                            <Skeleton key={i} className="h-24 w-full" />
-                          ))}
-                        </div>
-                      ) : userOutcomes.length === 0 ? (
-                        <div className="text-center p-8 border border-dashed rounded-lg bg-muted/50">
-                          <h3 className="text-lg font-medium mb-2">
-                            No creations yet
-                          </h3>
-                          <p className="text-muted-foreground mb-4">
-                            Share your AI-generated creations with the community
-                          </p>
-                          <Button
-                            onClick={() => setIsDialogOpen(true)}
-                            variant="default"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Your First Creation
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {userOutcomes.map((outcome) => (
-                            <div
-                              key={outcome.id}
-                              className="border rounded-lg p-4 flex gap-4 bg-background hover:bg-secondary/10 transition-colors"
-                            >
-                              <div className="h-20 w-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                {outcome.imageUrl ? (
-                                  <img
-                                    src={outcome.imageUrl}
-                                    alt={outcome.title}
-                                    className="w-full h-full object-contain max-h-[80vh] max-w-full w-full"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500">
-                                    <span className="text-xs text-white font-medium">
-                                      No Image
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-grow overflow-hidden">
-                                <h3 className="font-medium text-base truncate">
-                                  {outcome.title}
-                                </h3>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {outcome.description}
-                                </p>
-                                <div className="flex items-center mt-1 text-xs text-muted-foreground">
-                                  <span>Made with {outcome.toolName}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-2 ml-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditOutcome(outcome)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteClick(outcome.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <AffiliateManager />
                     </div>
                   </div>
-
-                  <Dialog
-                    open={isDeleteDialogOpen}
-                    onOpenChange={setIsDeleteDialogOpen}
-                  >
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Delete Creation</DialogTitle>
-                        <DialogDescription>
-                          Are you sure you want to delete this creation? This
-                          action cannot be undone.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="flex justify-end gap-2 mt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => setIsDeleteDialogOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={handleDeleteOutcome}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </TabsContent> */}
+                </TabsContent>
 
                 <TabsContent value="profile">
                   <Card>

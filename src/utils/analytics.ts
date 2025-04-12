@@ -1,3 +1,4 @@
+
 import ReactGA from 'react-ga4';
 
 // Initialize Google Analytics with your tracking ID
@@ -41,4 +42,18 @@ export const trackEvent = (
     label,
     value,
   });
+};
+
+/**
+ * Track affiliate link clicks
+ * @param affiliateCode - The affiliate code
+ * @param toolId - The tool ID
+ * @param toolName - The tool name
+ */
+export const trackAffiliateClick = (
+  affiliateCode: string,
+  toolId: string,
+  toolName: string
+) => {
+  trackEvent('affiliate', 'click', `${toolName} (${affiliateCode})`);
 };

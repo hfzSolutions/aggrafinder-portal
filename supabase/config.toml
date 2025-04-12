@@ -1,1 +1,33 @@
+
 project_id = "ozqlpdsmjwrhjyceyskd"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+port = 54325
+
+[realtime]
+enabled = true
+
+[storage]
+enabled = true
+
+[edge_functions]
+[edge_functions.track-affiliate]
+verify_jwt = false

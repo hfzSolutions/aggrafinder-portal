@@ -54,6 +54,87 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_clicks: {
+        Row: {
+          affiliate_id: string
+          conversion_value: number | null
+          converted: boolean
+          created_at: string
+          id: string
+          ip_address: string | null
+          tool_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          conversion_value?: number | null
+          converted?: boolean
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          tool_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          conversion_value?: number | null
+          converted?: boolean
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          tool_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_clicks_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_clicks_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliates: {
+        Row: {
+          affiliate_code: string
+          created_at: string
+          earnings: number
+          id: string
+          is_active: boolean
+          payment_email: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          affiliate_code: string
+          created_at?: string
+          earnings?: number
+          id?: string
+          is_active?: boolean
+          payment_email?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          affiliate_code?: string
+          created_at?: string
+          earnings?: number
+          id?: string
+          is_active?: boolean
+          payment_email?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_outcomes: {
         Row: {
           created_at: string
@@ -114,6 +195,7 @@ export type Database = {
           tags: string[]
           url: string
           user_id: string | null
+          youtube_url: string | null
         }
         Insert: {
           approval_status?: string
@@ -130,6 +212,7 @@ export type Database = {
           tags: string[]
           url: string
           user_id?: string | null
+          youtube_url?: string | null
         }
         Update: {
           approval_status?: string
@@ -146,6 +229,7 @@ export type Database = {
           tags?: string[]
           url?: string
           user_id?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -239,6 +323,7 @@ export type Database = {
       tool_analytics: {
         Row: {
           action: string
+          affiliate_code: string | null
           created_at: string
           id: string
           metadata: Json | null
@@ -247,6 +332,7 @@ export type Database = {
         }
         Insert: {
           action: string
+          affiliate_code?: string | null
           created_at?: string
           id?: string
           metadata?: Json | null
@@ -255,6 +341,7 @@ export type Database = {
         }
         Update: {
           action?: string
+          affiliate_code?: string | null
           created_at?: string
           id?: string
           metadata?: Json | null
@@ -333,6 +420,7 @@ export type Database = {
           submitter_name: string | null
           tool_id: string | null
           url: string
+          youtube_url: string | null
         }
         Insert: {
           category: string[]
@@ -348,6 +436,7 @@ export type Database = {
           submitter_name?: string | null
           tool_id?: string | null
           url: string
+          youtube_url?: string | null
         }
         Update: {
           category?: string[]
@@ -363,6 +452,7 @@ export type Database = {
           submitter_name?: string | null
           tool_id?: string | null
           url?: string
+          youtube_url?: string | null
         }
         Relationships: [
           {
@@ -490,6 +580,14 @@ export type Database = {
       approve_tool: {
         Args: { tool_id: string }
         Returns: undefined
+      }
+      create_affiliate: {
+        Args: { user_id: string }
+        Returns: string
+      }
+      generate_affiliate_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       mark_account_for_deletion: {
         Args: { user_id: string; deletion_reason?: string }
