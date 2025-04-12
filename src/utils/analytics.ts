@@ -1,3 +1,4 @@
+
 import ReactGA from 'react-ga4';
 
 // Initialize Google Analytics with your tracking ID

@@ -114,6 +114,7 @@ export type Database = {
           tags: string[]
           url: string
           user_id: string | null
+          youtube_url: string | null
         }
         Insert: {
           approval_status?: string
@@ -130,6 +131,7 @@ export type Database = {
           tags: string[]
           url: string
           user_id?: string | null
+          youtube_url?: string | null
         }
         Update: {
           approval_status?: string
@@ -146,6 +148,7 @@ export type Database = {
           tags?: string[]
           url?: string
           user_id?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -239,6 +242,7 @@ export type Database = {
       tool_analytics: {
         Row: {
           action: string
+          affiliate_code: string | null
           created_at: string
           id: string
           metadata: Json | null
@@ -247,6 +251,7 @@ export type Database = {
         }
         Insert: {
           action: string
+          affiliate_code?: string | null
           created_at?: string
           id?: string
           metadata?: Json | null
@@ -255,6 +260,7 @@ export type Database = {
         }
         Update: {
           action?: string
+          affiliate_code?: string | null
           created_at?: string
           id?: string
           metadata?: Json | null
@@ -333,6 +339,7 @@ export type Database = {
           submitter_name: string | null
           tool_id: string | null
           url: string
+          youtube_url: string | null
         }
         Insert: {
           category: string[]
@@ -348,6 +355,7 @@ export type Database = {
           submitter_name?: string | null
           tool_id?: string | null
           url: string
+          youtube_url?: string | null
         }
         Update: {
           category?: string[]
@@ -363,6 +371,7 @@ export type Database = {
           submitter_name?: string | null
           tool_id?: string | null
           url?: string
+          youtube_url?: string | null
         }
         Relationships: [
           {
@@ -490,6 +499,14 @@ export type Database = {
       approve_tool: {
         Args: { tool_id: string }
         Returns: undefined
+      }
+      create_affiliate: {
+        Args: { user_id: string }
+        Returns: string
+      }
+      generate_affiliate_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       mark_account_for_deletion: {
         Args: { user_id: string; deletion_reason?: string }

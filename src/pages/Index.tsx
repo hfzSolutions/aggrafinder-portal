@@ -6,6 +6,7 @@ import Hero from "@/components/home/Hero";
 import FeaturedTools from "@/components/home/FeaturedTools";
 import PopularTools from "@/components/home/PopularTools";
 import Newsletter from "@/components/home/Newsletter";
+import PostToolCTA from "@/components/home/PostToolCTA";
 
 const Index = () => {
   return (
@@ -20,6 +21,7 @@ const Index = () => {
       <main>
         <Hero />
         <FeaturedTools />
+        <PostToolCTA />
         <PopularTools />
         <Newsletter />
       </main>
