@@ -185,10 +185,8 @@ export function ToolSubmissionForm({
     );
   };
 
-  // Check if a tool with the same URL or name already exists
   const checkDuplicateTool = async (name: string, url: string) => {
     try {
-      // First check by URL (exact match)
       const { data: urlMatch, error: urlError } = await (supabase as any)
         .from('ai_tools')
         .select('id, name')
@@ -201,7 +199,6 @@ export function ToolSubmissionForm({
         return urlMatch[0];
       }
 
-      // Then check by name (case insensitive)
       const { data: nameMatch, error: nameError } = await (supabase as any)
         .from('ai_tools')
         .select('id, name')
@@ -225,9 +222,7 @@ export function ToolSubmissionForm({
     try {
       setIsSubmitting(true);
 
-      // Skip duplicate check in edit mode
       if (!editMode) {
-        // Check for duplicate tool
         const duplicate = await checkDuplicateTool(values.name, values.url);
 
         if (duplicate) {
@@ -237,23 +232,43 @@ export function ToolSubmissionForm({
         }
       }
 
-      // Determine if this tool is being added from the admin interface
-      // Check if the component path includes 'admin' to determine if it's admin-added
       const isAdminAdded = window.location.pathname.includes('/admin');
+
+      let imageUrl = values.imageUrl;
+
+      if (values.imageUrl instanceof File) {
+        const file = await compressImage(values.imageUrl, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1200,
+          quality: 0.8,
+        });
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `tools/${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('assets')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+        
+        imageUrl = filePath;
+      }
 
       const toolData = {
         name: values.name,
         tagline: values.tagline,
         description: values.description,
         url: values.url,
-        youtube_url: values.youtubeUrl, // Add YouTube URL to submission
-        image_url: values.imageUrl,
+        youtube_url: values.youtubeUrl,
+        image_url: typeof imageUrl === 'string' ? imageUrl : '',
         category: values.category,
         pricing: values.pricing,
         featured: values.featured,
         tags: values.tags,
         user_id: userId,
-        is_admin_added: isAdminAdded, // Set based on whether it's submitted from admin page
+        is_admin_added: isAdminAdded,
       };
 
       let result;
@@ -559,7 +574,6 @@ export function ToolSubmissionForm({
         </form>
       </Form>
 
-      {/* Duplicate Tool Dialog */}
       <Dialog
         open={!!duplicateTool}
         onOpenChange={(open) => !open && setDuplicateTool(null)}

@@ -11,7 +11,7 @@ const PostToolCTA = () => {
   
   const handlePostTool = () => {
     trackEvent('user_engagement', 'click_post_tool_cta');
-    navigate('/dashboard');
+    navigate('/auth');
   };
 
   return (
@@ -21,14 +21,14 @@ const PostToolCTA = () => {
           <div className="flex-1 space-y-4">
             <div className="inline-flex items-center px-3 py-1 rounded-full border bg-background text-primary text-sm font-medium">
               <Gift className="h-3.5 w-3.5 mr-1.5" />
-              Share your AI tool with the world
+              Share your AI tool with the community
             </div>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
               Post Your AI Tool For Free
             </h2>
             <p className="text-muted-foreground max-w-[600px]">
-              Showcase your AI tool to our growing community of AI enthusiasts and early adopters. 
-              Get visibility, feedback, and users – all at no cost.
+              Be among the first to showcase your AI tool to our growing community.
+              Connect with early adopters looking for innovative AI solutions.
             </p>
             <ul className="space-y-2">
               <li className="flex items-start">
@@ -38,7 +38,7 @@ const PostToolCTA = () => {
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                   </svg>
                 </div>
-                <span>Reach thousands of AI enthusiasts and early adopters</span>
+                <span>Get valuable feedback from early adopters</span>
               </li>
               <li className="flex items-start">
                 <div className="mr-2 mt-0.5 h-5 w-5 text-primary flex-shrink-0">
@@ -47,7 +47,7 @@ const PostToolCTA = () => {
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                   </svg>
                 </div>
-                <span>Get valuable feedback from actual users</span>
+                <span>Increase visibility in a curated collection</span>
               </li>
               <li className="flex items-start">
                 <div className="mr-2 mt-0.5 h-5 w-5 text-primary flex-shrink-0">
@@ -56,7 +56,7 @@ const PostToolCTA = () => {
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                   </svg>
                 </div>
-                <span>Build your brand in the AI community</span>
+                <span>Establish your presence in the emerging AI community</span>
               </li>
             </ul>
           </div>
@@ -74,14 +74,14 @@ const PostToolCTA = () => {
               </div>
               <h3 className="text-xl font-bold mb-2">Add Your AI Tool</h3>
               <p className="text-muted-foreground mb-4">
-                Just fill out a simple form with details about your tool. No complicated process.
+                Sign in to your account and add your AI tool directly from your dashboard.
               </p>
               <Button 
                 onClick={handlePostTool} 
                 className="w-full group"
                 size="lg"
               >
-                Post Your Tool
+                Sign In to Post
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
