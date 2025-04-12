@@ -36,7 +36,6 @@ import { useSupabaseAdmin } from '@/hooks/useSupabaseAdmin';
 import { toast } from 'sonner';
 import { AITool } from '@/types/tools';
 import { supabase } from '@/integrations/supabase/client';
-import { compressImage } from '@/utils/imageCompression';
 
 const formSchema = z.object({
   name: z
