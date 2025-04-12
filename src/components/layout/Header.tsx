@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Plus, Image, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/hooks/use-theme';
+import { pageView, trackEvent } from '@/utils/analytics';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
@@ -42,6 +42,9 @@ const Header = () => {
   useEffect(() => {
     // Close mobile menu when route changes
     setIsMenuOpen(false);
+
+    // Track page view when location changes
+    pageView(location.pathname);
   }, [location]);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -61,6 +64,7 @@ const Header = () => {
         className={`relative px-3 py-2 transition-all duration-300 hover:text-primary ${
           isActive ? 'text-primary' : 'text-foreground/80 hover:text-foreground'
         }`}
+        onClick={() => trackEvent('navigation', 'click', to)}
       >
         <span className="relative z-10">{children}</span>
         {isActive && (
@@ -86,13 +90,20 @@ const Header = () => {
         <nav className="hidden md:flex items-center space-x-1">
           <NavLink to="/">Home</NavLink>
           <NavLink to="/tools">AI Tools</NavLink>
-          <NavLink to="/outcomes">AI Showcase</NavLink>
+          {/* <NavLink to="/outcomes">AI Showcase</NavLink> */}
           {!isLoading && user && <NavLink to="/dashboard">Dashboard</NavLink>}
           <div className="ml-4 flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              onClick={toggleTheme}
+              onClick={() => {
+                toggleTheme();
+                trackEvent(
+                  'theme',
+                  'toggle',
+                  theme === 'light' ? 'dark' : 'light'
+                );
+              }}
               className="w-9 h-9"
             >
               {theme === 'light' ? (
@@ -105,7 +116,12 @@ const Header = () => {
             {/* Only display login button if user is not logged in */}
             {!isLoading && !user && (
               <Button asChild variant="default" size="sm">
-                <Link to="/auth">Login</Link>
+                <Link
+                  to="/auth"
+                  onClick={() => trackEvent('navigation', 'click', '/auth')}
+                >
+                  Login
+                </Link>
               </Button>
             )}
           </div>
@@ -128,32 +144,47 @@ const Header = () => {
         }`}
       >
         <nav className="flex flex-col px-4 pb-6 pt-2 bg-background/95 backdrop-blur-md border-t border-border/10">
-          <Link to="/" className="px-4 py-3 hover:bg-secondary/50 rounded-md">
+          <Link
+            to="/"
+            className="px-4 py-3 hover:bg-secondary/50 rounded-md"
+            onClick={() => trackEvent('navigation', 'click_mobile', '/')}
+          >
             Home
           </Link>
           <Link
             to="/tools"
             className="px-4 py-3 hover:bg-secondary/50 rounded-md"
+            onClick={() => trackEvent('navigation', 'click_mobile', '/tools')}
           >
             AI Tools
           </Link>
-          <Link
+          {/* <Link
             to="/outcomes"
             className="px-4 py-3 hover:bg-secondary/50 rounded-md"
           >
             AI Showcase
-          </Link>
+          </Link> */}
           {!isLoading && user && (
             <Link
               to="/dashboard"
               className="px-4 py-3 hover:bg-secondary/50 rounded-md"
+              onClick={() =>
+                trackEvent('navigation', 'click_mobile', '/dashboard')
+              }
             >
               Dashboard
             </Link>
           )}
 
           <button
-            onClick={toggleTheme}
+            onClick={() => {
+              toggleTheme();
+              trackEvent(
+                'theme',
+                'toggle_mobile',
+                theme === 'light' ? 'dark' : 'light'
+              );
+            }}
             className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
           >
             {theme === 'light' ? (
@@ -174,6 +205,7 @@ const Header = () => {
             <Link
               to="/auth"
               className="px-4 py-3 hover:bg-secondary/50 rounded-md flex items-center gap-2 w-full text-left"
+              onClick={() => trackEvent('navigation', 'click_mobile', '/auth')}
             >
               <span>Login</span>
             </Link>
