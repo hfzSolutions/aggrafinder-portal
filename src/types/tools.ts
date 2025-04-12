@@ -7,7 +7,7 @@ export interface AITool {
   imageUrl: string;
   category: string[];
   url: string;
-  youtubeUrl?: string; // Add YouTube URL field
+  youtubeUrl?: string; // YouTube URL field
   featured: boolean;
   pricing: 'Free' | 'Freemium' | 'Paid' | 'Free Trial';
   tags: string[];

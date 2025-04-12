@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import SearchBar from '@/components/ui/SearchBar';
 import FilterButton from '@/components/ui/FilterButton';
+import InlineSubscription from '@/components/tools/InlineSubscription';
 import {
   ArrowLeft,
   Sliders,
@@ -45,7 +46,6 @@ const Tools = () => {
   const [sortOption, setSortOption] = useState<'newest' | 'popular'>('newest');
   const [showFavorites, setShowFavorites] = useState(false);
 
-  // Custom hooks for favorites and recently viewed tools
   const { favoriteTools, addFavorite, removeFavorite, isFavorite } =
     useFavoriteTools();
   const {
@@ -68,12 +68,10 @@ const Tools = () => {
     search: searchTerm,
     pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
     loadMore: true,
-    // Filter by favorites if showFavorites is true
     ...(showFavorites &&
       favoriteTools.length > 0 && {
         customQuery: (query) => query.in('id', favoriteTools),
       }),
-    // Sort by newest (default) or popular
     sortBy: sortOption === 'popular' ? 'popularity' : 'created_at',
   });
 
@@ -143,9 +141,15 @@ const Tools = () => {
       removeFavorite(toolId);
     }
 
-    // Track the event
     trackEvent(toolId, 'favorite_toggle', { isFavorite });
   };
+
+  const getSubscriptionIndex = () => {
+    if (filteredTools.length <= 3) return null;
+    return Math.min(6, Math.floor(filteredTools.length / 2));
+  };
+
+  const subscriptionIndex = getSubscriptionIndex();
 
   const isLoading =
     categoriesLoading || (toolsLoading && filteredTools.length === 0);
@@ -179,7 +183,6 @@ const Tools = () => {
           </div>
 
           <div className="container px-4 md:px-8 mx-auto py-8">
-            {/* Recently Viewed Tools Section */}
             {recentlyViewedTools.length > 0 && (
               <div className="mb-8 animate-fade-in">
                 <div className="flex items-center justify-between mb-4">
@@ -493,22 +496,30 @@ const Tools = () => {
                     }
                   >
                     {filteredTools.map((tool, index) => (
-                      <div
-                        key={tool.id}
-                        ref={
-                          index === filteredTools.length - 1
-                            ? lastToolElementRef
-                            : null
-                        }
-                        className="animate-fade-in transition-all duration-300 transform hover:translate-y-[-2px]"
-                      >
-                        <ToolCard
-                          tool={tool}
-                          viewType={isMobile ? 'list' : view}
-                          onFavoriteToggle={handleFavoriteToggle}
-                          isFavorite={isFavorite(tool.id)}
-                        />
-                      </div>
+                      <>
+                        <div
+                          key={tool.id}
+                          ref={
+                            index === filteredTools.length - 1
+                              ? lastToolElementRef
+                              : null
+                          }
+                          className="animate-fade-in transition-all duration-300 transform hover:translate-y-[-2px]"
+                        >
+                          <ToolCard
+                            tool={tool}
+                            viewType={isMobile ? 'list' : view}
+                            onFavoriteToggle={handleFavoriteToggle}
+                            isFavorite={isFavorite(tool.id)}
+                          />
+                        </div>
+
+                        {subscriptionIndex === index && (
+                          <div key="subscription" className={view === 'grid' ? 'col-span-full' : ''}>
+                            <InlineSubscription />
+                          </div>
+                        )}
+                      </>
                     ))}
 
                     {toolsLoading && filteredTools.length > 0 && (
