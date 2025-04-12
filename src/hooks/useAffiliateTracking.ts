@@ -6,6 +6,7 @@ import { trackEvent } from '@/utils/analytics';
 
 /**
  * Hook to track affiliate referrals from URL parameters
+ * Must be used within a Router context
  */
 export const useAffiliateTracking = () => {
   const location = useLocation();
@@ -26,6 +27,9 @@ export const useAffiliateTracking = () => {
       const toolId = pathMatch[1];
       recordAffiliateClick(affiliateCode, toolId);
     }
+    
+    // Track the referral event
+    trackEvent('affiliate', 'referral', affiliateCode);
     
   }, [location]);
 
@@ -64,4 +68,10 @@ export const useAffiliateTracking = () => {
   return {
     getCurrentAffiliateCode,
   };
+};
+
+// Add this to be used in each page that needs affiliate tracking
+export const AffiliateTracker = () => {
+  useAffiliateTracking();
+  return null;
 };

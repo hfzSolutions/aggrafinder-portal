@@ -28,8 +28,9 @@ import { useFavoriteTools } from '@/hooks/useFavoriteTools';
 import { useRecentlyViewedTools } from '@/hooks/useRecentlyViewedTools';
 import { useToolAnalytics } from '@/hooks/useToolAnalytics';
 import { toast } from 'sonner';
+import { AffiliateTracker } from '@/hooks/useAffiliateTracking';
 
-const Tools = () => {
+function Tools() {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
@@ -45,7 +46,6 @@ const Tools = () => {
   const [sortOption, setSortOption] = useState<'newest' | 'popular'>('newest');
   const [showFavorites, setShowFavorites] = useState(false);
 
-  // Custom hooks for favorites and recently viewed tools
   const { favoriteTools, addFavorite, removeFavorite, isFavorite } =
     useFavoriteTools();
   const {
@@ -68,12 +68,10 @@ const Tools = () => {
     search: searchTerm,
     pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
     loadMore: true,
-    // Filter by favorites if showFavorites is true
     ...(showFavorites &&
       favoriteTools.length > 0 && {
         customQuery: (query) => query.in('id', favoriteTools),
       }),
-    // Sort by newest (default) or popular
     sortBy: sortOption === 'popular' ? 'popularity' : 'created_at',
   });
 
@@ -143,7 +141,6 @@ const Tools = () => {
       removeFavorite(toolId);
     }
 
-    // Track the event
     trackEvent(toolId, 'favorite_toggle', { isFavorite });
   };
 
@@ -152,6 +149,7 @@ const Tools = () => {
 
   return (
     <>
+      <AffiliateTracker />
       <Helmet>
         <title>AI Tools Collection | AI Aggregator</title>
         <meta
@@ -179,7 +177,6 @@ const Tools = () => {
           </div>
 
           <div className="container px-4 md:px-8 mx-auto py-8">
-            {/* Recently Viewed Tools Section */}
             {recentlyViewedTools.length > 0 && (
               <div className="mb-8 animate-fade-in">
                 <div className="flex items-center justify-between mb-4">
@@ -537,6 +534,6 @@ const Tools = () => {
       </div>
     </>
   );
-};
+}
 
 export default Tools;

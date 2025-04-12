@@ -1,3 +1,4 @@
+
 export type AITool = {
   id: string;
   name: string;
@@ -39,7 +40,15 @@ export type AnalyticsAction =
   | 'vote_up'
   | 'vote_down' 
   | 'watch_demo'
-  | 'affiliate_click';
+  | 'affiliate_click'
+  | 'click_url'
+  | 'share_copy_link'
+  | 'share_twitter'
+  | 'share_facebook'
+  | 'share_linkedin'
+  | 'share_email'
+  | 'share_native'
+  | 'favorite_toggle';
 
 export type ToolRequest = {
   id: string;

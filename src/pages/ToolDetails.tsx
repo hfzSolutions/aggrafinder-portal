@@ -31,8 +31,9 @@ import { VoteButtons } from '@/components/tools/VoteButtons';
 import { CommentsList } from '@/components/tools/CommentsList';
 import ShareButton from '@/components/tools/ShareButton';
 import { ClaimToolButton } from '@/components/tools/ClaimToolButton';
+import { AffiliateTracker } from '@/hooks/useAffiliateTracking';
 
-const ToolDetails = () => {
+function ToolDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,7 +45,6 @@ const ToolDetails = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
-  // Get the addRecentlyViewed function from the hook
   const { addRecentlyViewed } = useRecentlyViewedTools();
 
   useEffect(() => {
@@ -100,7 +100,6 @@ const ToolDetails = () => {
 
         setTool(transformedData);
 
-        // Add this tool to recently viewed tools
         addRecentlyViewed(data.id);
       } catch (err) {
         console.error('Error fetching tool details:', err);
@@ -148,6 +147,7 @@ const ToolDetails = () => {
 
   return (
     <>
+      <AffiliateTracker />
       <Helmet>
         <title>
           {tool ? `${tool.name} | AI Tool Details` : 'AI Tool Details'}
@@ -519,6 +519,6 @@ const ToolDetails = () => {
       )}
     </>
   );
-};
+}
 
 export default ToolDetails;
