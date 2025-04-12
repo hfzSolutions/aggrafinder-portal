@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -92,6 +93,7 @@ export function RecommendedTools({
           id: item.id,
           name: item.name,
           description: item.description,
+          tagline: item.tagline || '', // Add the missing tagline property
           imageUrl: item.image_url,
           category: item.category,
           url: item.url,
