@@ -1,4 +1,5 @@
-import { AITool } from '@/types';
+
+import { AITool } from '@/types/tools';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { ToolCard } from './ToolCard';
