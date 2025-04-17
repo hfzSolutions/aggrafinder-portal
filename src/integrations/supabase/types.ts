@@ -389,7 +389,7 @@ export type Database = {
           created_at: string
           id: string
           rating: number | null
-          tool_id: string | null
+          tool_id: string
           updated_at: string
           user_id: string | null
         }
@@ -398,7 +398,7 @@ export type Database = {
           created_at?: string
           id?: string
           rating?: number | null
-          tool_id?: string | null
+          tool_id: string
           updated_at?: string
           user_id?: string | null
         }
@@ -407,19 +407,11 @@ export type Database = {
           created_at?: string
           id?: string
           rating?: number | null
-          tool_id?: string | null
+          tool_id?: string
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tool_reviews_tool_id_fkey"
-            columns: ["tool_id"]
-            isOneToOne: false
-            referencedRelation: "ai_tools"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tool_votes: {
         Row: {

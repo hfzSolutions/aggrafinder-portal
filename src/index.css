@@ -13,8 +13,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 24 95% 53%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 24.6 95% 53.1%; /* Orange color (hsl 24.6, 95%, 53.1%) - matches #F97316 */
+    --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -30,7 +30,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 24 95% 53%;
+    --ring: 24.6 95% 53.1%; /* Updated ring color to match primary */
 
     --radius: 0.75rem;
   }
@@ -45,8 +45,8 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 24 90% 58%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 24.6 95% 53.1%; /* Orange color in dark mode */
+    --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -62,7 +62,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 24 90% 58%;
+    --ring: 24.6 95% 53.1%; /* Updated ring color to match primary */
   }
 }
 
@@ -117,7 +117,7 @@
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-orange-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-400;
   }
 
   .hover-card-animation {
