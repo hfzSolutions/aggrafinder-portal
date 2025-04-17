@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -92,12 +93,14 @@ export function RecommendedTools({
           id: item.id,
           name: item.name,
           description: item.description,
+          tagline: item.tagline || '', // Add the tagline property with a fallback
           imageUrl: item.image_url,
           category: item.category,
           url: item.url,
           featured: item.featured,
           pricing: item.pricing as 'Free' | 'Freemium' | 'Paid' | 'Free Trial',
           tags: item.tags,
+          youtubeUrl: item.youtube_url || undefined, // Add youtubeUrl property
         }));
 
         setTools(transformedData);
