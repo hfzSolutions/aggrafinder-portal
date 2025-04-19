@@ -59,6 +59,11 @@ export const ToolCard = ({
     trackEvent(tool.id, 'view');
   };
 
+  const handleCategoryClick = (category: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click when clicking category
+    navigate(`/tools?category=${encodeURIComponent(category)}`);
+  };
+
   const handleLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click when clicking on the link
     trackEvent(tool.id, 'click_url');
@@ -96,7 +101,6 @@ export const ToolCard = ({
     }
   };
 
-  // Render a grid card (original style)
   if (viewType === 'grid') {
     return (
       <div
@@ -224,7 +228,8 @@ export const ToolCard = ({
                   <Badge
                     key={index}
                     variant="outline"
-                    className="text-xs bg-secondary/40 hover:bg-secondary"
+                    className="text-xs bg-secondary/40 hover:bg-secondary cursor-pointer"
+                    onClick={(e) => handleCategoryClick(category, e)}
                   >
                     {category}
                   </Badge>
@@ -236,6 +241,7 @@ export const ToolCard = ({
                       <Badge
                         variant="outline"
                         className="text-xs bg-secondary/40 hover:bg-secondary cursor-help"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         +{tool.category.length - 2}
                       </Badge>
@@ -251,33 +257,6 @@ export const ToolCard = ({
             </div>
           </div>
           <div className="mt-auto">
-            {/* <div className="flex flex-wrap gap-1 mb-4">
-              {tool.tags.slice(0, 3).map((tag, index) => (
-                <span
-                  key={index}
-                  className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground"
-                >
-                  {tag}
-                </span>
-              ))}
-              {tool.tags.length > 3 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground cursor-help">
-                        +{tool.tags.length - 3}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="text-xs">
-                        {tool.tags.slice(3).join(', ')}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div> */}
-
             <div className="flex items-center justify-between">
               <div
                 onClick={(e) => e.stopPropagation()}
@@ -305,7 +284,6 @@ export const ToolCard = ({
     );
   }
 
-  // Render a compact card for recently viewed section
   if (compact) {
     return (
       <div
@@ -344,7 +322,6 @@ export const ToolCard = ({
     );
   }
 
-  // Render a list card (new style)
   return (
     <div
       className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
@@ -358,7 +335,6 @@ export const ToolCard = ({
       </div>
 
       <div className="flex flex-col sm:flex-row">
-        {/* Image Section (Left) */}
         <div className="relative sm:w-1/4 min-w-[120px] h-48 sm:h-auto overflow-hidden bg-secondary/30">
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
@@ -419,7 +395,6 @@ export const ToolCard = ({
           </div>
         </div>
 
-        {/* Content Section (Right) */}
         <div className="flex-1 p-5 flex flex-col">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-lg font-medium group-hover:text-primary transition-colors duration-300">
@@ -451,7 +426,8 @@ export const ToolCard = ({
                   <Badge
                     key={index}
                     variant="outline"
-                    className="text-xs bg-secondary/40 hover:bg-secondary"
+                    className="text-xs bg-secondary/40 hover:bg-secondary cursor-pointer"
+                    onClick={(e) => handleCategoryClick(category, e)}
                   >
                     {category}
                   </Badge>
@@ -463,6 +439,7 @@ export const ToolCard = ({
                       <Badge
                         variant="outline"
                         className="text-xs bg-secondary/40 hover:bg-secondary cursor-help"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         +{tool.category.length - 3}
                       </Badge>
@@ -477,33 +454,6 @@ export const ToolCard = ({
               )}
             </div>
           </div>
-
-          {/* <div className="flex flex-wrap gap-1 mb-4">
-            {tool.tags.slice(0, 4).map((tag, index) => (
-              <span
-                key={index}
-                className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground"
-              >
-                {tag}
-              </span>
-            ))}
-            {tool.tags.length > 4 && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground cursor-help">
-                      +{tool.tags.length - 4}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="text-xs">
-                      {tool.tags.slice(4).join(', ')}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div> */}
 
           <div className="flex items-center justify-between gap-4 mt-auto">
             <div className="flex items-center gap-3">

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -93,7 +92,7 @@ export function ToolClaimRequests() {
     setIsLoading(true);
     try {
       let query = supabase
-        .from('tool_requests')
+        .from('tool_reports')
         .select('*', { count: 'exact' })
         .eq('request_type', 'claim')
         .eq('status', pageParams.status)
@@ -165,7 +164,7 @@ export function ToolClaimRequests() {
       if (isRejecting) {
         // Reject the request
         const { error } = await supabase
-          .from('tool_requests')
+          .from('tool_reports')
           .update({
             status: 'rejected',
             admin_feedback: feedback,
@@ -178,7 +177,7 @@ export function ToolClaimRequests() {
         setIsApproving(true);
         // Approve the request - first create the tool
         const { error: approvalError } = await supabase
-          .from('tool_requests')
+          .from('tool_reports')
           .update({
             status: 'approved',
             admin_feedback: feedback,
@@ -190,7 +189,7 @@ export function ToolClaimRequests() {
         // Migrate the data if this is referring to an existing tool
         if (selectedRequest.tool_id) {
           const { error: updateError } = await supabase
-            .from('tool_requests')
+            .from('tool_reports')
             .update({
               migrated: true,
             })
