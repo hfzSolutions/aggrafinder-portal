@@ -192,7 +192,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       // First get the tool request details
       const { data: requestData, error: fetchError } = await supabase
-        .from('tool_requests')
+        .from('tool_reports')
         .select('*')
         .eq('id', id)
         .single();
@@ -235,7 +235,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       // Update the request status
       const { error: updateError } = await supabase
-        .from('tool_requests')
+        .from('tool_reports')
         .update({ status: 'approved' })
         .eq('id', id);
 
@@ -260,7 +260,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
       setLoading(true);
 
       const { error } = await supabase
-        .from('tool_requests')
+        .from('tool_reports')
         .update({ status: 'rejected' })
         .eq('id', id);
 
