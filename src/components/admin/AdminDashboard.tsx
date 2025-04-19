@@ -776,8 +776,28 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                           <div className="text-sm space-y-1">
                             <div>
                               <span className="font-medium">URL:</span>{' '}
-                              {tool.url}
+                              <a
+                                href={tool.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                {tool.url}
+                              </a>
                             </div>
+                            {tool.youtubeUrl && (
+                              <div>
+                                <span className="font-medium">YouTube:</span>{' '}
+                                <a
+                                  href={tool.youtubeUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline"
+                                >
+                                  Watch Video
+                                </a>
+                              </div>
+                            )}
                             <div>
                               <span className="font-medium">Categories:</span>{' '}
                               {tool.category.join(', ')}
@@ -888,8 +908,29 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                         </div>
                         <div className="text-sm space-y-1">
                           <div>
-                            <span className="font-medium">URL:</span> {tool.url}
+                            <span className="font-medium">URL:</span>{' '}
+                            <a
+                              href={tool.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {tool.url}
+                            </a>
                           </div>
+                          {tool.youtubeUrl && (
+                            <div>
+                              <span className="font-medium">YouTube:</span>{' '}
+                              <a
+                                href={tool.youtubeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                Watch Video
+                              </a>
+                            </div>
+                          )}
                           <div>
                             <span className="font-medium">Categories:</span>{' '}
                             {tool.category.join(', ')}

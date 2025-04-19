@@ -62,6 +62,7 @@ interface UseSupabaseAdminReturn {
     toolsData: {
       name: string;
       description: string;
+      tagline?: string; // Added tagline
       url: string;
       youtube_url?: string; // Add YouTube URL
       image_url: string;
@@ -222,7 +223,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
         const { error: insertError } = await supabase.from('ai_tools').insert({
           name: requestData.name,
           description: requestData.description,
-          image_url: 'https://via.placeholder.com/300', // Default image
           category: requestData.category,
           url: requestData.url,
           featured: false,
@@ -438,6 +438,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
         const batch = toolsData.slice(i, i + batchSize).map((tool) => ({
           name: tool.name,
           description: tool.description,
+          tagline: tool.tagline, // Include tagline
           url: tool.url,
           youtube_url: tool.youtube_url, // Include YouTube URL
           image_url: tool.image_url,
