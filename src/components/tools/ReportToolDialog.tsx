@@ -64,9 +64,9 @@ export function ReportToolDialog({
     try {
       setIsSubmitting(true);
       
-      // Create a tool request of type "report"
+      // Create a tool report 
       const { error } = await supabase
-        .from('tool_requests')
+        .from('tool_reports')  // Updated table name here
         .insert({
           tool_id: toolId,
           name: toolName,

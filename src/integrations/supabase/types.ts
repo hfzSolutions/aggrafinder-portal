@@ -324,7 +324,7 @@ export type Database = {
           },
         ]
       }
-      tool_requests: {
+      tool_reports: {
         Row: {
           category: string[]
           created_at: string
@@ -375,7 +375,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tool_requests_tool_id_fkey"
+            foreignKeyName: "tool_reports_tool_id_fkey"
             columns: ["tool_id"]
             isOneToOne: false
             referencedRelation: "ai_tools"
