@@ -19,11 +19,9 @@ interface ToolUploadData {
   tagline?: string;
   url: string;
   youtubeUrl?: string;
-  imageUrl: string;
   category: string[];
   pricing: 'Free' | 'Freemium' | 'Paid' | 'Free Trial';
-  featured: boolean;
-  tags: string[];
+  // Other fields will be set with defaults
 }
 
 export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
@@ -78,13 +76,6 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
       errors.push(`Row ${rowIndex}: YouTube URL must be a valid YouTube URL`);
     }
 
-    // Image URL validation (if provided)
-    if (data.imageUrl && !/^https?:\/\/.+/.test(data.imageUrl)) {
-      errors.push(
-        `Row ${rowIndex}: Image URL must be a valid URL starting with http:// or https://`
-      );
-    }
-
     // Category validation
     if (
       !data.category ||
@@ -112,8 +103,39 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
         `Row ${rowIndex}: Pricing must be one of: ${validPricing.join(', ')}`
       );
     }
-
+    console.log('Bulk Item', data);
     return { isValid: errors.length === 0, errors };
+  };
+
+  // Function to parse CSV properly handling quoted fields
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let inQuotes = false;
+    let currentValue = '';
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(currentValue.trim());
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+
+    // Add the last value
+    result.push(currentValue.trim());
+
+    // Remove quotes from values
+    return result.map((value) => {
+      if (value.startsWith('"') && value.endsWith('"')) {
+        return value.substring(1, value.length - 1).trim();
+      }
+      return value.trim();
+    });
   };
 
   const parseCSV = async () => {
@@ -125,7 +147,7 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
     try {
       const text = await file.text();
       const rows = text.split('\n');
-      const headers = rows[0].split(',').map((h) => h.trim());
+      const headers = parseCSVLine(rows[0]);
 
       // Validate headers
       const requiredHeaders = ['name', 'description', 'url'];
@@ -148,7 +170,7 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
       for (let i = 1; i < rows.length; i++) {
         if (!rows[i].trim()) continue; // Skip empty rows
 
-        const values = rows[i].split(',').map((v) => v.trim());
+        const values = parseCSVLine(rows[i]);
         const tool: any = {};
 
         // Map CSV values to tool properties
@@ -158,24 +180,14 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
             tool[header] = values[index]
               ? values[index].split(';').map((c: string) => c.trim())
               : [];
-          } else if (header === 'tags') {
-            // Handle tags as array
-            tool[header] = values[index]
-              ? values[index].split(';').map((t: string) => t.trim())
-              : [];
-          } else if (header === 'featured') {
-            // Handle featured as boolean
-            tool[header] = values[index]?.toLowerCase() === 'true';
           } else {
             tool[header] = values[index] || '';
           }
         });
 
         // Set defaults for missing fields
-        if (!tool.imageUrl) tool.imageUrl = 'https://via.placeholder.com/300';
+        if (!tool.tagline) tool.tagline = '';
         if (!tool.pricing) tool.pricing = 'Free';
-        if (!tool.featured) tool.featured = false;
-        if (!tool.tags) tool.tags = [];
 
         // Validate the tool data
         const { isValid, errors } = validateToolData(tool, i);
@@ -220,13 +232,13 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
       const toolsData = parsedTools.map((tool) => ({
         name: tool.name,
         description: tool.description,
+        tagline: tool.tagline,
         url: tool.url,
-        youtube_url: tool.youtubeUrl, // Include YouTube URL
-        image_url: tool.imageUrl,
+        youtube_url: tool.youtubeUrl,
         category: tool.category,
         pricing: tool.pricing,
-        featured: tool.featured,
-        tags: tool.tags,
+        featured: false,
+        tags: [],
       }));
 
       const { success, error, count } = await bulkSubmitTools(toolsData);
@@ -258,10 +270,9 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
           disabled={isUploading}
         />
         <p className="text-sm text-muted-foreground">
-          Upload a CSV file with the following headers: name, description, url,
-          youtubeUrl (optional), imageUrl (optional), category
-          (semicolon-separated), pricing (optional), featured (optional), tags
-          (optional, semicolon-separated)
+          Upload a CSV file with the following headers: name, description,
+          tagline (optional), url, youtubeUrl (optional), category
+          (semicolon-separated), pricing (optional)
         </p>
       </div>
 
@@ -306,6 +317,8 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
               <thead className="bg-muted">
                 <tr>
                   <th className="p-2 text-left">Name</th>
+                  <th className="p-2 text-left">Description</th>
+                  <th className="p-2 text-left">Tagline</th>
                   <th className="p-2 text-left">URL</th>
                   <th className="p-2 text-left">YouTube URL</th>
                   <th className="p-2 text-left">Categories</th>
@@ -316,6 +329,12 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
                 {parsedTools.slice(0, 5).map((tool, index) => (
                   <tr key={index} className="border-t">
                     <td className="p-2">{tool.name}</td>
+                    <td className="p-2">
+                      {tool.description.length > 30
+                        ? `${tool.description.substring(0, 30)}...`
+                        : tool.description}
+                    </td>
+                    <td className="p-2">{tool.tagline || '-'}</td>
                     <td className="p-2">{tool.url}</td>
                     <td className="p-2">{tool.youtubeUrl || '-'}</td>
                     <td className="p-2">{tool.category.join(', ')}</td>
@@ -325,7 +344,7 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
                 {parsedTools.length > 5 && (
                   <tr className="border-t">
                     <td
-                      colSpan={4}
+                      colSpan={7} // Updated colspan for the new column
                       className="p-2 text-center text-muted-foreground"
                     >
                       ... and {parsedTools.length - 5} more tools
