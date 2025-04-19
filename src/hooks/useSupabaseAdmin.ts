@@ -30,31 +30,34 @@ interface UseSupabaseAdminReturn {
   // Tool management
   submitTool: (toolData: {
     name: string;
+    tagline: string;
     description: string;
     url: string;
     youtube_url?: string; // Add YouTube URL
-    image_url: string;
+    image_url: any;
     category: string[];
     pricing: string;
     featured: boolean;
     tags: string[];
-    user_id: string;
-    is_admin_added?: boolean;
+    user_id?: string;
+    is_admin_added: boolean;
   }) => Promise<{ success: boolean; error?: string }>;
 
   updateTool: (
     id: string,
     toolData: {
       name: string;
+      tagline: string;
       description: string;
       url: string;
       youtube_url?: string; // Add YouTube URL
-      image_url: string;
+      image_url: any;
       category: string[];
       pricing: string;
       featured: boolean;
       tags: string[];
       user_id?: string;
+      is_admin_added: boolean;
     }
   ) => Promise<{ success: boolean; error?: string }>;
 
@@ -281,33 +284,61 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
   // Tool management functions
   const submitTool = async (toolData: {
     name: string;
+    tagline: string;
     description: string;
     url: string;
     youtube_url?: string; // Add YouTube URL
-    image_url: string;
+    image_url: any;
     category: string[];
     pricing: string;
     featured: boolean;
     tags: string[];
-    user_id: string;
-    is_admin_added?: boolean; // Add optional parameter to control is_admin_added flag
+    user_id?: string;
+    is_admin_added: boolean;
   }): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
 
-      // Insert the tool with the image URL and set is_admin_added based on context
-      // If is_admin_added is explicitly provided in toolData, use that value
-      // Otherwise, default to false (user-submitted)
-      const dataToInsert = {
-        ...toolData,
-        is_admin_added:
-          toolData.is_admin_added !== undefined
-            ? toolData.is_admin_added
-            : false,
-      };
+      toolData.is_admin_added = window.location.pathname.includes('/admin');
 
       // Insert the tool with the prepared data
-      const { error } = await supabase.from('ai_tools').insert(dataToInsert);
+      const { data, error } = await supabase
+        .from('ai_tools')
+        .insert(toolData)
+        .select()
+        .single();
+
+      // Handle image compression if it's a new file
+      if (toolData.image_url instanceof File) {
+        const file = await compressImage(toolData.image_url, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1200,
+          quality: 0.8,
+        });
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 15)}.${fileExt}`;
+        const filePath = `tools/${fileName}`;
+
+        // Upload the new image
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('assets')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Update the tool with the prepared data
+        const { error } = await supabase
+          .from('ai_tools')
+          .update({
+            image_url: filePath,
+          })
+          .eq('id', data.id);
+
+        if (error) throw error;
+      }
 
       if (error) throw error;
 
@@ -376,19 +407,84 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     id: string,
     toolData: {
       name: string;
+      tagline: string;
       description: string;
       url: string;
       youtube_url?: string; // Add YouTube URL
-      image_url: string;
+      image_url: any;
       category: string[];
       pricing: string;
       featured: boolean;
       tags: string[];
       user_id?: string;
+      is_admin_added: boolean;
     }
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
+
+      // Handle image compression if it's a new file
+      if (toolData.image_url instanceof File) {
+        const file = await compressImage(toolData.image_url, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1200,
+          quality: 0.8,
+        });
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 15)}.${fileExt}`;
+        const filePath = `tools/${fileName}`;
+
+        // Upload the new image
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('assets')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        toolData.image_url = filePath;
+      } else {
+        const existingImagePath = toolData.image_url.includes(
+          import.meta.env.VITE_STORAGE_URL
+        )
+          ? toolData.image_url
+              .split(import.meta.env.VITE_STORAGE_URL + '/')
+              .pop()
+          : toolData.image_url;
+
+        toolData.image_url = existingImagePath;
+      }
+
+      // First get the current tool data to check if we need to delete an old image
+      const { data: currentTool, error: fetchError } = await supabase
+        .from('ai_tools')
+        .select('image_url')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // If the image URL has changed and the old one was stored in Supabase Storage,
+      // delete the old image to free up storage space
+      if (
+        currentTool?.image_url &&
+        currentTool.image_url !== toolData.image_url &&
+        !currentTool.image_url.startsWith('http')
+      ) {
+        // Delete the old image from storage
+        const { error: deleteError } = await supabase.storage
+          .from('assets')
+          .remove([currentTool.image_url]);
+
+        if (deleteError) {
+          console.error('Error deleting previous image:', deleteError);
+          // Continue with update even if delete fails
+        }
+      }
+
+      toolData.is_admin_added = window.location.pathname.includes('/admin');
 
       // Update the tool with the prepared data
       const { error } = await supabase

@@ -97,12 +97,34 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
     if (!toolToDelete) return;
 
     try {
-      const { error } = await supabase
+      // First get the tool details to get the image path
+      const { data: toolData, error: fetchError } = await supabase
+        .from('ai_tools')
+        .select('image_url')
+        .eq('id', toolToDelete)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete the tool from the database
+      const { error: deleteError } = await supabase
         .from('ai_tools')
         .delete()
         .eq('id', toolToDelete);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
+
+      // If the tool had an image and it's stored in Supabase Storage, delete it
+      if (toolData?.image_url && !toolData.image_url.startsWith('http')) {
+        const { error: storageError } = await supabase.storage
+          .from('assets')
+          .remove([toolData.image_url]);
+
+        if (storageError) {
+          console.error('Error deleting tool image:', storageError);
+          // We don't throw here as the tool was already deleted
+        }
+      }
 
       setUserTools((prev) => prev.filter((tool) => tool.id !== toolToDelete));
       toast.success('Tool deleted successfully');

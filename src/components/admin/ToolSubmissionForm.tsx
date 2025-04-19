@@ -233,29 +233,7 @@ export function ToolSubmissionForm({
         }
       }
 
-      const isAdminAdded = window.location.pathname.includes('/admin');
-
-      let imageUrl = values.imageUrl;
-
-      if (values.imageUrl instanceof File) {
-        const file = await compressImage(values.imageUrl, {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1200,
-          quality: 0.8,
-        });
-
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `tools/${fileName}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('assets')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-        
-        imageUrl = filePath;
-      }
+      let result;
 
       const toolData = {
         name: values.name,
@@ -263,18 +241,17 @@ export function ToolSubmissionForm({
         description: values.description,
         url: values.url,
         youtube_url: values.youtubeUrl,
-        image_url: typeof imageUrl === 'string' ? imageUrl : '',
+        image_url: values.imageUrl,
         category: values.category,
         pricing: values.pricing,
         featured: values.featured,
         tags: values.tags,
         user_id: userId,
-        is_admin_added: isAdminAdded,
+        is_admin_added: false,
       };
 
-      let result;
-
       if (editMode && toolToEdit) {
+        // Use updateTool from useSupabaseAdmin which already handles image deletion
         result = await updateTool(toolToEdit.id, toolData);
         if (result.success) {
           toast.success('Tool updated successfully!');

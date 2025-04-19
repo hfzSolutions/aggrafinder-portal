@@ -99,10 +99,12 @@ const Tools = () => {
     [toolsLoading, hasMore, loadNextPage]
   );
 
+  // Effect to update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchTerm) params.set('search', searchTerm);
     if (activeCategory !== 'All') params.set('category', activeCategory);
+    if (selectedPricing !== 'All') params.set('pricing', selectedPricing);
 
     const newUrl = `${location.pathname}${
       params.toString() ? '?' + params.toString() : ''
@@ -115,6 +117,26 @@ const Tools = () => {
     navigate,
     location.pathname,
   ]);
+
+  // Effect to sync URL params with state when URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const categoryParam = params.get('category');
+    const searchParam = params.get('search');
+    const pricingParam = params.get('pricing');
+
+    if (categoryParam && categoryParam !== activeCategory) {
+      setActiveCategory(categoryParam);
+    }
+
+    if (searchParam && searchParam !== searchTerm) {
+      setSearchTerm(searchParam);
+    }
+
+    if (pricingParam && pricingParam !== selectedPricing) {
+      setSelectedPricing(pricingParam);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (isMobile) {
@@ -310,6 +332,26 @@ const Tools = () => {
                             }`}
                           />
                           {showFavorites ? 'All Tools' : 'Favorites Only'}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start mt-4"
+                          onClick={() => {
+                            setActiveCategory('All');
+                            setSelectedPricing('All');
+                            setSearchTerm('');
+                            setShowFavorites(false);
+                            setSortOption('newest');
+                            setView('list');
+                            // Reset URL to clean state
+                            navigate('/tools', { replace: true });
+                            toast.success('All filters cleared');
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Clear all filters
                         </Button>
                       </div>
                     )}
@@ -515,7 +557,10 @@ const Tools = () => {
                         </div>
 
                         {subscriptionIndex === index && (
-                          <div key="subscription" className={view === 'grid' ? 'col-span-full' : ''}>
+                          <div
+                            key="subscription"
+                            className={view === 'grid' ? 'col-span-full' : ''}
+                          >
                             <InlineSubscription />
                           </div>
                         )}
