@@ -43,7 +43,9 @@ const Tools = () => {
   const [selectedPricing, setSelectedPricing] = useState('All');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('list');
-  const [sortOption, setSortOption] = useState<'newest' | 'popular'>('newest');
+  const [sortOption, setSortOption] = useState<'newest' | 'popular' | 'random'>(
+    'random'
+  ); // Default to random sorting
   const [showFavorites, setShowFavorites] = useState(false);
 
   const { favoriteTools, addFavorite, removeFavorite, isFavorite } =
@@ -72,7 +74,12 @@ const Tools = () => {
       favoriteTools.length > 0 && {
         customQuery: (query) => query.in('id', favoriteTools),
       }),
-    sortBy: sortOption === 'popular' ? 'popularity' : 'created_at',
+    sortBy:
+      sortOption === 'popular'
+        ? 'popularity'
+        : sortOption === 'newest'
+        ? 'created_at'
+        : 'random',
   });
 
   const observer = useRef<IntersectionObserver | null>(null);
@@ -403,6 +410,16 @@ const Tools = () => {
                           Sort by
                         </h3>
                         <div className="flex space-x-2 w-full">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`px-3 flex-1 ${
+                              sortOption === 'random' ? 'bg-secondary/70' : ''
+                            }`}
+                            onClick={() => setSortOption('random')}
+                          >
+                            Random
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import FilterButton from '@/components/ui/FilterButton';
 import {
   Loader2,
   Plus,
@@ -41,6 +42,7 @@ import {
   FolderPlus,
   InboxIcon,
   ImageOff,
+  Search,
 } from 'lucide-react';
 import {
   Dialog,
@@ -65,6 +67,12 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   // State for tools management
   const [tools, setTools] = useState<AITool[]>([]);
   const [toolsLoading, setToolsLoading] = useState(true);
+
+  // State for tools filtering
+  const [filterNoImage, setFilterNoImage] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterPricing, setFilterPricing] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // State for pending tools
   const [pendingTools, setPendingTools] = useState<AITool[]>([]);
@@ -144,17 +152,44 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   // State for tabs
   const [activeTab, setActiveTab] = useState('tools');
 
-  // Fetch tools - updated to include the activeTab dependency
+  // Fetch tools - updated to include the activeTab dependency and filters
   useEffect(() => {
     const fetchTools = async () => {
       try {
         setToolsLoading(true);
-        const { data, error } = await supabase
+        let query = supabase
           .from('ai_tools')
           .select('*')
           .eq('approval_status', 'approved')
-          .range(page * TOOLS_PER_PAGE, (page + 1) * TOOLS_PER_PAGE - 1)
           .order('created_at', { ascending: false });
+
+        // Apply category filter
+        if (filterCategory !== 'All') {
+          query = query.contains('category', [filterCategory]);
+        }
+
+        // Apply pricing filter
+        if (filterPricing !== 'All') {
+          query = query.eq('pricing', filterPricing);
+        }
+
+        // Apply search term filter
+        if (searchTerm) {
+          query = query.or(
+            `name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,tagline.ilike.%${searchTerm}%`
+          );
+        }
+
+        // Apply No Image filter at the database level
+        if (filterNoImage) {
+          query = query.is('image_url', null);
+        }
+
+        // Get the data with pagination
+        const { data, error } = await query.range(
+          page * TOOLS_PER_PAGE,
+          (page + 1) * TOOLS_PER_PAGE - 1
+        );
 
         if (error) throw error;
 
@@ -195,7 +230,15 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     if (isAdmin && activeTab === 'tools') {
       fetchTools();
     }
-  }, [isAdmin, page, activeTab]); // Add activeTab as a dependency
+  }, [
+    isAdmin,
+    page,
+    activeTab,
+    filterNoImage,
+    filterCategory,
+    filterPricing,
+    searchTerm,
+  ]); // Add filters as dependencies
 
   // Fetch pending tools that need approval - also update this to refresh when activeTab changes
   useEffect(() => {
@@ -399,17 +442,42 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   };
 
-  // Refresh tools list function to avoid code duplication - modified to respect approval status
+  // Refresh tools list function to avoid code duplication - modified to respect approval status and filters
   const refreshToolsList = async () => {
     try {
       setToolsLoading(true);
       setPage(0);
       setTools([]);
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('ai_tools')
         .select('*')
-        .eq('approval_status', 'approved') // Ensure we only get approved tools
+        .eq('approval_status', 'approved'); // Ensure we only get approved tools
+
+      // Apply category filter
+      if (filterCategory !== 'All') {
+        query = query.contains('category', [filterCategory]);
+      }
+
+      // Apply pricing filter
+      if (filterPricing !== 'All') {
+        query = query.eq('pricing', filterPricing);
+      }
+
+      // Apply search term filter
+      if (searchTerm) {
+        query = query.or(
+          `name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,tagline.ilike.%${searchTerm}%`
+        );
+      }
+
+      // Apply No Image filter at the database level
+      if (filterNoImage) {
+        query = query.is('image_url', null);
+      }
+
+      // Get the data with pagination
+      const { data, error } = await query
         .range(0, TOOLS_PER_PAGE - 1)
         .order('created_at', { ascending: false });
 
@@ -432,6 +500,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           | 'pending'
           | 'approved'
           | 'rejected',
+        isAdminAdded: item.is_admin_added || false,
       }));
 
       setHasMore(data.length === TOOLS_PER_PAGE);
@@ -674,6 +743,67 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                     )}
                   </DialogContent>
                 </Dialog>
+              </div>
+
+              {/* Filter Section */}
+              <div className="flex flex-wrap gap-2 mb-4 items-center">
+                <div className="relative w-full md:w-auto flex-grow md:flex-grow-0 mb-2 md:mb-0">
+                  <Input
+                    type="text"
+                    placeholder="Search tools..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full md:w-64"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <FilterButton
+                    label="Category"
+                    options={['All', ...(categories.map((c) => c.name) || [])]}
+                    selectedOption={filterCategory}
+                    onChange={setFilterCategory}
+                  />
+                  <FilterButton
+                    label="Pricing"
+                    options={['All', 'Free', 'Freemium', 'Paid', 'Free Trial']}
+                    selectedOption={filterPricing}
+                    onChange={setFilterPricing}
+                  />
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="no-image-filter"
+                      checked={filterNoImage}
+                      onCheckedChange={(checked) =>
+                        setFilterNoImage(checked as boolean)
+                      }
+                    />
+                    <Label
+                      htmlFor="no-image-filter"
+                      className="cursor-pointer text-sm"
+                    >
+                      No Image
+                    </Label>
+                  </div>
+                  {(filterNoImage ||
+                    filterCategory !== 'All' ||
+                    filterPricing !== 'All' ||
+                    searchTerm) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFilterNoImage(false);
+                        setFilterCategory('All');
+                        setFilterPricing('All');
+                        setSearchTerm('');
+                        setPage(0);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {toolsLoading && page === 0 ? (

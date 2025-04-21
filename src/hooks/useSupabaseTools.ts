@@ -13,7 +13,7 @@ interface UseSupabaseToolsOptions {
   excludeId?: string; // Add this to exclude specific tools (useful for related tools)
   userId?: string; // Add this to filter by user ID
   includeUnapproved?: boolean; // Add this to include unapproved tools (for admin views)
-  sortBy?: 'created_at' | 'popularity' | 'name'; // Add sorting options
+  sortBy?: 'created_at' | 'popularity' | 'name' | 'random'; // Add sorting options including random
   customQuery?: (query: any) => any; // Allow custom query modifications
 }
 
@@ -28,7 +28,7 @@ export const useSupabaseTools = ({
   excludeId,
   userId,
   includeUnapproved = false,
-  sortBy = 'created_at',
+  sortBy = 'random', // Default to random sorting for unique user experience
   customQuery,
 }: UseSupabaseToolsOptions = {}) => {
   const [tools, setTools] = useState<AITool[]>([]);
@@ -129,9 +129,11 @@ export const useSupabaseTools = ({
           query = query.order('created_at', { ascending: false });
         } else if (sortBy === 'name') {
           query = query.order('name', { ascending: true });
-        } else {
-          // Default sort by created_at
+        } else if (sortBy === 'created_at') {
           query = query.order('created_at', { ascending: false });
+        } else if (sortBy === 'random') {
+          // For random sorting, we'll fetch the data first and then shuffle it
+          // No specific order in the query
         }
 
         query = query.range(
@@ -197,11 +199,20 @@ export const useSupabaseTools = ({
           isAdminAdded: item.is_admin_added || false,
         }));
 
-        // Sort by upvotes if sortBy is popularity
+        // Apply client-side sorting
         if (sortBy === 'popularity') {
           transformedData = transformedData.sort(
             (a, b) => (b.upvotes || 0) - (a.upvotes || 0)
           );
+        } else if (sortBy === 'random') {
+          // Fisher-Yates shuffle algorithm for true randomization
+          for (let i = transformedData.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [transformedData[i], transformedData[j]] = [
+              transformedData[j],
+              transformedData[i],
+            ];
+          }
         }
 
         setHasMore(transformedData.length === limit);
