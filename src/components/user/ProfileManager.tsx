@@ -9,7 +9,7 @@ import { FileUpload } from '@/components/ui/file-upload';
 import { compressImage } from '@/utils/imageCompression';
 import { sanitizeFilename } from '@/utils/fileUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Trash2, Upload } from 'lucide-react';
+import { Trash2, Upload, ShieldAlert } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   AlertDialog,
@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface ProfileManagerProps {
   userId: string;
@@ -47,6 +47,7 @@ export function ProfileManager({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] =
     useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -85,6 +86,25 @@ export function ProfileManager({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        // Check if user is in admin_users table
+        const { data, error } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        setIsAdmin(!!data);
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+    };
+
+    checkAdminStatus();
+  }, [userId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,6 +346,21 @@ export function ProfileManager({
           placeholder="Choose a username"
         />
       </div>
+
+      {isAdmin && (
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-center"
+            asChild
+          >
+            <Link to="/admin">
+              <ShieldAlert className="mr-2 h-4 w-4" />
+              Access Admin Dashboard
+            </Link>
+          </Button>
+        </div>
+      )}
 
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? 'Updating...' : 'Update Profile'}
