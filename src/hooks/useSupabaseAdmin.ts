@@ -525,13 +525,39 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     try {
       setLoading(true);
 
+      // First, check for existing tool names
+      const toolNames = toolsData.map((tool) => tool.name);
+      const { data: existingTools } = await supabase
+        .from('ai_tools')
+        .select('name')
+        .in('name', toolNames);
+
+      // Create a set of existing tool names for faster lookup
+      const existingToolNames = new Set(
+        existingTools?.map((tool) => tool.name) || []
+      );
+
+      // Filter out tools with existing names
+      const newTools = toolsData.filter(
+        (tool) => !existingToolNames.has(tool.name)
+      );
+
+      // If all tools already exist, return early
+      if (newTools.length === 0) {
+        return {
+          success: true,
+          count: 0,
+          error: `All ${toolsData.length} tools already exist in the database.`,
+        };
+      }
+
       // Process tools in batches to avoid overwhelming the database
       const batchSize = 10;
       let successCount = 0;
 
       // Process tools in batches
-      for (let i = 0; i < toolsData.length; i += batchSize) {
-        const batch = toolsData.slice(i, i + batchSize).map((tool) => ({
+      for (let i = 0; i < newTools.length; i += batchSize) {
+        const batch = newTools.slice(i, i + batchSize).map((tool) => ({
           name: tool.name,
           description: tool.description,
           tagline: tool.tagline, // Include tagline
@@ -553,6 +579,17 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
         if (error) throw error;
 
         successCount += batch.length;
+      }
+
+      // If some tools were skipped due to existing names
+      if (successCount < toolsData.length) {
+        return {
+          success: true,
+          count: successCount,
+          error: `${successCount} tools uploaded. ${
+            toolsData.length - successCount
+          } tools skipped because they already exist.`,
+        };
       }
 
       return { success: true, count: successCount };

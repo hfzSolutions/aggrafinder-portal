@@ -19,10 +19,10 @@ export const compressImage = async (
 ): Promise<File> => {
   // Default compression options
   const defaultOptions: CompressionOptions = {
-    maxSizeMB: 1, // Default max size in MB
-    maxWidthOrHeight: 1920, // Default max width/height
+    maxSizeMB: 0.5, // Reduced max size to 500KB
+    maxWidthOrHeight: 1200, // Reduced max dimensions
     useWebWorker: true, // Use web worker for better performance
-    quality: 0.8, // Default quality (0.8 = 80%)
+    quality: 0.7, // Reduced quality for smaller file size
   };
 
   // Merge default options with provided options

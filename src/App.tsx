@@ -9,6 +9,7 @@ import Tools from './pages/Tools';
 import ToolDetails from './pages/ToolDetails';
 import CompareTools from './pages/CompareTools';
 import Resources from './pages/Resources';
+import UTMTracker from './components/analytics/UTMTracker';
 
 import Outcomes from './pages/Outcomes';
 import NotFound from './pages/NotFound';
@@ -46,6 +47,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ToolsCompareProvider>
+          <UTMTracker />
+
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/tools" element={<Tools />} />

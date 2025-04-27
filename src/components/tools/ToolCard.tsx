@@ -114,6 +114,10 @@ export const ToolCard = ({
           <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-primary/20 to-transparent rounded-br-xl"></div>
         </div>
 
+        {tool.featured && (
+          <div className="absolute inset-0 border-2 border-yellow-200 dark:border-yellow-500/40 rounded-xl pointer-events-none z-10"></div>
+        )}
+
         <div className="relative pt-[56.25%] w-full overflow-hidden bg-secondary/30">
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
@@ -333,6 +337,10 @@ export const ToolCard = ({
         <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent rounded-tl-xl"></div>
         <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-primary/20 to-transparent rounded-br-xl"></div>
       </div>
+
+      {tool.featured && (
+        <div className="absolute inset-0 border-2 border-yellow-300 dark:border-yellow-500/40 rounded-xl pointer-events-none"></div>
+      )}
 
       <div className="flex flex-col sm:flex-row">
         <div className="relative sm:w-1/4 min-w-[120px] h-48 sm:h-auto overflow-hidden bg-secondary/30">

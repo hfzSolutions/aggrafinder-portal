@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { AnalyticsAction } from '@/types/tools';
+import { getStoredUTMParams } from '@/utils/utmTracker';
 
 export const useToolAnalytics = () => {
   const [isTracking, setIsTracking] = useState(false);
@@ -28,12 +28,21 @@ export const useToolAnalytics = () => {
       setIsTracking(true);
       const userId = getUserId();
 
+      // Get UTM parameters from storage
+      const utmParams = getStoredUTMParams();
+
+      // Combine provided metadata with UTM parameters
+      const enhancedMetadata = {
+        ...metadata,
+        ...(utmParams && { utm: utmParams }),
+      };
+
       const { error } = await supabase.from('tool_analytics').insert([
         {
           tool_id: toolId,
           user_id: userId,
           action,
-          metadata,
+          metadata: enhancedMetadata,
           created_at: new Date().toISOString(),
         },
       ]);

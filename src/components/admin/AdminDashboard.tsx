@@ -9,6 +9,8 @@ import { BulkToolUpload } from './BulkToolUpload';
 import { ToolOwnershipClaims } from './ToolOwnershipClaims';
 import { SupportMessages } from './SupportMessages';
 import { AdminSummary } from './AdminSummary';
+import { TodaysToolPicker } from './TodaysToolPicker';
+import { SponsorBannerManager } from './SponsorBannerManager';
 import {
   Card,
   CardContent,
@@ -655,6 +657,8 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="support">Support Messages</TabsTrigger>
+              <TabsTrigger value="todays_picks">Today's Picks</TabsTrigger>
+              <TabsTrigger value="sponsor_banners">Sponsor Banners</TabsTrigger>
             </TabsList>
 
             {/* Tools Tab */}
@@ -1175,6 +1179,20 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* Today's Tool Picks Tab */}
+            <TabsContent value="todays_picks" className="space-y-4">
+              <h3 className="text-lg font-medium">
+                Manage Today's AI Tool Picks
+              </h3>
+              <TodaysToolPicker />
+            </TabsContent>
+
+            {/* Sponsor Banners Tab */}
+            <TabsContent value="sponsor_banners" className="space-y-4">
+              <h3 className="text-lg font-medium">Manage Sponsor Banners</h3>
+              <SponsorBannerManager />
             </TabsContent>
 
             {/* Categories Tab */}

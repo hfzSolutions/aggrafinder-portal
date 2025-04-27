@@ -10,7 +10,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Pencil, Trash2, Eye, AlertCircle } from 'lucide-react';
+import {
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { ToolSubmissionForm } from '@/components/admin/ToolSubmissionForm';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +34,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface MyToolsManagerProps {
   userId: string;
@@ -37,15 +55,34 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
   const [editingTool, setEditingTool] = useState<AITool | null>(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [toolToDelete, setToolToDelete] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalTools, setTotalTools] = useState(0);
+  const itemsPerPage = 5;
 
   const fetchUserTools = async () => {
     try {
       setLoading(true);
+
+      // Get total count for pagination
+      const { count, error: countError } = await supabase
+        .from('ai_tools')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      if (countError) throw countError;
+
+      setTotalTools(count || 0);
+
+      // Get paginated data
       const { data, error } = await supabase
         .from('ai_tools')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(
+          (currentPage - 1) * itemsPerPage,
+          currentPage * itemsPerPage - 1
+        );
 
       if (error) throw error;
 
@@ -81,7 +118,7 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
 
   useEffect(() => {
     fetchUserTools();
-  }, [userId]);
+  }, [userId, currentPage]);
 
   const handleEditTool = (tool: AITool) => {
     setEditingTool(tool);
@@ -182,7 +219,7 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
         </Button>
       </div>
 
-      {userTools.length === 0 ? (
+      {userTools.length === 0 && !loading ? (
         <div className="text-center p-8 border border-dashed rounded-lg bg-muted/50">
           <h3 className="text-lg font-medium mb-2">No tools yet</h3>
           <p className="text-muted-foreground mb-4">
@@ -272,6 +309,79 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
               </CardContent>
             </Card>
           ))}
+
+          {/* Pagination */}
+          {totalTools > itemsPerPage && (
+            <Pagination className="mt-6">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    className={
+                      currentPage === 1
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                  />
+                </PaginationItem>
+
+                {Array.from({
+                  length: Math.ceil(totalTools / itemsPerPage),
+                }).map((_, index) => {
+                  const pageNumber = index + 1;
+                  // Show current page, first page, last page, and pages around current
+                  const isVisible =
+                    pageNumber === 1 ||
+                    pageNumber === Math.ceil(totalTools / itemsPerPage) ||
+                    Math.abs(pageNumber - currentPage) <= 1;
+
+                  if (
+                    (!isVisible && pageNumber === 2) ||
+                    (!isVisible &&
+                      pageNumber === Math.ceil(totalTools / itemsPerPage) - 1)
+                  ) {
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+
+                  if (isVisible) {
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationLink
+                          isActive={pageNumber === currentPage}
+                          onClick={() => setCurrentPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+
+                  return null;
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(prev + 1, Math.ceil(totalTools / itemsPerPage))
+                      )
+                    }
+                    className={
+                      currentPage === Math.ceil(totalTools / itemsPerPage)
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       )}
 

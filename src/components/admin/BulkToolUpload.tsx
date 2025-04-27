@@ -245,7 +245,13 @@ export function BulkToolUpload({ onSuccess, categories }: BulkToolUploadProps) {
 
       if (!success) throw new Error(error);
 
-      toast.success(`Successfully uploaded ${count} tools`);
+      if (error && count === 0) {
+        toast.info(error);
+      } else if (error) {
+        toast.success(`${error}`);
+      } else {
+        toast.success(`Successfully uploaded ${count} tools`);
+      }
       setFile(null);
       setParsedTools([]);
       setPreviewMode(false);

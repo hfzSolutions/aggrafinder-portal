@@ -41,7 +41,7 @@ import { compressImage } from '@/utils/imageCompression';
 const formSchema = z.object({
   name: z
     .string()
-    .min(3, 'Name must be at least 3 characters')
+    .min(2, 'Name must be at least 2 characters')
     .max(100, 'Name must be less than 100 characters'),
   tagline: z
     .string()
