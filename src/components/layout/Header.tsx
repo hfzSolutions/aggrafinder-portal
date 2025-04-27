@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/hooks/use-theme';
 import { pageView, trackEvent } from '@/utils/analytics';
+import SponsorBanner from './SponsorBanner';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
@@ -80,6 +81,7 @@ const Header = () => {
         scrolled ? 'bg-background/90 backdrop-blur-sm border-b' : ''
       }`}
     >
+      <SponsorBanner />
       <nav className="container flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2 font-semibold">
           <Image className="h-6 w-6" />

@@ -1,5 +1,5 @@
-
 import ReactGA from 'react-ga4';
+import { getStoredUTMParams, UTMParams } from './utmTracker';
 
 // Initialize Google Analytics with your tracking ID
 // TODO: Replace with your actual Google Analytics tracking ID
@@ -20,7 +20,34 @@ export const initGA = () => {
  * @param path - The current page path
  */
 export const pageView = (path: string) => {
-  ReactGA.send({ hitType: 'pageview', page: path });
+  const utmParams = getStoredUTMParams();
+  const customDimensions = utmParamsToCustomDimensions(utmParams);
+
+  ReactGA.send({
+    hitType: 'pageview',
+    page: path,
+    ...customDimensions,
+  });
+};
+
+/**
+ * Convert UTM parameters to GA4 custom dimensions
+ * @param utmParams - UTM parameters object
+ * @returns Object with custom dimensions
+ */
+const utmParamsToCustomDimensions = (utmParams: UTMParams | null) => {
+  if (!utmParams) return {};
+
+  const dimensions: Record<string, string> = {};
+
+  // Map UTM parameters to custom dimensions
+  if (utmParams.source) dimensions.utm_source = utmParams.source;
+  if (utmParams.medium) dimensions.utm_medium = utmParams.medium;
+  if (utmParams.campaign) dimensions.utm_campaign = utmParams.campaign;
+  if (utmParams.term) dimensions.utm_term = utmParams.term;
+  if (utmParams.content) dimensions.utm_content = utmParams.content;
+
+  return dimensions;
 };
 
 /**
@@ -36,10 +63,14 @@ export const trackEvent = (
   label?: string,
   value?: number
 ) => {
+  const utmParams = getStoredUTMParams();
+  const customDimensions = utmParamsToCustomDimensions(utmParams);
+
   ReactGA.event({
     category,
     action,
     label,
     value,
+    ...customDimensions,
   });
 };

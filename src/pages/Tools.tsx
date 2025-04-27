@@ -18,6 +18,7 @@ import {
   Heart,
   Clock,
   ArrowUpDown,
+  Star,
 } from 'lucide-react';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { useSupabaseCategories } from '@/hooks/useSupabaseCategories';
@@ -29,6 +30,7 @@ import { useFavoriteTools } from '@/hooks/useFavoriteTools';
 import { useRecentlyViewedTools } from '@/hooks/useRecentlyViewedTools';
 import { useToolAnalytics } from '@/hooks/useToolAnalytics';
 import { toast } from 'sonner';
+import { SponsorAdCard } from '@/components/tools/SponsorAdCard';
 
 const Tools = () => {
   const location = useLocation();
@@ -42,11 +44,17 @@ const Tools = () => {
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [selectedPricing, setSelectedPricing] = useState('All');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [view, setView] = useState<'grid' | 'list'>('list');
-  const [sortOption, setSortOption] = useState<'newest' | 'popular' | 'random'>(
-    'random'
-  ); // Default to random sorting
+  const [view, setView] = useState<'grid' | 'list'>(() => {
+    const storedView = localStorage.getItem('preferred_view') as
+      | 'grid'
+      | 'list';
+    return storedView || 'grid'; // Default to grid if no preference is stored
+  });
+  const [sortOption, setSortOption] = useState<'newest' | 'popular'>('newest');
   const [showFavorites, setShowFavorites] = useState(false);
+  const [selectedFeaturedTool, setSelectedFeaturedTool] = useState<any | null>(
+    null
+  );
 
   const { favoriteTools, addFavorite, removeFavorite, isFavorite } =
     useFavoriteTools();
@@ -59,6 +67,21 @@ const Tools = () => {
   const { trackEvent } = useToolAnalytics();
 
   const { categories, loading: categoriesLoading } = useSupabaseCategories();
+  // Fetch featured tools separately
+  const { tools: featuredTools, loading: featuredToolsLoading } =
+    useSupabaseTools({
+      featured: true,
+      limit: 5, // Limit to 5 featured tools
+    });
+
+  // Select a random featured tool when featuredTools are loaded
+  useEffect(() => {
+    if (featuredTools.length > 0 && !featuredToolsLoading) {
+      const randomIndex = Math.floor(Math.random() * featuredTools.length);
+      setSelectedFeaturedTool(featuredTools[randomIndex]);
+    }
+  }, [featuredTools, featuredToolsLoading]);
+
   const {
     tools: filteredTools,
     loading: toolsLoading,
@@ -79,32 +102,11 @@ const Tools = () => {
         ? 'popularity'
         : sortOption === 'newest'
         ? 'created_at'
-        : 'random',
+        : '',
   });
 
-  const observer = useRef<IntersectionObserver | null>(null);
-
-  const lastToolElementRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (toolsLoading) return;
-
-      if (observer.current) observer.current.disconnect();
-
-      observer.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore) {
-            loadNextPage();
-          }
-        },
-        {
-          rootMargin: '100px',
-        }
-      );
-
-      if (node) observer.current.observe(node);
-    },
-    [toolsLoading, hasMore, loadNextPage]
-  );
+  // Removed infinite scroll observer in favor of a 'See More' button approach
+  // This gives users more control over when to load additional content
 
   // Effect to update URL when filters change
   useEffect(() => {
@@ -151,6 +153,14 @@ const Tools = () => {
     }
   }, [isMobile]);
 
+  // Save view preference to localStorage when it changes
+  useEffect(() => {
+    if (!isMobile) {
+      // Only save preference when not on mobile
+      localStorage.setItem('preferred_view', view);
+    }
+  }, [view, isMobile]);
+
   const handleSearch = (value: string) => {
     setSearchTerm(value);
   };
@@ -175,7 +185,9 @@ const Tools = () => {
 
   const getSubscriptionIndex = () => {
     if (filteredTools.length <= 3) return null;
-    return Math.min(6, Math.floor(filteredTools.length / 2));
+    // Increase the index to show more tools before the subscription
+    // This will reduce the gap between the last tool and the email section
+    return Math.min(8, Math.floor(filteredTools.length / 2));
   };
 
   const subscriptionIndex = getSubscriptionIndex();
@@ -327,19 +339,7 @@ const Tools = () => {
                           className="w-full"
                         />
 
-                        <Button
-                          variant={showFavorites ? 'default' : 'outline'}
-                          size="sm"
-                          className="w-full justify-start"
-                          onClick={() => setShowFavorites(!showFavorites)}
-                        >
-                          <Heart
-                            className={`h-4 w-4 mr-2 ${
-                              showFavorites ? 'fill-current' : ''
-                            }`}
-                          />
-                          {showFavorites ? 'All Tools' : 'Favorites Only'}
-                        </Button>
+                        {/* Favorites filter removed as per requirement */}
 
                         <Button
                           variant="outline"
@@ -351,7 +351,7 @@ const Tools = () => {
                             setSearchTerm('');
                             setShowFavorites(false);
                             setSortOption('newest');
-                            setView('list');
+                            setView('grid'); // Changed from 'list' to 'grid' to maintain grid as default
                             // Reset URL to clean state
                             navigate('/tools', { replace: true });
                             toast.success('All filters cleared');
@@ -383,23 +383,23 @@ const Tools = () => {
                             variant="ghost"
                             size="sm"
                             className={`px-3 flex-1 ${
-                              view === 'list' ? 'bg-secondary/70' : ''
-                            }`}
-                            onClick={() => setView('list')}
-                          >
-                            <List className="h-4 w-4 mr-2" />
-                            List
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`px-3 flex-1 ${
                               view === 'grid' ? 'bg-secondary/70' : ''
                             }`}
                             onClick={() => setView('grid')}
                           >
                             <Grid className="h-4 w-4 mr-2" />
                             Grid
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`px-3 flex-1 ${
+                              view === 'list' ? 'bg-secondary/70' : ''
+                            }`}
+                            onClick={() => setView('list')}
+                          >
+                            <List className="h-4 w-4 mr-2" />
+                            List
                           </Button>
                         </div>
                       </div>
@@ -410,16 +410,6 @@ const Tools = () => {
                           Sort by
                         </h3>
                         <div className="flex space-x-2 w-full">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`px-3 flex-1 ${
-                              sortOption === 'random' ? 'bg-secondary/70' : ''
-                            }`}
-                            onClick={() => setSortOption('random')}
-                          >
-                            Random
-                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -546,59 +536,85 @@ const Tools = () => {
                   </div>
                 )}
 
-                {!isLoading && filteredTools.length > 0 && !error && (
-                  <div
-                    className={
-                      view === 'grid'
-                        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
-                        : 'grid grid-cols-1 gap-4'
-                    }
-                  >
-                    {filteredTools.map((tool, index) => (
-                      <>
-                        <div
-                          key={tool.id}
-                          ref={
-                            index === filteredTools.length - 1
-                              ? lastToolElementRef
-                              : null
-                          }
-                          className="animate-fade-in transition-all duration-300 transform hover:translate-y-[-2px]"
-                        >
-                          <ToolCard
-                            tool={tool}
-                            viewType={isMobile ? 'list' : view}
-                            onFavoriteToggle={handleFavoriteToggle}
-                            isFavorite={isFavorite(tool.id)}
-                          />
-                        </div>
+                {!isLoading && filteredTools.length > 0 && (
+                  <>
+                    <div
+                      className={
+                        view === 'grid'
+                          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
+                          : 'grid grid-cols-1 gap-4'
+                      }
+                    >
+                      {filteredTools.map((tool, index) => {
+                        // Insert sponsor ad after the 4th tool
+                        if (index === 4) {
+                          return (
+                            <>
+                              <div key={`tool-${tool.id}`}>
+                                <ToolCard
+                                  tool={tool}
+                                  viewType={view}
+                                  onFavoriteToggle={handleFavoriteToggle}
+                                  isFavorite={isFavorite(tool.id)}
+                                />
+                              </div>
+                              <div key="sponsor-ad">
+                                <SponsorAdCard viewType={view} />
+                              </div>
+                            </>
+                          );
+                        }
 
-                        {subscriptionIndex === index && (
-                          <div
-                            key="subscription"
-                            className={view === 'grid' ? 'col-span-full' : ''}
-                          >
-                            <InlineSubscription />
+                        if (index === 12) {
+                          return (
+                            <>
+                              <div key={`tool-${tool.id}`}>
+                                <ToolCard
+                                  tool={tool}
+                                  viewType={view}
+                                  onFavoriteToggle={handleFavoriteToggle}
+                                  isFavorite={isFavorite(tool.id)}
+                                />
+                              </div>
+                              <div key="subscription">
+                                <InlineSubscription viewType={view} />
+                              </div>
+                            </>
+                          );
+                        }
+
+                        return (
+                          <div key={`tool-${tool.id}`}>
+                            <ToolCard
+                              tool={tool}
+                              viewType={view}
+                              onFavoriteToggle={handleFavoriteToggle}
+                              isFavorite={isFavorite(tool.id)}
+                            />
                           </div>
-                        )}
-                      </>
-                    ))}
-
-                    {toolsLoading && filteredTools.length > 0 && (
-                      <div
-                        className={`col-span-full flex justify-center py-4 ${
-                          view === 'grid' ? 'mt-4' : 'mt-2'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-                          <span className="text-sm text-muted-foreground">
-                            Loading more tools...
-                          </span>
-                        </div>
+                        );
+                      })}
+                    </div>
+                    {/* Load More Button */}
+                    {hasMore && (
+                      <div className="flex justify-center mt-10">
+                        <Button
+                          onClick={loadNextPage}
+                          disabled={toolsLoading}
+                          className="px-8"
+                        >
+                          {toolsLoading ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                              Loading...
+                            </>
+                          ) : (
+                            'Load More Tools'
+                          )}
+                        </Button>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
