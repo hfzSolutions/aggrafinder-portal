@@ -120,7 +120,7 @@ Implement canonical URLs to prevent duplicate content issues:
 
 ```jsx
 <SEO
-  canonicalUrl={`https://yourdomain.com/tools/${tool.id}`}
+  canonicalUrl={`https://deeplistai.com/tools/${tool.id}`}
   // Other props
 />
 ```
