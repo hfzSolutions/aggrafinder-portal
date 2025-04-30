@@ -248,6 +248,12 @@ const ToolDetails = () => {
                             {tool.description}
                           </p>
 
+                          <div className="text-xs text-muted-foreground/70 italic mt-1">
+                            AI tools evolve rapidly. For the most current
+                            features and pricing, we recommend checking the
+                            official website.
+                          </div>
+
                           <div className="flex flex-wrap items-center gap-3 pt-4">
                             <Button
                               size="lg"

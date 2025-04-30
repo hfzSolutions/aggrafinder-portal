@@ -2,9 +2,9 @@ import ReactGA from 'react-ga4';
 import { getStoredUTMParams, UTMParams } from './utmTracker';
 
 // Initialize Google Analytics with your tracking ID
-// TODO: Replace with your actual Google Analytics tracking ID
+// Using the same ID as in index.html (G-G09RG52H8E)
 // For Google Analytics 4, the ID format is 'G-XXXXXXXXXX'
-const TRACKING_ID = import.meta.env.REACT_APP_GA_TRACKING_ID || 'G-XXXXXXXXXX';
+const TRACKING_ID = import.meta.env.REACT_APP_GA_TRACKING_ID || 'G-G09RG52H8E';
 
 /**
  * Initialize Google Analytics

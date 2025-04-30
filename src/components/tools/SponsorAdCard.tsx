@@ -1,26 +1,94 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ExternalLink, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useToolAnalytics } from '@/hooks/useToolAnalytics';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { supabase } from '@/integrations/supabase/client';
+
+interface SponsorAd {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  link: string;
+  link_text: string;
+  is_active: boolean;
+}
 
 interface SponsorAdCardProps {
   viewType?: 'grid' | 'list';
   compact?: boolean;
+  adData?: SponsorAd; // For preview in admin panel
 }
 
 export const SponsorAdCard = ({
   viewType = 'grid',
   compact = false,
+  adData,
 }: SponsorAdCardProps) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const { trackEvent } = useToolAnalytics();
+  const [sponsorAd, setSponsorAd] = useState<SponsorAd | null>(null);
+  const { trackEvent } = useAnalytics();
+
+  // Fetch active sponsor ad from database if not provided via props
+  useEffect(() => {
+    const fetchActiveSponsorAd = async () => {
+      // If ad data is provided via props (for preview), use that
+      if (adData) {
+        setSponsorAd(adData);
+        return;
+      }
+
+      try {
+        const now = new Date().toISOString();
+        const { data, error } = await supabase
+          .from('sponsor_ads')
+          .select('*')
+          .lte('start_date', now) // Start date is before or equal to current date
+          .gte('end_date', now) // End date is after or equal to current date
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (error) {
+          if (error.code !== 'PGRST116') {
+            // PGRST116 is the error code for no rows returned
+            console.error('Error fetching active sponsor ad:', error);
+          }
+          return;
+        }
+
+        if (data) {
+          setSponsorAd(data);
+        }
+      } catch (error) {
+        console.error('Error fetching sponsor ad:', error);
+      }
+    };
+
+    fetchActiveSponsorAd();
+  }, [adData]);
+
+  // If no sponsor ad is available, don't render anything
+  if (!sponsorAd && !adData) {
+    return null;
+  }
+
+  const ad = sponsorAd || adData;
+  if (!ad) return null;
 
   const handleAdClick = () => {
-    window.open('https://example.com/sponsor', '_blank');
-    trackEvent('sponsor-ad', 'click_url');
+    window.open(ad.link, '_blank');
+    trackEvent('sponsor_ad', 'click_url', {
+      ad_id: ad.id,
+      ad_title: ad.title,
+      ad_link: ad.link,
+      view_type: viewType,
+      click_type: 'card',
+    });
   };
 
   if (viewType === 'grid') {
@@ -44,7 +112,7 @@ export const SponsorAdCard = ({
           )}
 
           <img
-            src="/images/sponsor-ad.jpg"
+            src={ad.image_url}
             alt="Sponsored Advertisement"
             className={cn(
               'absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105',
@@ -69,11 +137,10 @@ export const SponsorAdCard = ({
 
         <div className="p-4 flex-grow flex flex-col">
           <h3 className="font-medium text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors duration-200">
-            Premium AI Solution
+            {ad.title}
           </h3>
           <p className="text-muted-foreground text-sm mb-3 line-clamp-3">
-            Boost your productivity with our cutting-edge AI tools. Try our
-            premium features today and transform your workflow.
+            {ad.description}
           </p>
           <div className="mt-auto pt-2">
             <Button
@@ -81,11 +148,17 @@ export const SponsorAdCard = ({
               className="w-full justify-center gap-1.5"
               onClick={(e) => {
                 e.stopPropagation();
-                window.open('https://example.com/sponsor', '_blank');
-                trackEvent('sponsor-ad', 'click_url');
+                window.open(ad.link, '_blank');
+                trackEvent('sponsor_ad', 'click_url', {
+                  ad_id: ad.id,
+                  ad_title: ad.title,
+                  ad_link: ad.link,
+                  view_type: viewType,
+                  click_type: 'button',
+                });
               }}
             >
-              Learn More <ExternalLink className="h-3.5 w-3.5" />
+              {ad.link_text} <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
@@ -109,7 +182,7 @@ export const SponsorAdCard = ({
         )}
 
         <img
-          src="/images/sponsor-ad.jpg"
+          src={ad.image_url}
           alt="Sponsored Advertisement"
           className={cn(
             'h-full w-full object-cover transition-opacity',
@@ -131,14 +204,13 @@ export const SponsorAdCard = ({
       <div className="flex-grow">
         <div className="flex justify-between items-start mb-1">
           <h3 className="font-medium text-base group-hover:text-primary transition-colors duration-200">
-            Premium AI Solution
+            {ad.title}
           </h3>
         </div>
 
         {!compact && (
           <p className="text-muted-foreground text-sm mb-2 line-clamp-2">
-            Boost your productivity with our cutting-edge AI tools. Try our
-            premium features today.
+            {ad.description}
           </p>
         )}
 
@@ -149,11 +221,18 @@ export const SponsorAdCard = ({
             className="h-7 px-2 text-xs rounded-full"
             onClick={(e) => {
               e.stopPropagation();
-              window.open('https://example.com/sponsor', '_blank');
-              trackEvent('sponsor-ad', 'click_url');
+              window.open(ad.link, '_blank');
+              trackEvent('sponsor_ad', 'click_url', {
+                ad_id: ad.id,
+                ad_title: ad.title,
+                ad_link: ad.link,
+                view_type: viewType,
+                click_type: 'button',
+                compact: compact,
+              });
             }}
           >
-            Learn More <ExternalLink className="ml-1 h-3 w-3" />
+            {ad.link_text} <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
           <span className="text-xs text-muted-foreground">Sponsored</span>
         </div>

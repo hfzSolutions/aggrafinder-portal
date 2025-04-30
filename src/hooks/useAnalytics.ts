@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { AnalyticsAction } from '@/types/tools';
 import { getStoredUTMParams } from '@/utils/utmTracker';
 
-export const useToolAnalytics = () => {
+type AnalyticsEventType =
+  | 'newsletter'
+  | 'sponsor_ad_banner'
+  | 'sponsor_ad'
+  | 'page_view'
+  | 'traffic_source';
+
+export const useAnalytics = () => {
   const [isTracking, setIsTracking] = useState(false);
 
   // Get or create a unique identifier for this user/browser
@@ -17,13 +23,14 @@ export const useToolAnalytics = () => {
     return userId;
   };
 
-  const trackToolEvent = async (
-    toolId: string,
-    action: AnalyticsAction,
+  const trackEvent = async (
+    eventType: AnalyticsEventType,
+    action: string,
     metadata?: Record<string, any>
   ) => {
     if (isTracking) return false; // Prevent duplicate tracking
-
+    console.log('tracking event');
+    // Track the event in Supabase analytics channe
     try {
       setIsTracking(true);
       const userId = getUserId();
@@ -37,9 +44,9 @@ export const useToolAnalytics = () => {
         ...(utmParams && { utm: utmParams }),
       };
 
-      const { error } = await supabase.from('tool_analytics').insert([
+      const { error } = await supabase.from('general_analytics').insert([
         {
-          tool_id: toolId,
+          event_type: eventType,
           user_id: userId,
           action,
           metadata: enhancedMetadata,
@@ -51,12 +58,12 @@ export const useToolAnalytics = () => {
 
       return true;
     } catch (error) {
-      console.error('Error tracking tool analytics event:', error);
+      console.error('Error tracking analytics event:', error);
       return false;
     } finally {
       setIsTracking(false);
     }
   };
 
-  return { trackEvent: trackToolEvent };
+  return { trackEvent };
 };
