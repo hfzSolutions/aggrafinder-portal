@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail } from 'lucide-react';
 import { useNewsletterSubscription } from '@/hooks/useNewsletterSubscription';
-import { trackEvent } from '@/utils/analytics';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils';
 
 interface InlineSubscriptionProps {
@@ -16,9 +16,14 @@ const InlineSubscription = ({ viewType = 'grid' }: InlineSubscriptionProps) => {
   const { toast } = useToast();
   const { subscribe, isLoading } = useNewsletterSubscription();
 
+  const { trackEvent } = useAnalytics();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    trackEvent('user_engagement', 'newsletter_signup_tools_page');
+    trackEvent('newsletter', 'subscription_attempt', {
+      source: 'tools_page',
+      view_type: viewType,
+    });
 
     if (!email.trim() || !email.includes('@')) {
       toast({

@@ -1,0 +1,11 @@
+# robots.txt for AI Tools Aggregator
+User-agent: *
+Allow: /
+
+# Disallow admin and authentication pages
+Disallow: /admin
+Disallow: /auth
+Disallow: /dashboard
+
+# Sitemap location
+Sitemap: https://yourdomain.com/sitemap.xml

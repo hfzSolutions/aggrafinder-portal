@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface SponsorBannerProps {
   message?: string;
@@ -13,6 +14,7 @@ interface SponsorBannerProps {
 
 const SponsorBanner = (props: SponsorBannerProps) => {
   const [isVisible, setIsVisible] = useState(false);
+  const analytics = useAnalytics();
   const [bannerData, setBannerData] = useState<{
     id: string;
     message: string;
@@ -160,6 +162,14 @@ const SponsorBanner = (props: SponsorBannerProps) => {
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm font-semibold underline underline-offset-2"
+            onClick={() => {
+              analytics.trackEvent('sponsor_ad_banner', 'click', {
+                banner_id: bannerData?.id,
+                message: bannerData?.message || props.message,
+                link: bannerData?.link || props.link,
+                link_text: bannerData?.link_text || props.linkText,
+              });
+            }}
           >
             {bannerData?.link_text || props.linkText || 'Learn more'}
           </a>

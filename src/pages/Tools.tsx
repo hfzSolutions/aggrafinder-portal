@@ -595,7 +595,7 @@ const Tools = () => {
                         );
                       })}
                     </div>
-                    {/* Load More Button */}
+                    {/* View More Button */}
                     {hasMore && (
                       <div className="flex justify-center mt-10">
                         <Button
@@ -609,7 +609,7 @@ const Tools = () => {
                               Loading...
                             </>
                           ) : (
-                            'Load More Tools'
+                            'View More'
                           )}
                         </Button>
                       </div>

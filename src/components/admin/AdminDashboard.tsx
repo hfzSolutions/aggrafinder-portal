@@ -11,6 +11,7 @@ import { SupportMessages } from './SupportMessages';
 import { AdminSummary } from './AdminSummary';
 import { TodaysToolPicker } from './TodaysToolPicker';
 import { SponsorBannerManager } from './SponsorBannerManager';
+import { SponsorAdManager } from './SponsorAdManager';
 import {
   Card,
   CardContent,
@@ -72,6 +73,9 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
   // State for tools filtering
   const [filterNoImage, setFilterNoImage] = useState(false);
+  const [filterFeatured, setFilterFeatured] = useState<boolean | undefined>(
+    undefined
+  );
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterPricing, setFilterPricing] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -165,6 +169,11 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
           .eq('approval_status', 'approved')
           .order('created_at', { ascending: false });
 
+        // Apply featured filter
+        if (filterFeatured !== undefined) {
+          query = query.eq('featured', filterFeatured);
+        }
+
         // Apply category filter
         if (filterCategory !== 'All') {
           query = query.contains('category', [filterCategory]);
@@ -237,6 +246,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     page,
     activeTab,
     filterNoImage,
+    filterFeatured,
     filterCategory,
     filterPricing,
     searchTerm,
@@ -455,6 +465,11 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         .from('ai_tools')
         .select('*')
         .eq('approval_status', 'approved'); // Ensure we only get approved tools
+
+      // Apply featured filter
+      if (filterFeatured !== undefined) {
+        query = query.eq('featured', filterFeatured);
+      }
 
       // Apply category filter
       if (filterCategory !== 'All') {
@@ -761,6 +776,31 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Select
+                      value={
+                        filterFeatured !== undefined
+                          ? filterFeatured.toString()
+                          : 'all'
+                      }
+                      onValueChange={(value) => {
+                        if (value === 'all') {
+                          setFilterFeatured(undefined);
+                        } else {
+                          setFilterFeatured(value === 'true');
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-[130px]">
+                        <SelectValue placeholder="Featured" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="true">Featured</SelectItem>
+                        <SelectItem value="false">Not Featured</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <FilterButton
                     label="Category"
                     options={['All', ...(categories.map((c) => c.name) || [])]}
@@ -789,6 +829,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                     </Label>
                   </div>
                   {(filterNoImage ||
+                    filterFeatured !== undefined ||
                     filterCategory !== 'All' ||
                     filterPricing !== 'All' ||
                     searchTerm) && (
@@ -797,6 +838,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                       size="sm"
                       onClick={() => {
                         setFilterNoImage(false);
+                        setFilterFeatured(undefined);
                         setFilterCategory('All');
                         setFilterPricing('All');
                         setSearchTerm('');
@@ -1189,10 +1231,21 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               <TodaysToolPicker />
             </TabsContent>
 
-            {/* Sponsor Banners Tab */}
+            {/* Sponsors Tab */}
             <TabsContent value="sponsor_banners" className="space-y-4">
-              <h3 className="text-lg font-medium">Manage Sponsor Banners</h3>
-              <SponsorBannerManager />
+              <h3 className="text-lg font-medium">Manage Sponsors</h3>
+              <Tabs defaultValue="banners" className="mt-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="banners">Banners</TabsTrigger>
+                  <TabsTrigger value="ads">Ads</TabsTrigger>
+                </TabsList>
+                <TabsContent value="banners" className="mt-4">
+                  <SponsorBannerManager />
+                </TabsContent>
+                <TabsContent value="ads" className="mt-4">
+                  <SponsorAdManager />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             {/* Categories Tab */}

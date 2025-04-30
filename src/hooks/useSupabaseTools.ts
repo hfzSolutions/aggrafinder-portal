@@ -22,7 +22,7 @@ export const useSupabaseTools = ({
   category,
   search,
   pricing,
-  limit = 14,
+  limit = 25,
   page = 0,
   loadMore = false,
   excludeId,
