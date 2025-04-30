@@ -8,4 +8,4 @@ Disallow: /auth
 Disallow: /dashboard
 
 # Sitemap location
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://deeplistai.com/sitemap.xml
