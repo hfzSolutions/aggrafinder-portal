@@ -4,22 +4,23 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import Index from './pages/Index';
-import Tools from './pages/Tools';
-import ToolDetails from './pages/ToolDetails';
-import CompareTools from './pages/CompareTools';
-import Resources from './pages/Resources';
+import Index from '@/pages/Index';
+import Tools from '@/pages/Tools';
+import ToolDetails from '@/pages/ToolDetails';
+import CompareTools from '@/pages/CompareTools';
+import Resources from '@/pages/Resources';
 import UTMTracker from './components/analytics/UTMTracker';
 
-import Outcomes from './pages/Outcomes';
-import NotFound from './pages/NotFound';
-import Auth from './pages/Auth';
-import Dashboard from './pages/Dashboard';
-import Admin from './pages/Admin';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import CookiesPolicy from './pages/CookiesPolicy';
-import Support from './pages/Support';
+import Outcomes from '@/pages/Outcomes';
+import NotFound from '@/pages/NotFound';
+import Auth from '@/pages/Auth';
+import UpdatePassword from '@/pages/UpdatePassword';
+import Dashboard from '@/pages/Dashboard';
+import Admin from '@/pages/Admin';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
+import TermsOfService from '@/pages/TermsOfService';
+import CookiesPolicy from '@/pages/CookiesPolicy';
+import Support from '@/pages/Support';
 import { ToolsCompareProvider } from './hooks/useToolsCompare';
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
 
             <Route path="/outcomes" element={<Outcomes />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />

@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Hero from '@/components/home/Hero';
+import CategoryShortcuts from '@/components/home/CategoryShortcuts';
 import FeaturedTools from '@/components/home/FeaturedTools';
 import TodaysAITool from '@/components/home/TodaysAITool';
 import PopularTools from '@/components/home/PopularTools';
@@ -23,11 +24,12 @@ const Index = () => {
 
       <main>
         <Hero />
+        <CategoryShortcuts />
         <FeaturedTools />
         <TodaysAITool />
         <PostToolCTA />
         <PopularTools />
-        <Newsletter />
+        {/* <Newsletter /> */}
       </main>
 
       <Footer />

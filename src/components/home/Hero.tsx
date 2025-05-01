@@ -117,8 +117,7 @@ const Hero = () => {
             }`}
             style={staggeredDelay(4)}
           >
-            Navigate the AI landscape with our curated collection of tools. Find
-            the perfect AI solutions for your needs, all in one place.
+            Find the perfect AI solutions for your needs.
           </p>
 
           <div

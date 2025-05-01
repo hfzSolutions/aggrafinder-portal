@@ -1,4 +1,4 @@
-# robots.txt for AI Tools Aggregator
+# robots.txt for DeepList AI 
 User-agent: *
 Allow: /
 

@@ -21,7 +21,7 @@ export const SEO = ({
   title = 'DeepListAI | Find the Best AI Tools for Your Needs',
   description = 'Discover the most powerful and innovative AI tools to enhance your productivity, creativity, and workflow. Find the perfect AI solution for your specific needs.',
   keywords = 'AI tools, artificial intelligence, machine learning, productivity tools, AI software, AI solutions',
-  image = '/og-image.png',
+  image = '/images/web-logo.png',
   article = false,
   canonicalUrl,
   structuredData,

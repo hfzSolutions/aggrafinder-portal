@@ -23,8 +23,10 @@ const Auth = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [showResetForm, setShowResetForm] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -88,6 +90,24 @@ const Auth = () => {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+      if (error) throw error;
+      toast.success('Password reset email sent! Please check your inbox.');
+      setShowResetForm(false);
+      setResetEmail('');
+    } catch (error: any) {
+      toast.error(error.message || 'Error sending password reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (isCheckingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -99,7 +119,7 @@ const Auth = () => {
   return (
     <>
       <Helmet>
-        <title>Sign In | AI Showcase</title>
+        <title>Sign In | DeepList AI</title>
       </Helmet>
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -108,7 +128,7 @@ const Auth = () => {
             <Card>
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">
-                  Welcome to AI Showcase
+                  Welcome to DeepList AI
                 </CardTitle>
                 <CardDescription>
                   Sign in to share and manage your AI creations
@@ -122,56 +142,109 @@ const Auth = () => {
 
                 <TabsContent value="signin">
                   <CardContent>
-                    <form onSubmit={handleSignIn} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="signin-email">Email</Label>
-                        <Input
-                          id="signin-email"
-                          type="email"
-                          placeholder="your.email@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signin-password">Password</Label>
-                        <Input
-                          id="signin-password"
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={loading}
+                    {!showResetForm ? (
+                      <form onSubmit={handleSignIn} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-email">Email</Label>
+                          <Input
+                            id="signin-email"
+                            type="email"
+                            placeholder="your.email@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-password">Password</Label>
+                          <Input
+                            id="signin-password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <Button
+                          type="submit"
+                          className="w-full"
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Signing In...
+                            </>
+                          ) : (
+                            'Sign In'
+                          )}
+                        </Button>
+                        <div className="text-sm text-center">
+                          <button
+                            type="button"
+                            onClick={() => setShowResetForm(true)}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            Forgot Password?
+                          </button>
+                        </div>
+                        <div className="relative my-4">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                              Or continue with
+                            </span>
+                          </div>
+                        </div>
+                        <GoogleLoginButton />
+                      </form>
+                    ) : (
+                      <form
+                        onSubmit={handlePasswordReset}
+                        className="space-y-4"
                       >
-                        {loading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Signing In...
-                          </>
-                        ) : (
-                          'Sign In'
-                        )}
-                      </Button>
-
-                      <div className="relative my-4">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
+                        <p className="text-sm text-muted-foreground">
+                          Enter your email address and we'll send you a link to
+                          reset your password.
+                        </p>
+                        <div className="space-y-2">
+                          <Label htmlFor="reset-email">Email</Label>
+                          <Input
+                            id="reset-email"
+                            type="email"
+                            placeholder="your.email@example.com"
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            required
+                          />
                         </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">
-                            Or continue with
-                          </span>
+                        <Button
+                          type="submit"
+                          className="w-full"
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            'Send Reset Link'
+                          )}
+                        </Button>
+                        <div className="text-sm text-center">
+                          <button
+                            type="button"
+                            onClick={() => setShowResetForm(false)}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            Back to Sign In
+                          </button>
                         </div>
-                      </div>
-
-                      <GoogleLoginButton />
-                    </form>
+                      </form>
+                    )}
                   </CardContent>
                 </TabsContent>
 

@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Github, Twitter, Linkedin } from 'lucide-react';
 
@@ -10,15 +9,14 @@ const Footer = () => {
       <div className="container px-4 md:px-8 py-12 mx-auto">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-12">
           {/* Logo and description */}
-          <div className="md:col-span-4">
+          <div className="md:col-span-6">
             <Link to="/" className="flex items-center space-x-2 mb-4">
-              <div className="relative w-8 h-8 overflow-hidden">
-                <div className="absolute inset-0 rounded-md bg-gradient-to-tr from-primary to-blue-400" />
-                <div className="absolute inset-1 bg-white dark:bg-gray-900 rounded-sm flex items-center justify-center">
-                  <span className="text-primary font-bold text-sm">AI</span>
-                </div>
-              </div>
-              <span className="text-xl font-medium">AI Aggregator</span>
+              <img
+                src="/images/web-logo.png"
+                alt="Website Logo"
+                className="h-8 w-auto"
+              />
+              <span className="text-xl font-medium">DeepList AI</span>
             </Link>
             <p className="text-muted-foreground max-w-md">
               Discover the best AI tools and resources in one place. Our curated
@@ -77,7 +75,7 @@ const Footer = () => {
                   AI Tools
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link
                   to="/outcomes"
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -92,11 +90,11 @@ const Footer = () => {
                 >
                   Resources
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
 
-          <div className="md:col-span-2">
+          {/* <div className="md:col-span-2">
             <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">
               Resources
             </h3>
@@ -126,7 +124,7 @@ const Footer = () => {
                 </a>
               </li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Legal */}
           <div className="md:col-span-2">
@@ -183,21 +181,21 @@ const Footer = () => {
                   Feedback
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <a
-                  href="mailto:hello@example.com"
+                  href="mailto:support@deeplistai.com"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  hello@example.com
+                  support@deeplistai.com
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
         </div>
 
         <div className="pt-8 mt-8 border-t border-border/30">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} AI Aggregator. All rights reserved.
+            © {currentYear} DeepList AI. All rights reserved.
           </p>
         </div>
       </div>
