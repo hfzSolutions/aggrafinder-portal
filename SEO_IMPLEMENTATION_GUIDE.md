@@ -1,4 +1,4 @@
-# SEO Implementation Guide for AI Tools Aggregator
+# SEO Implementation Guide for DeepList AI
 
 This guide outlines how to implement SEO improvements across the website to increase visibility in search engines and drive more organic traffic.
 

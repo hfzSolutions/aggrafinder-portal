@@ -198,7 +198,7 @@ const Tools = () => {
   return (
     <>
       <Helmet>
-        <title>AI Tools Collection | AI Aggregator</title>
+        <title>AI Tools Collection | DeepList AI</title>
         <meta
           name="description"
           content="Browse our comprehensive collection of AI tools across various categories. Find the perfect tool for your specific needs."

@@ -19,7 +19,7 @@ const FeaturedTools = () => {
     <section
       // @ts-ignore
       ref={ref}
-      className="py-20"
+      className="pb-20"
     >
       <div className="container px-4 md:px-8 mx-auto">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">

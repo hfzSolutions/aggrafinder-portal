@@ -84,8 +84,12 @@ const Header = () => {
       <SponsorBanner />
       <nav className="container flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2 font-semibold">
-          <Image className="h-6 w-6" />
-          <span>AI Showcase</span>
+          <img
+            src="/images/web-logo.png"
+            alt="Website Logo"
+            className="h-6 w-auto"
+          />
+          <span>DeepList AI</span>
         </Link>
 
         {/* Desktop menu */}

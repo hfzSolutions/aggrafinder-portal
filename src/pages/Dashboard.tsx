@@ -273,7 +273,7 @@ const Dashboard = () => {
   return (
     <>
       <Helmet>
-        <title>Dashboard | AI Showcase</title>
+        <title>Dashboard | DeepList AI</title>
       </Helmet>
       <div className="min-h-screen flex flex-col">
         <Header />
