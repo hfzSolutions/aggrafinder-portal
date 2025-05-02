@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Plus, Image, Sun, Moon } from 'lucide-react';
@@ -97,7 +96,7 @@ const Header = () => {
         <nav className="hidden md:flex items-center space-x-1">
           <NavLink to="/">Home</NavLink>
           <NavLink to="/tools">AI Tools</NavLink>
-          <NavLink to="/chat">AI Chat</NavLink>
+          {/* <NavLink to="/chat">AI Chat</NavLink> */}
           {/* <NavLink to="/outcomes">AI Showcase</NavLink> */}
           {!isLoading && user && <NavLink to="/dashboard">Dashboard</NavLink>}
           <div className="ml-4 flex items-center gap-2">
@@ -166,14 +165,14 @@ const Header = () => {
           >
             AI Tools
           </Link>
-          <Link
+          {/* <Link
             to="/chat"
             className="px-4 py-3 hover:bg-secondary/50 rounded-md"
             onClick={() => trackEvent('navigation', 'click_mobile', '/chat')}
           >
             AI Chat
           </Link>
-          {/* <Link
+          <Link
             to="/outcomes"
             className="px-4 py-3 hover:bg-secondary/50 rounded-md"
           >

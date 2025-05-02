@@ -1,4 +1,3 @@
-
 export interface AITool {
   id: string;
   name: string;
@@ -16,6 +15,7 @@ export interface AITool {
   popularity?: number;
   upvotes?: number; // Add upvotes property for sorting
   isAdminAdded?: boolean; // Flag to indicate if the tool was added by an admin
+  aiChatEnabled?: boolean; // Flag to enable AI chat for this tool
 }
 
 export type AnalyticsAction =

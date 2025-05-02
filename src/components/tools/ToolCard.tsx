@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExternalLink, ImageOff, Star, Heart } from 'lucide-react';
+import {
+  ExternalLink,
+  ImageOff,
+  Star,
+  Heart,
+  MessageSquare,
+} from 'lucide-react';
 import { AITool } from '@/types/tools';
 import { cn } from '@/lib/utils';
 import { CompareButton } from './CompareButton';
@@ -15,6 +21,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useToolAnalytics } from '@/hooks/useToolAnalytics';
+import ToolChatModal from './ToolChatModal';
+import { AskAIButton } from './AskAIButton';
 
 interface ToolCardProps {
   tool: AITool;
@@ -35,6 +43,7 @@ export const ToolCard = ({
   const [isImageError, setIsImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isFavoriteState, setIsFavoriteState] = useState(isFavorite);
+  const [showChatModal, setShowChatModal] = useState(false);
   const navigate = useNavigate();
   const { isToolSelected, toggleToolSelection } = useToolsCompare();
   const { trackEvent } = useToolAnalytics();
@@ -105,7 +114,6 @@ export const ToolCard = ({
     return (
       <div
         className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col cursor-pointer"
-        onClick={handleCardClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -192,7 +200,13 @@ export const ToolCard = ({
                 buttonText="Compare"
               />
 
-              {onFavoriteToggle && (
+              <AskAIButton
+                isActive={isToolSelected(tool.id)}
+                onClick={() => setShowChatModal(true)}
+                buttonText="Ask AI"
+              />
+
+              {/* {onFavoriteToggle && (
                 <Button
                   size="sm"
                   variant="secondary"
@@ -210,19 +224,27 @@ export const ToolCard = ({
                   />
                   {isFavoriteState ? 'Saved' : 'Save'}
                 </Button>
-              )}
+              )} */}
             </div>
           </div>
         </div>
 
         <div className="flex-1 p-5 flex flex-col">
-          <h3 className="text-lg font-medium mb-2 group-hover:text-primary transition-colors duration-300">
+          <h3
+            onClick={handleCardClick}
+            className="text-lg font-medium mb-2 group-hover:text-primary transition-colors duration-300"
+          >
             {tool.name}
           </h3>
           {tool.tagline && (
-            <p className="text-sm mb-2 line-clamp-2">{tool.tagline}</p>
+            <p onClick={handleCardClick} className="text-sm mb-2 line-clamp-2">
+              {tool.tagline}
+            </p>
           )}
-          <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-3">
+          <p
+            onClick={handleCardClick}
+            className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-3"
+          >
             {tool.description}
           </p>
           <div className="mb-3">
@@ -269,21 +291,29 @@ export const ToolCard = ({
                 <VoteButtons toolId={tool.id} variant="compact" />
               </div>
 
-              <a
-                href={tool.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                onClick={handleLinkClick}
-              >
-                Visit website
-                <ExternalLink className="ml-1 h-3.5 w-3.5" />
-              </a>
+              <div className="flex items-center space-x-2">
+                <a
+                  href={tool.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                  onClick={handleLinkClick}
+                >
+                  Visit website
+                  <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                </a>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/10 rounded-xl pointer-events-none transition-all duration-300"></div>
+
+        <ToolChatModal
+          tool={tool}
+          isOpen={showChatModal}
+          onClose={() => setShowChatModal(false)}
+        />
       </div>
     );
   }
@@ -291,8 +321,8 @@ export const ToolCard = ({
   if (compact) {
     return (
       <div
-        className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex cursor-pointer animate-fade-in"
         onClick={handleCardClick}
+        className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex cursor-pointer animate-fade-in"
       >
         <div className="relative w-1/3 overflow-hidden bg-secondary/30">
           {isImageError ? (
@@ -329,7 +359,6 @@ export const ToolCard = ({
   return (
     <div
       className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-      onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -405,7 +434,10 @@ export const ToolCard = ({
 
         <div className="flex-1 p-5 flex flex-col">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-medium group-hover:text-primary transition-colors duration-300">
+            <h3
+              onClick={handleCardClick}
+              className="text-lg font-medium group-hover:text-primary transition-colors duration-300"
+            >
               {tool.name}
             </h3>
             <div className="hidden sm:block">
@@ -420,10 +452,15 @@ export const ToolCard = ({
           </div>
 
           {tool.tagline && (
-            <p className="text-sm mb-2 line-clamp-1">{tool.tagline}</p>
+            <p onClick={handleCardClick} className="text-sm mb-2 line-clamp-1">
+              {tool.tagline}
+            </p>
           )}
 
-          <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2">
+          <p
+            onClick={handleCardClick}
+            className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2"
+          >
             {tool.description}
           </p>
 
@@ -486,23 +523,45 @@ export const ToolCard = ({
                   buttonText="Compare"
                 />
               </div>
-            </div>
 
-            <a
-              href={tool.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-              onClick={handleLinkClick}
-            >
-              Visit website
-              <ExternalLink className="ml-1 h-3.5 w-3.5" />
-            </a>
+              <div
+                className={cn(
+                  'transition-all duration-300',
+                  isHovered || isToolSelected(tool.id)
+                    ? 'opacity-100'
+                    : 'opacity-0'
+                )}
+              >
+                <AskAIButton
+                  isActive={isToolSelected(tool.id)}
+                  onClick={() => setShowChatModal(true)}
+                  buttonText="Ask AI"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={tool.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                onClick={handleLinkClick}
+              >
+                Visit website
+                <ExternalLink className="ml-1 h-3.5 w-3.5" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/10 rounded-xl pointer-events-none transition-all duration-300"></div>
+
+      <ToolChatModal
+        tool={tool}
+        isOpen={showChatModal}
+        onClose={() => setShowChatModal(false)}
+      />
     </div>
   );
 };
