@@ -10,12 +10,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Settings, ChevronDown } from 'lucide-react';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Settings } from 'lucide-react';
 import { ChatModel } from './ChatInterface';
 
 type ModelSelectorProps = {
@@ -36,31 +37,33 @@ const ModelSelector = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [keyInput, setKeyInput] = useState(apiKey);
 
+  const handleModelChange = (modelId: string) => {
+    const model = models.find(m => m.id === modelId);
+    if (model) {
+      onSelectModel(model);
+    }
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            {selectedModel.name}
-            <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+    <div className="flex items-center gap-2 w-full max-w-sm mx-auto">
+      <Select value={selectedModel.id} onValueChange={handleModelChange}>
+        <SelectTrigger className="flex-1">
+          <SelectValue placeholder={selectedModel.name} />
+        </SelectTrigger>
+        <SelectContent>
           {models.map((model) => (
-            <DropdownMenuItem
-              key={model.id}
-              onClick={() => onSelectModel(model)}
-            >
+            <SelectItem key={model.id} value={model.id}>
               {model.name}
-            </DropdownMenuItem>
+            </SelectItem>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </SelectContent>
+      </Select>
 
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="icon">
+          <Button variant="outline" size="icon">
             <Settings className="h-4 w-4" />
+            <span className="sr-only">Settings</span>
           </Button>
         </DialogTrigger>
         <DialogContent>

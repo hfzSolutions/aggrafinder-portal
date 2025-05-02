@@ -2,7 +2,14 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, MessageCircle, Trash2 } from 'lucide-react';
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { 
+  SidebarGroup, 
+  SidebarGroupContent, 
+  SidebarGroupLabel, 
+  SidebarMenu, 
+  SidebarMenuItem, 
+  SidebarMenuButton 
+} from '@/components/ui/sidebar';
 
 export type ChatSession = {
   id: string;
@@ -46,11 +53,11 @@ const ChatHistory = ({ activeChatId, setActiveChatId }: ChatHistoryProps) => {
   };
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <div className="p-3">
         <Button 
           variant="default" 
-          className="w-full mb-2 bg-primary/90 hover:bg-primary"
+          className="w-full mb-2"
           onClick={handleNewChat}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -64,18 +71,18 @@ const ChatHistory = ({ activeChatId, setActiveChatId }: ChatHistoryProps) => {
           <SidebarMenu>
             {chatSessions.length > 0 ? (
               chatSessions.map((session) => (
-                <SidebarMenuItem key={session.id}>
+                <SidebarMenuItem key={session.id} className="px-1">
                   <SidebarMenuButton
                     isActive={activeChatId === session.id}
                     onClick={() => setActiveChatId(session.id)}
-                    className="w-full text-left flex items-center"
+                    className="w-full text-left flex items-center group px-2 py-2"
                   >
                     <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span className="flex-1 truncate">{session.title}</span>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => handleDeleteChat(session.id, e)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -92,7 +99,7 @@ const ChatHistory = ({ activeChatId, setActiveChatId }: ChatHistoryProps) => {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-    </>
+    </div>
   );
 };
 

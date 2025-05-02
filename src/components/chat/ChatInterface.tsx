@@ -55,6 +55,7 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
   
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load API key and chat sessions on mount
   useEffect(() => {
@@ -68,6 +69,15 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
       setChatSessions(JSON.parse(savedSessions));
     }
   }, []);
+
+  // Focus input field when page loads or chat changes
+  useEffect(() => {
+    if (inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [selectedChatId]);
 
   // Handle changes to selected chat
   useEffect(() => {
@@ -247,29 +257,39 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
-      {messages.length <= 1 && (
-        <div className="flex justify-center items-center py-8">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleStartNewChat}
-            className="flex items-center gap-2"
-          >
-            <PlusCircle className="h-4 w-4" />
-            New Chat
-          </Button>
-        </div>
-      )}
-      
       <div className="flex-1 overflow-y-auto">
-        {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
+        {messages.length <= 1 && (
+          <div className="flex justify-center items-center py-8">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleStartNewChat}
+              className="flex items-center gap-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+              New Chat
+            </Button>
+          </div>
+        )}
+        
+        <div className="divide-y divide-border">
+          {messages.map((message) => (
+            <ChatMessage key={message.id} message={message} />
+          ))}
+        </div>
         <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 border-t bg-background sticky bottom-0">
-        <div className="max-w-3xl mx-auto flex flex-col gap-2">
+        <div className="max-w-3xl mx-auto flex flex-col gap-4">
+          <ModelSelector
+            models={AVAILABLE_MODELS}
+            selectedModel={selectedModel}
+            onSelectModel={setSelectedModel}
+            apiKey={apiKey}
+            onApiKeyChange={handleApiKeyChange}
+          />
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -278,6 +298,7 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
             className="flex items-center space-x-2"
           >
             <Input
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
@@ -288,16 +309,6 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </form>
-
-          <div className="flex justify-center">
-            <ModelSelector
-              models={AVAILABLE_MODELS}
-              selectedModel={selectedModel}
-              onSelectModel={setSelectedModel}
-              apiKey={apiKey}
-              onApiKeyChange={handleApiKeyChange}
-            />
-          </div>
         </div>
       </div>
     </div>

@@ -25,10 +25,10 @@ const Chat = () => {
 
       <Header />
 
-      <main className="flex-1">
-        <div className="flex h-[calc(100vh-64px-64px)] relative">
+      <main className="flex-1 bg-background">
+        <div className="flex h-[calc(100vh-64px-64px)] w-full relative">
           <SidebarProvider defaultOpen={sidebarOpen} open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <Sidebar className="z-20 border-r border-border bg-muted/30 md:w-72" collapsible="offcanvas">
+            <Sidebar className="z-20 border-r border-border bg-muted/30 w-72" collapsible="offcanvas">
               <SidebarContent>
                 <ChatHistory activeChatId={activeChatId} setActiveChatId={setActiveChatId} />
               </SidebarContent>
@@ -43,6 +43,7 @@ const Chat = () => {
                   className="md:hidden"
                 >
                   <MenuIcon className="h-5 w-5" />
+                  <span className="sr-only">Toggle sidebar</span>
                 </Button>
               </div>
               <div className="flex-1 overflow-hidden">
