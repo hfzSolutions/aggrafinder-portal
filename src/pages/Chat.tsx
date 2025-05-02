@@ -23,38 +23,40 @@ const Chat = () => {
         />
       </Helmet>
 
-      <Header />
+      <div className="flex flex-col min-h-screen">
+        <Header />
 
-      <main className="flex-1 bg-background">
-        <div className="flex h-[calc(100vh-64px-64px)] w-full relative">
-          <SidebarProvider defaultOpen={sidebarOpen} open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <Sidebar className="z-20 border-r border-border bg-muted/30 w-72" collapsible="offcanvas">
-              <SidebarContent>
-                <ChatHistory activeChatId={activeChatId} setActiveChatId={setActiveChatId} />
-              </SidebarContent>
-            </Sidebar>
-            
-            <div className="flex-1 flex flex-col">
-              <div className="bg-background p-2 border-b">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="md:hidden"
-                >
-                  <MenuIcon className="h-5 w-5" />
-                  <span className="sr-only">Toggle sidebar</span>
-                </Button>
+        <main className="flex-1 flex pt-16">
+          <div className="flex h-[calc(100vh-64px)] w-full relative">
+            <SidebarProvider defaultOpen={sidebarOpen} open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <Sidebar className="z-20 border-r border-border bg-muted/30 w-72" collapsible="offcanvas">
+                <SidebarContent className="pt-4">
+                  <ChatHistory activeChatId={activeChatId} setActiveChatId={setActiveChatId} />
+                </SidebarContent>
+              </Sidebar>
+              
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="bg-background p-2 border-b">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="md:hidden"
+                  >
+                    <MenuIcon className="h-5 w-5" />
+                    <span className="sr-only">Toggle sidebar</span>
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <ChatInterface selectedChatId={activeChatId} onNewChat={() => setActiveChatId(null)} />
+                </div>
               </div>
-              <div className="flex-1 overflow-hidden">
-                <ChatInterface selectedChatId={activeChatId} onNewChat={() => setActiveChatId(null)} />
-              </div>
-            </div>
-          </SidebarProvider>
-        </div>
-      </main>
+            </SidebarProvider>
+          </div>
+        </main>
 
-      <Footer />
+        <Footer />
+      </div>
     </>
   );
 };

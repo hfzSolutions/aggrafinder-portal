@@ -96,7 +96,9 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   // Save current chat when messages change
@@ -257,7 +259,7 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-32">
         {messages.length <= 1 && (
           <div className="flex justify-center items-center py-8">
             <Button
@@ -280,7 +282,7 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t bg-background sticky bottom-0">
+      <div className="p-4 border-t bg-background/95 backdrop-blur-sm absolute bottom-0 left-0 right-0">
         <div className="max-w-3xl mx-auto flex flex-col gap-4">
           <ModelSelector
             models={AVAILABLE_MODELS}

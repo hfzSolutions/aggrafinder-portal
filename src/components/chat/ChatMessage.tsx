@@ -20,13 +20,13 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
       isUser ? "bg-muted/30" : "bg-background"
     )}>
       <Avatar className={cn(
-        "h-8 w-8 rounded-md flex-shrink-0",
+        "h-8 w-8 rounded-md flex-shrink-0 mt-1",
         isUser ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
       )}>
         {isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
       </Avatar>
       
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden">
         <p className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
           {message.content}
         </p>
