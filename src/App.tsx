@@ -1,3 +1,4 @@
+
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -21,6 +22,7 @@ import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import TermsOfService from '@/pages/TermsOfService';
 import CookiesPolicy from '@/pages/CookiesPolicy';
 import Support from '@/pages/Support';
+import Chat from '@/pages/Chat';
 import { ToolsCompareProvider } from './hooks/useToolsCompare';
 
 const queryClient = new QueryClient();
@@ -56,6 +58,7 @@ const App = () => (
             <Route path="/tools/:id" element={<ToolDetails />} />
             <Route path="/tools/compare/:ids" element={<CompareTools />} />
             <Route path="/resources" element={<Resources />} />
+            <Route path="/chat" element={<Chat />} />
 
             <Route path="/outcomes" element={<Outcomes />} />
             <Route path="/auth" element={<Auth />} />

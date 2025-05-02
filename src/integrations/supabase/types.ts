@@ -96,6 +96,13 @@ export type Database = {
             referencedRelation: "ai_tools"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_outcomes_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools_random"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ai_tools: {
@@ -167,6 +174,78 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_featured_tools: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          feature_date: string
+          id: string
+          notes: string | null
+          tool_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          feature_date: string
+          id?: string
+          notes?: string | null
+          tool_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          feature_date?: string
+          id?: string
+          notes?: string | null
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_featured_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_featured_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools_random"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      general_analytics: {
+        Row: {
+          action: string
+          created_at: string
+          event_type: Database["public"]["Enums"]["general_analytics_event_type"]
+          id: string
+          metadata: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          event_type: Database["public"]["Enums"]["general_analytics_event_type"]
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["general_analytics_event_type"]
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -188,6 +267,87 @@ export type Database = {
           id?: string
           updated_at?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      sponsor_ads: {
+        Row: {
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          image_url: string
+          is_active: boolean | null
+          link: string
+          link_text: string
+          start_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          end_date: string
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          link: string
+          link_text?: string
+          start_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          link?: string
+          link_text?: string
+          start_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sponsor_banners: {
+        Row: {
+          background_color: string
+          created_at: string
+          end_date: string
+          id: string
+          link: string
+          link_text: string
+          message: string
+          start_date: string
+          text_color: string
+          updated_at: string
+        }
+        Insert: {
+          background_color?: string
+          created_at?: string
+          end_date: string
+          id?: string
+          link: string
+          link_text: string
+          message: string
+          start_date: string
+          text_color?: string
+          updated_at?: string
+        }
+        Update: {
+          background_color?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          link?: string
+          link_text?: string
+          message?: string
+          start_date?: string
+          text_color?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -275,6 +435,13 @@ export type Database = {
             referencedRelation: "ai_tools"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tool_analytics_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools_random"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tool_ownership_claims: {
@@ -320,6 +487,13 @@ export type Database = {
             columns: ["tool_id"]
             isOneToOne: false
             referencedRelation: "ai_tools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_ownership_claims_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools_random"
             referencedColumns: ["id"]
           },
         ]
@@ -381,6 +555,13 @@ export type Database = {
             referencedRelation: "ai_tools"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tool_reports_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools_random"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tool_reviews: {
@@ -419,6 +600,13 @@ export type Database = {
             referencedRelation: "ai_tools"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tool_reviews_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools_random"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tool_votes: {
@@ -449,6 +637,13 @@ export type Database = {
             columns: ["tool_id"]
             isOneToOne: false
             referencedRelation: "ai_tools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_votes_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools_random"
             referencedColumns: ["id"]
           },
         ]
@@ -485,6 +680,60 @@ export type Database = {
       }
     }
     Views: {
+      ai_tools_random: {
+        Row: {
+          approval_status: string | null
+          category: string[] | null
+          created_at: string | null
+          description: string | null
+          featured: boolean | null
+          id: string | null
+          image_url: string | null
+          is_admin_added: boolean | null
+          name: string | null
+          pricing: string | null
+          tagline: string | null
+          tags: string[] | null
+          url: string | null
+          user_id: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          approval_status?: string | null
+          category?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string | null
+          image_url?: string | null
+          is_admin_added?: boolean | null
+          name?: string | null
+          pricing?: string | null
+          tagline?: string | null
+          tags?: string[] | null
+          url?: string | null
+          user_id?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          approval_status?: string | null
+          category?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string | null
+          image_url?: string | null
+          is_admin_added?: boolean | null
+          name?: string | null
+          pricing?: string | null
+          tagline?: string | null
+          tags?: string[] | null
+          url?: string | null
+          user_id?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       tool_vote_counts: {
         Row: {
           downvotes: number | null
@@ -498,6 +747,13 @@ export type Database = {
             columns: ["tool_id"]
             isOneToOne: false
             referencedRelation: "ai_tools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_votes_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tools_random"
             referencedColumns: ["id"]
           },
         ]
@@ -516,6 +772,26 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_todays_featured_tool: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          approval_status: string
+          category: string[]
+          created_at: string
+          description: string
+          featured: boolean
+          id: string
+          image_url: string | null
+          is_admin_added: boolean | null
+          name: string
+          pricing: string
+          tagline: string | null
+          tags: string[]
+          url: string
+          user_id: string | null
+          youtube_url: string | null
+        }[]
+      }
       mark_account_for_deletion: {
         Args: { user_id: string; deletion_reason?: string }
         Returns: boolean
@@ -524,13 +800,38 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      random_ai_tools: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          approval_status: string
+          category: string[]
+          created_at: string
+          description: string
+          featured: boolean
+          id: string
+          image_url: string | null
+          is_admin_added: boolean | null
+          name: string
+          pricing: string
+          tagline: string | null
+          tags: string[]
+          url: string
+          user_id: string | null
+          youtube_url: string | null
+        }[]
+      }
       reject_tool: {
         Args: { tool_id: string }
         Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      general_analytics_event_type:
+        | "newsletter"
+        | "sponsor_ad"
+        | "page_view"
+        | "traffic_source"
+        | "sponsor_ad_banner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -645,6 +946,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      general_analytics_event_type: [
+        "newsletter",
+        "sponsor_ad",
+        "page_view",
+        "traffic_source",
+        "sponsor_ad_banner",
+      ],
+    },
   },
 } as const
