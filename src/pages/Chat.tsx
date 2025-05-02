@@ -1,10 +1,18 @@
 
+import { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ChatInterface from '@/components/chat/ChatInterface';
+import ChatHistory from '@/components/chat/ChatHistory';
+import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import { MenuIcon } from 'lucide-react';
 
 const Chat = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  
   return (
     <>
       <Helmet>
@@ -17,14 +25,31 @@ const Chat = () => {
 
       <Header />
 
-      <main className="flex-1 container mx-auto py-16 px-4 md:px-6 mt-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-6 text-center">Chat with AI Assistant</h1>
-          <p className="text-muted-foreground text-center mb-8">
-            Ask questions about AI tools or get personalized recommendations based on your needs.
-          </p>
-          
-          <ChatInterface />
+      <main className="flex-1">
+        <div className="flex h-[calc(100vh-64px-64px)] relative">
+          <SidebarProvider defaultOpen={sidebarOpen} open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <Sidebar className="z-20 border-r border-border bg-muted/30 md:w-72" collapsible="offcanvas">
+              <SidebarContent>
+                <ChatHistory activeChatId={activeChatId} setActiveChatId={setActiveChatId} />
+              </SidebarContent>
+            </Sidebar>
+            
+            <div className="flex-1 flex flex-col">
+              <div className="bg-background p-2 border-b">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="md:hidden"
+                >
+                  <MenuIcon className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ChatInterface selectedChatId={activeChatId} onNewChat={() => setActiveChatId(null)} />
+              </div>
+            </div>
+          </SidebarProvider>
         </div>
       </main>
 

@@ -2,11 +2,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ChatMessage from './ChatMessage';
 import { trackEvent } from '@/utils/analytics';
 import ModelSelector from './ModelSelector';
+import { v4 as uuidv4 } from 'uuid';
+import { ChatSession } from './ChatHistory';
 
 type Message = {
   id: string;
@@ -19,6 +21,11 @@ export type ChatModel = {
   name: string;
 };
 
+type ChatInterfaceProps = {
+  selectedChatId: string | null;
+  onNewChat: () => void;
+};
+
 const AVAILABLE_MODELS: ChatModel[] = [
   { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus' },
   { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet' },
@@ -29,34 +36,115 @@ const AVAILABLE_MODELS: ChatModel[] = [
   { id: 'google/gemini-1.0-pro', name: 'Gemini Pro' },
 ];
 
-const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content:
-        "👋 Hi there! I'm your AI assistant for DeepListAI. I can help you find the right AI tools for your needs, answer questions about AI technology, or discuss how different AI tools compare. How can I assist you today?",
-    },
-  ]);
+const SYSTEM_PROMPT = "You are an AI assistant for DeepListAI, a platform that helps users find and compare AI tools. You're knowledgeable about various AI tools, their features, use cases, and limitations. Provide helpful, accurate information about AI tools and technologies. If asked about specific tools, you can suggest similar alternatives or compare different options. Always be polite, helpful, and provide concise answers.";
+
+const DEFAULT_WELCOME_MESSAGE = {
+  id: '1',
+  role: 'assistant',
+  content: "👋 Hi there! I'm your AI assistant for DeepListAI. I can help you find the right AI tools for your needs, answer questions about AI technology, or discuss how different AI tools compare. How can I assist you today?",
+};
+
+const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
+  const [messages, setMessages] = useState<Message[]>([DEFAULT_WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState<ChatModel>(AVAILABLE_MODELS[2]); // Default to Claude 3 Haiku
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Load API key and chat sessions on mount
   useEffect(() => {
-    // Scroll to bottom when messages change
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  useEffect(() => {
-    // Check for saved API key
     const savedApiKey = localStorage.getItem('openrouter_api_key');
     if (savedApiKey) {
       setApiKey(savedApiKey);
     }
+    
+    const savedSessions = localStorage.getItem('chat_sessions');
+    if (savedSessions) {
+      setChatSessions(JSON.parse(savedSessions));
+    }
   }, []);
+
+  // Handle changes to selected chat
+  useEffect(() => {
+    if (selectedChatId === null) {
+      setMessages([DEFAULT_WELCOME_MESSAGE]);
+      setCurrentChatId(null);
+      return;
+    }
+    
+    const savedChatData = localStorage.getItem(`chat_${selectedChatId}`);
+    if (savedChatData) {
+      setMessages(JSON.parse(savedChatData));
+      setCurrentChatId(selectedChatId);
+    }
+  }, [selectedChatId]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Save current chat when messages change
+  useEffect(() => {
+    if (currentChatId && messages.length > 1) {
+      localStorage.setItem(`chat_${currentChatId}`, JSON.stringify(messages));
+    }
+  }, [messages, currentChatId]);
+
+  const generateChatTitle = (userMessage: string): string => {
+    // Create a title based on the first user message
+    const maxLength = 30;
+    return userMessage.length > maxLength 
+      ? userMessage.substring(0, maxLength) + '...'
+      : userMessage;
+  };
+
+  const saveNewChat = (userMessage: string) => {
+    const newChatId = uuidv4();
+    const newChat: ChatSession = {
+      id: newChatId,
+      title: generateChatTitle(userMessage),
+      lastMessage: userMessage,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Update sessions list
+    const updatedSessions = [newChat, ...chatSessions];
+    setChatSessions(updatedSessions);
+    localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions));
+    
+    // Set current chat ID
+    setCurrentChatId(newChatId);
+    
+    // Return the new chat ID
+    return newChatId;
+  };
+
+  const updateChatSession = (chatId: string, lastUserMessage: string) => {
+    const updatedSessions = chatSessions.map(session => {
+      if (session.id === chatId) {
+        return {
+          ...session,
+          lastMessage: lastUserMessage,
+          timestamp: new Date().toISOString()
+        };
+      }
+      return session;
+    });
+    
+    // Sort by most recent first
+    updatedSessions.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    
+    setChatSessions(updatedSessions);
+    localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions));
+  };
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -74,6 +162,14 @@ const ChatInterface = () => {
       role: 'user',
       content: input.trim(),
     };
+
+    // Determine chat ID
+    let chatId = currentChatId;
+    if (!chatId) {
+      chatId = saveNewChat(input.trim());
+    } else {
+      updateChatSession(chatId, input.trim());
+    }
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
@@ -93,10 +189,7 @@ const ChatInterface = () => {
         body: JSON.stringify({
           model: selectedModel.id,
           messages: [
-            {
-              role: 'system',
-              content: "You are an AI assistant for DeepListAI, a platform that helps users find and compare AI tools. You're knowledgeable about various AI tools, their features, use cases, and limitations. Provide helpful, accurate information about AI tools and technologies. If asked about specific tools, you can suggest similar alternatives or compare different options. Always be polite, helpful, and provide concise answers.",
-            },
+            { role: 'system', content: SYSTEM_PROMPT },
             ...messages
               .filter((msg) => msg.role !== 'system')
               .map((msg) => ({
@@ -121,6 +214,10 @@ const ChatInterface = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      
+      // Save updated chat
+      localStorage.setItem(`chat_${chatId}`, JSON.stringify([...messages, userMessage, assistantMessage]));
+      
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -143,45 +240,65 @@ const ChatInterface = () => {
     });
   };
 
+  const handleStartNewChat = () => {
+    onNewChat();
+    setMessages([DEFAULT_WELCOME_MESSAGE]);
+  };
+
   return (
-    <div className="flex flex-col h-[70vh] bg-background border rounded-lg shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-        <h2 className="font-semibold">AI Chat Assistant</h2>
-        <ModelSelector
-          models={AVAILABLE_MODELS}
-          selectedModel={selectedModel}
-          onSelectModel={setSelectedModel}
-          apiKey={apiKey}
-          onApiKeyChange={handleApiKeyChange}
-        />
-      </div>
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {(!messages.length || (messages.length === 1 && messages[0].role === 'assistant')) && (
+        <div className="flex justify-center items-center py-8">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleStartNewChat}
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            New Chat
+          </Button>
+        </div>
+      )}
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto">
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSendMessage();
-          }}
-          className="flex items-center space-x-2"
-        >
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            disabled={isLoading}
-            className="flex-1"
-          />
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </form>
+      <div className="p-4 border-t bg-background sticky bottom-0">
+        <div className="max-w-3xl mx-auto flex flex-col gap-2">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className="flex items-center space-x-2"
+          >
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              disabled={isLoading}
+              className="flex-1"
+            />
+            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </form>
+
+          <div className="flex justify-center">
+            <ModelSelector
+              models={AVAILABLE_MODELS}
+              selectedModel={selectedModel}
+              onSelectModel={setSelectedModel}
+              apiKey={apiKey}
+              onApiKeyChange={handleApiKeyChange}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
