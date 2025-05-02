@@ -37,6 +37,9 @@ const ChatHistory = ({ activeChatId, setActiveChatId }: ChatHistoryProps) => {
     setChatSessions(updatedSessions);
     localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions));
     
+    // Also delete the chat messages
+    localStorage.removeItem(`chat_${id}`);
+    
     if (activeChatId === id) {
       setActiveChatId(null);
     }

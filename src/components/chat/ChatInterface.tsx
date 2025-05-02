@@ -38,7 +38,7 @@ const AVAILABLE_MODELS: ChatModel[] = [
 
 const SYSTEM_PROMPT = "You are an AI assistant for DeepListAI, a platform that helps users find and compare AI tools. You're knowledgeable about various AI tools, their features, use cases, and limitations. Provide helpful, accurate information about AI tools and technologies. If asked about specific tools, you can suggest similar alternatives or compare different options. Always be polite, helpful, and provide concise answers.";
 
-const DEFAULT_WELCOME_MESSAGE = {
+const DEFAULT_WELCOME_MESSAGE: Message = {
   id: '1',
   role: 'assistant',
   content: "👋 Hi there! I'm your AI assistant for DeepListAI. I can help you find the right AI tools for your needs, answer questions about AI technology, or discuss how different AI tools compare. How can I assist you today?",
@@ -247,7 +247,7 @@ const ChatInterface = ({ selectedChatId, onNewChat }: ChatInterfaceProps) => {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
-      {(!messages.length || (messages.length === 1 && messages[0].role === 'assistant')) && (
+      {messages.length <= 1 && (
         <div className="flex justify-center items-center py-8">
           <Button
             variant="outline"
