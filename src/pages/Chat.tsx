@@ -1,8 +1,54 @@
-
 import { Helmet } from 'react-helmet';
+import { useState } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ChatInterface from '@/components/chat/ChatInterface';
+import ChatSidebar from '@/components/chat/ChatSidebar';
+import {
+  useSidebar,
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+
+// Wrapper component to use sidebar context
+const ChatContent = () => {
+  const { toggleSidebar } = useSidebar();
+  const [selectedChatId, setSelectedChatId] = useState<string | undefined>(
+    undefined
+  );
+
+  const handleSelectChat = (chatId: string) => {
+    setSelectedChatId(chatId);
+    // In a real implementation, you would load the selected chat's messages here
+  };
+
+  const handleNewChat = () => {
+    setSelectedChatId(undefined);
+    // In a real implementation, you would clear the current chat and start a new one
+  };
+
+  return (
+    <div className="flex h-[calc(100vh-80px)]">
+      <Sidebar className="h-full border-r pt-16">
+        <SidebarContent>
+          <ChatSidebar
+            onSelectChat={handleSelectChat}
+            onNewChat={handleNewChat}
+            selectedChatId={selectedChatId}
+          />
+        </SidebarContent>
+      </Sidebar>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-hidden">
+          <ChatInterface selectedChatId={selectedChatId} />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Chat = () => {
   return (
@@ -15,20 +61,17 @@ const Chat = () => {
         />
       </Helmet>
 
-      <Header />
+      <div className="min-h-screen flex flex-col">
+        <Header />
 
-      <main className="flex-1 container mx-auto py-16 px-4 md:px-6 mt-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-6 text-center">Chat with AI Assistant</h1>
-          <p className="text-muted-foreground text-center mb-8">
-            Ask questions about AI tools or get personalized recommendations based on your needs.
-          </p>
-          
-          <ChatInterface />
-        </div>
-      </main>
+        <main className="flex-grow pt-20 pb-20">
+          <SidebarProvider defaultCollapsed={false} collapsible="icon">
+            <ChatContent />
+          </SidebarProvider>
+        </main>
 
-      <Footer />
+        {/* <Footer /> */}
+      </div>
     </>
   );
 };

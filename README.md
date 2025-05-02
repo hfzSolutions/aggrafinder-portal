@@ -4,6 +4,20 @@
 
 **URL**: https://lovable.dev/projects/bef2138c-10fa-4727-8c64-95e9272e45b3
 
+## Environment Variables Setup
+
+This application uses environment variables for configuration. Follow these steps to set up your environment:
+
+1. Create a `.env` file in the root directory of the project
+2. Copy the contents from `.env.example` to your `.env` file
+3. Replace the placeholder values with your actual API keys and configuration
+
+### Required Environment Variables
+
+- `VITE_OPENROUTER_API_KEY`: Your OpenRouter API key for the chat functionality
+
+The application uses a centralized API key stored in environment variables instead of requiring users to input their own keys.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
