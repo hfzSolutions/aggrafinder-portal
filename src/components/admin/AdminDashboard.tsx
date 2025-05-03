@@ -56,6 +56,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+// Direct API call for email notifications
 
 interface AdminDashboardProps {
   userId: string;
@@ -602,34 +603,6 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
       // Refresh the main tools list to include the newly approved tool
       refreshToolsList();
-
-      // Send email notification to the tool submitter if there's a user ID
-      if (toolData?.user_id) {
-        try {
-          // Get the user's email from their profile
-          const { data: userData, error: userError } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', toolData.user_id)
-            .single();
-
-          if (!userError && userData?.email) {
-            // Import the sendToolApprovalEmail function dynamically to avoid loading it unnecessarily
-            const { sendToolApprovalEmail } = await import(
-              '@/integrations/resend/client'
-            );
-
-            // Send the approval notification email
-            await sendToolApprovalEmail(userData.email, toolData.name);
-          }
-        } catch (emailError) {
-          console.error(
-            'Error sending approval notification email:',
-            emailError
-          );
-          // Don't throw here, as we don't want to fail the approval process if email sending fails
-        }
-      }
 
       toast.success('Tool approved successfully');
     } catch (error: any) {
