@@ -82,6 +82,7 @@ interface ToolSubmissionFormProps {
   toolToEdit?: AITool;
   userId?: string;
   categories?: { id: number; name: string }[];
+  isAdmin?: boolean;
 }
 
 export function ToolSubmissionForm({
@@ -90,6 +91,7 @@ export function ToolSubmissionForm({
   toolToEdit,
   userId,
   categories: propCategories,
+  isAdmin = false,
 }: ToolSubmissionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
@@ -465,26 +467,28 @@ export function ToolSubmissionForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="featured"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Featured Tool</FormLabel>
-                  <p className="text-sm text-muted-foreground">
-                    Featured tools will be highlighted on the homepage
-                  </p>
-                </div>
-              </FormItem>
-            )}
-          />
+          {isAdmin && (
+            <FormField
+              control={form.control}
+              name="featured"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Featured Tool</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Featured tools will be highlighted on the homepage
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}

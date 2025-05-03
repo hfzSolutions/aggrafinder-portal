@@ -24,7 +24,7 @@ const Footer = () => {
             </p>
             <div className="flex mt-6 space-x-4">
               <a
-                href="https://twitter.com"
+                href="https://x.com/deeplistai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -32,7 +32,7 @@ const Footer = () => {
               >
                 <Twitter size={20} />
               </a>
-              <a
+              {/* <a
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -49,7 +49,7 @@ const Footer = () => {
                 aria-label="LinkedIn"
               >
                 <Linkedin size={20} />
-              </a>
+              </a> */}
             </div>
           </div>
 

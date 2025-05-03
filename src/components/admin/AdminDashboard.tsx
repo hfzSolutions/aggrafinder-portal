@@ -554,6 +554,15 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     if (!confirm('Are you sure you want to approve this tool?')) return;
 
     try {
+      // First, get the tool details to get the user ID and tool name
+      const { data: toolData, error: toolFetchError } = await supabase
+        .from('ai_tools')
+        .select('name, user_id')
+        .eq('id', id)
+        .single();
+
+      if (toolFetchError) throw new Error(toolFetchError.message);
+
       const { success, error } = await approveTool(id);
 
       if (!success) throw new Error(error);
@@ -593,6 +602,34 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
       // Refresh the main tools list to include the newly approved tool
       refreshToolsList();
+
+      // Send email notification to the tool submitter if there's a user ID
+      if (toolData?.user_id) {
+        try {
+          // Get the user's email from their profile
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', toolData.user_id)
+            .single();
+
+          if (!userError && userData?.email) {
+            // Import the sendToolApprovalEmail function dynamically to avoid loading it unnecessarily
+            const { sendToolApprovalEmail } = await import(
+              '@/integrations/resend/client'
+            );
+
+            // Send the approval notification email
+            await sendToolApprovalEmail(userData.email, toolData.name);
+          }
+        } catch (emailError) {
+          console.error(
+            'Error sending approval notification email:',
+            emailError
+          );
+          // Don't throw here, as we don't want to fail the approval process if email sending fails
+        }
+      }
 
       toast.success('Tool approved successfully');
     } catch (error: any) {
@@ -707,6 +744,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                           refreshToolsList();
                         }}
                         userId={userId}
+                        isAdmin={true}
                       />
                     </DialogContent>
                   </Dialog>
@@ -758,6 +796,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                         editMode={true}
                         toolToEdit={editingTool}
                         userId={userId}
+                        isAdmin={true}
                       />
                     )}
                   </DialogContent>
