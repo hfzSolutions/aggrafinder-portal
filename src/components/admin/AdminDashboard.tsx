@@ -56,6 +56,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import ToolApprovalEmailTemplate from '@/templates/ToolApprovalEmail';
 // Direct API call for email notifications
 
 interface AdminDashboardProps {
@@ -564,9 +565,9 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
       if (toolFetchError) throw new Error(toolFetchError.message);
 
-      // const { success, error } = await approveTool(id);
+      const { success, error } = await approveTool(id);
 
-      // if (!success) throw new Error(error);
+      if (!success) throw new Error(error);
 
       // If the tool has a user_id (meaning it was submitted by a registered user), send email notification
       if (toolData.user_id) {
@@ -582,32 +583,30 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
             const baseUrl = window.location.origin;
             const toolDetailsUrl = `${baseUrl}/tool/${id}`;
 
-            // Send approval email
-            const response = await fetch(
-              `${
-                import.meta.env.VITE_SUPABASE_URL
-              }/functions/v1/send-tool-approval-email`,
+            // Generate the HTML content using our template
+            const htmlContent = ToolApprovalEmailTemplate({
+              toolName: toolData.name,
+              userName: userData.full_name || 'there',
+              toolUrl: toolDetailsUrl,
+              siteUrl: baseUrl,
+            });
+
+            const { data, error } = await supabase.functions.invoke(
+              'send-email-with-resend',
               {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${
-                    import.meta.env.VITE_SUPABASE_ANON_KEY
-                  }`,
+                body: {
+                  from: 'DeepList AI <team@deeplistai.com>',
+                  to: userData.email,
+                  subject: `Your Tool "${toolData.name}" Has Been Approved!`,
+                  html: htmlContent,
                 },
-                body: JSON.stringify({
-                  toolName: toolData.name,
-                  userEmail: userData.email,
-                  userName: userData.full_name,
-                  toolUrl: toolDetailsUrl,
-                }),
               }
             );
 
-            if (!response.ok) {
-              const errorData = await response.json();
-              console.error('Email sending failed:', errorData);
-              // Don't throw - email failure shouldn't prevent the approval
+            if (error) {
+              console.error('Error sending email:', error);
+            } else {
+              console.log('Email sent successfully:', data);
             }
           }
         } catch (emailError) {
