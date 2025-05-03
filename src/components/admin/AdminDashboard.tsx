@@ -550,7 +550,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   };
 
-  // Handle tool approval - updated to refresh the lists appropriately
+  // Handle tool approval - updated to send email notification
   const handleApproveTool = async (id: string) => {
     if (!confirm('Are you sure you want to approve this tool?')) return;
 
@@ -558,7 +558,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       // First, get the tool details to get the user ID and tool name
       const { data: toolData, error: toolFetchError } = await supabase
         .from('ai_tools')
-        .select('name, user_id')
+        .select('name, user_id, url')
         .eq('id', id)
         .single();
 
@@ -567,6 +567,47 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       const { success, error } = await approveTool(id);
 
       if (!success) throw new Error(error);
+
+      // If the tool has a user_id (meaning it was submitted by a registered user), send email notification
+      if (toolData.user_id) {
+        try {
+          // Get the user's email
+          const { data: userData, error: userFetchError } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', toolData.user_id)
+            .single();
+
+          if (!userFetchError && userData?.email) {
+            const baseUrl = window.location.origin;
+            const toolDetailsUrl = `${baseUrl}/tool/${id}`;
+            
+            // Send approval email
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://ozqlpdsmjwrhjyceyskd.supabase.co'}/functions/v1/send-tool-approval-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cWxwZHNtandyaGp5Y2V5c2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1Mzc1ODUsImV4cCI6MjA1NzExMzU4NX0.nStPFsaCFMIpXnuyWYjyebGjVMxuYQwU5Ye6Q5RF-SA'}`,
+              },
+              body: JSON.stringify({
+                toolName: toolData.name,
+                userEmail: userData.email,
+                userName: userData.full_name,
+                toolUrl: toolDetailsUrl
+              }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error('Email sending failed:', errorData);
+              // Don't throw - email failure shouldn't prevent the approval
+            }
+          }
+        } catch (emailError) {
+          console.error('Failed to send approval email:', emailError);
+          // Don't throw - email failure shouldn't prevent the approval
+        }
+      }
 
       // Update local state for pending tools
       setPendingTools((prev) => prev.filter((tool) => tool.id !== id));

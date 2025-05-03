@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -118,18 +119,57 @@ export function ToolOwnershipClaims() {
 
       if (error) throw error;
 
-      if (status === 'approved') {
-        const claim = claims.find((c) => c.id === claimId);
-        if (claim) {
-          const { error: toolUpdateError } = await supabase
-            .from('ai_tools')
-            .update({
-              user_id: claim.user_id,
-              is_admin_added: false,
-            })
-            .eq('id', claim.tool_id);
+      const claim = claims.find((c) => c.id === claimId);
+      
+      if (status === 'approved' && claim) {
+        // First, get the tool details to correctly update ownership
+        const { data: toolData, error: toolFetchError } = await supabase
+          .from('ai_tools')
+          .select('name, url')
+          .eq('id', claim.tool_id)
+          .single();
 
-          if (toolUpdateError) throw toolUpdateError;
+        if (toolFetchError) throw toolFetchError;
+
+        // Update tool ownership
+        const { error: toolUpdateError } = await supabase
+          .from('ai_tools')
+          .update({
+            user_id: claim.user_id,
+            is_admin_added: false,
+          })
+          .eq('id', claim.tool_id);
+
+        if (toolUpdateError) throw toolUpdateError;
+        
+        // Send approval email notification
+        try {
+          const toolUrl = toolData.url;
+          const baseUrl = window.location.origin;
+          const toolDetailsUrl = `${baseUrl}/tool/${claim.tool_id}`;
+          
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://ozqlpdsmjwrhjyceyskd.supabase.co'}/functions/v1/send-tool-approval-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cWxwZHNtandyaGp5Y2V5c2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1Mzc1ODUsImV4cCI6MjA1NzExMzU4NX0.nStPFsaCFMIpXnuyWYjyebGjVMxuYQwU5Ye6Q5RF-SA'}`,
+            },
+            body: JSON.stringify({
+              toolName: toolData.name || claim.ai_tools?.name,
+              userEmail: claim.submitter_email,
+              userName: claim.submitter_name,
+              toolUrl: toolDetailsUrl,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Email sending failed:', errorData);
+            // Don't throw here - we still want to complete the approval process
+          }
+        } catch (emailError) {
+          console.error('Failed to send approval email:', emailError);
+          // Don't throw - email failure shouldn't prevent the approval
         }
       }
 
@@ -474,4 +514,19 @@ export function ToolOwnershipClaims() {
       </CardContent>
     </Card>
   );
+
+  function getStatusBadge(status: string) {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-500">Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return (
+          <Badge variant="outline" className="border-amber-500 text-amber-500">
+            Pending
+          </Badge>
+        );
+    }
+  }
 }
