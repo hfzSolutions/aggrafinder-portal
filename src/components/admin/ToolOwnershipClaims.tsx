@@ -148,11 +148,13 @@ export function ToolOwnershipClaims() {
           const baseUrl = window.location.origin;
           const toolDetailsUrl = `${baseUrl}/tool/${claim.tool_id}`;
           
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://ozqlpdsmjwrhjyceyskd.supabase.co'}/functions/v1/send-tool-approval-email`, {
+          // Use the complete URL for the edge function
+          const response = await fetch("https://ozqlpdsmjwrhjyceyskd.supabase.co/functions/v1/send-tool-approval-email", {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cWxwZHNtandyaGp5Y2V5c2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1Mzc1ODUsImV4cCI6MjA1NzExMzU4NX0.nStPFsaCFMIpXnuyWYjyebGjVMxuYQwU5Ye6Q5RF-SA'}`,
+              // Use the anon key directly to avoid env variable issues
+              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cWxwZHNtandyaGp5Y2V5c2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1Mzc1ODUsImV4cCI6MjA1NzExMzU4NX0.nStPFsaCFMIpXnuyWYjyebGjVMxuYQwU5Ye6Q5RF-SA',
             },
             body: JSON.stringify({
               toolName: toolData.name || claim.ai_tools?.name,
