@@ -107,6 +107,7 @@ export type Database = {
       }
       ai_tools: {
         Row: {
+          ai_chat_enabled: boolean | null
           approval_status: string
           category: string[]
           created_at: string
@@ -124,6 +125,7 @@ export type Database = {
           youtube_url: string | null
         }
         Insert: {
+          ai_chat_enabled?: boolean | null
           approval_status?: string
           category: string[]
           created_at?: string
@@ -141,6 +143,7 @@ export type Database = {
           youtube_url?: string | null
         }
         Update: {
+          ai_chat_enabled?: boolean | null
           approval_status?: string
           category?: string[]
           created_at?: string
@@ -249,6 +252,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          email: string | null
           full_name: string | null
           id: string
           updated_at: string | null
@@ -256,6 +260,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          email?: string | null
           full_name?: string | null
           id: string
           updated_at?: string | null
@@ -263,6 +268,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          email?: string | null
           full_name?: string | null
           id?: string
           updated_at?: string | null
@@ -775,6 +781,7 @@ export type Database = {
       get_todays_featured_tool: {
         Args: Record<PropertyKey, never>
         Returns: {
+          ai_chat_enabled: boolean | null
           approval_status: string
           category: string[]
           created_at: string
@@ -803,6 +810,7 @@ export type Database = {
       random_ai_tools: {
         Args: Record<PropertyKey, never>
         Returns: {
+          ai_chat_enabled: boolean | null
           approval_status: string
           category: string[]
           created_at: string
