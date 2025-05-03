@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -99,39 +98,6 @@ export function ToolOwnershipClaims() {
     setSelectedClaim(claim);
     setShowDetailsDialog(true);
   };
-  
-  const sendApprovalEmail = async (claim: ToolOwnershipClaim, toolData: any) => {
-    try {
-      const baseUrl = window.location.origin;
-      const toolDetailsUrl = `${baseUrl}/tool/${claim.tool_id}`;
-      
-      // Use a direct fetch with explicit CORS handling
-      const response = await fetch("https://ozqlpdsmjwrhjyceyskd.supabase.co/functions/v1/send-tool-approval-email", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cWxwZHNtandyaGp5Y2V5c2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1Mzc1ODUsImV4cCI6MjA1NzExMzU4NX0.nStPFsaCFMIpXnuyWYjyebGjVMxuYQwU5Ye6Q5RF-SA',
-        },
-        body: JSON.stringify({
-          toolName: toolData.name || claim.ai_tools?.name,
-          userEmail: claim.submitter_email,
-          userName: claim.submitter_name,
-          toolUrl: toolDetailsUrl,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Email sending failed:', errorData);
-        return false;
-      }
-      
-      return true;
-    } catch (emailError) {
-      console.error('Failed to send approval email:', emailError);
-      return false;
-    }
-  };
 
   const handleUpdateStatus = async (
     claimId: string,
@@ -153,7 +119,7 @@ export function ToolOwnershipClaims() {
       if (error) throw error;
 
       const claim = claims.find((c) => c.id === claimId);
-      
+
       if (status === 'approved' && claim) {
         // First, get the tool details to correctly update ownership
         const { data: toolData, error: toolFetchError } = await supabase
@@ -174,13 +140,6 @@ export function ToolOwnershipClaims() {
           .eq('id', claim.tool_id);
 
         if (toolUpdateError) throw toolUpdateError;
-        
-        // Send approval email notification
-        const emailSent = await sendApprovalEmail(claim, toolData);
-        if (!emailSent) {
-          // Log but don't block the approval process
-          console.warn('Email notification could not be sent, but tool was approved');
-        }
       }
 
       toast.success(
