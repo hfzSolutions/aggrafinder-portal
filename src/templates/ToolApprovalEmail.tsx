@@ -116,7 +116,7 @@ export const ToolApprovalEmailTemplate = ({
         <p>Hello ${userName},</p>
 
         <p>
-          Great news! Your tool submission <strong>${toolName}</strong> has been reviewed and approved by our team. It is now live on DeepList AI and visible to all users.
+          Good news! Your tool <strong>${toolName}</strong> has been approved and is now listed on DeepList AI.
         </p>
 
         <div style="text-align: center">
