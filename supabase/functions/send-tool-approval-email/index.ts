@@ -4,11 +4,12 @@ import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
+// Updated CORS headers with more explicit configuration
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400", // 24 hours caching for preflight requests
 };
 
 interface ApprovalEmailRequest {
@@ -19,12 +20,17 @@ interface ApprovalEmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight requests more explicitly
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders, status: 204 });
+    console.log("Handling OPTIONS request");
+    return new Response(null, { 
+      status: 204, // No content for OPTIONS
+      headers: corsHeaders 
+    });
   }
 
   try {
+    console.log("Processing POST request");
     const { toolName, userEmail, userName, toolUrl }: ApprovalEmailRequest = await req.json();
 
     if (!toolName || !userEmail) {
@@ -38,6 +44,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const name = userName || "there"; // Fallback if no name is provided
+    
+    console.log(`Sending email to ${userEmail} about tool ${toolName}`);
     
     const emailResponse = await resend.emails.send({
       from: "AggraFinder <noreply@aggrafinder.com>",
