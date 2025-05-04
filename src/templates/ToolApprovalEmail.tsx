@@ -123,6 +123,7 @@ export const ToolApprovalEmailTemplate = ({
           <a href="${toolUrl}" class="button">View Your Tool</a>
         </div>
 
+        
         <p>
           If the button above doesn't work, copy and paste the following link
           into your browser:
