@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Anthropic } from '@anthropic-ai/sdk';
 
 type Message = {
   id: string;
@@ -48,8 +49,6 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // API key is stored in environment variable
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
   const { trackChatEvent } = useAIChatAnalytics();
 
   useEffect(() => {
@@ -98,44 +97,48 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
       // Prepare context about the tool for the AI
       const toolContext = `Tool Name: ${tool.name}\nDescription: ${
         tool.description
-      }\nCategories: ${tool.category.join(', ')}\nPricing: ${tool.pricing}`;
+      }\nCategories: ${tool.category.join(', ')}\nPricing: ${
+        tool.pricing
+      }\nWebsite URL: ${tool.url}`;
 
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': window.location.origin,
-          },
-          body: JSON.stringify({
-            model: 'qwen/qwen3-0.6b-04-28:free', // Using a free model for this feature
-            messages: [
+      // Create Anthropic client instance
+      const anthropic = new Anthropic({
+        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
+        dangerouslyAllowBrowser: true,
+      });
+
+      // Call Anthropic API directly
+      const response = await anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20240620',
+        max_tokens: 1000,
+        temperature: 0.7,
+        system: `You are an AI assistant helping users with information about AI tools. You are currently providing information about ${tool.name}. Here is information about the tool: ${toolContext}. Keep your responses concise and focused on this specific tool.`,
+        messages: [
+          ...messages.map((msg) => ({
+            role: msg.role as 'user' | 'assistant',
+            content: [
               {
-                role: 'system',
-                content: `You are an AI assistant helping users with information about AI tools. You are currently providing information about ${tool.name}. Here is information about the tool: ${toolContext}. Keep your responses concise and focused on this specific tool.`,
+                type: 'text',
+                text: msg.content,
               },
-              ...messages.map((msg) => ({
-                role: msg.role,
-                content: msg.content,
-              })),
-              { role: 'user', content: input },
             ],
-          }),
-        }
-      );
+          })),
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: input,
+              },
+            ],
+          },
+        ],
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
-
-      const data = await response.json();
-      console.log('data', data);
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: data.choices[0].message.content,
+        content: response.content[0].text,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
