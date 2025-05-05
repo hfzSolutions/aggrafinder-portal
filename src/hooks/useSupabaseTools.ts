@@ -117,6 +117,7 @@ export const useSupabaseTools = ({
           );
         }
 
+        // Determine which page to fetch
         const pageToFetch = loadMore ? currentPage : page;
         // Apply custom query modifications if provided
         if (typeof customQuery === 'function') {
