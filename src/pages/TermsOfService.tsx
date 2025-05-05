@@ -2,8 +2,13 @@ import { Helmet } from 'react-helmet';
 import { Container } from '@/components/ui/container';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { useEffect } from 'react';
 
 const TermsOfService = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <>
       <Helmet>

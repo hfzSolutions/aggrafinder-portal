@@ -136,6 +136,7 @@ export const ToolCard = ({
           {isImageError ? (
             <div
               className={`absolute inset-0 flex flex-col items-center justify-center ${getGradientForTool()}`}
+              onClick={handleCardClick}
             >
               <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
               <span className="text-xs text-primary/60 font-medium">
@@ -143,19 +144,25 @@ export const ToolCard = ({
               </span>
             </div>
           ) : (
-            <img
-              src={tool.imageUrl}
-              alt={tool.name}
-              className={cn(
-                'absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105',
-                isImageLoaded ? 'opacity-100' : 'opacity-0'
-              )}
-              onLoad={() => setIsImageLoaded(true)}
-              onError={handleImageError}
-            />
+            <div onClick={handleCardClick}>
+              <img
+                src={tool.imageUrl}
+                alt={tool.name}
+                className={cn(
+                  'absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105',
+                  isImageLoaded ? 'opacity-100' : 'opacity-0'
+                )}
+                onLoad={() => setIsImageLoaded(true)}
+                onError={handleImageError}
+                onClick={handleCardClick}
+              />
+            </div>
           )}
 
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div
+            onClick={handleCardClick}
+            className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          ></div>
 
           <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
             {tool.featured && (
@@ -190,7 +197,8 @@ export const ToolCard = ({
           <div
             className={cn(
               'absolute bottom-3 left-3 z-10 transition-all duration-300',
-              isHovered || isToolSelected(tool.id) ? 'opacity-100' : 'opacity-0'
+              'opacity-100 md:opacity-0 md:group-hover:opacity-100',
+              isToolSelected(tool.id) && 'md:opacity-100'
             )}
           >
             <div className="flex space-x-2">
@@ -201,7 +209,7 @@ export const ToolCard = ({
               />
 
               <AskAIButton
-                isActive={isToolSelected(tool.id)}
+                isActive={showChatModal}
                 onClick={() => setShowChatModal(true)}
                 buttonText="Ask AI"
               />
@@ -299,8 +307,8 @@ export const ToolCard = ({
                   className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                   onClick={handleLinkClick}
                 >
-                  Visit website
-                  <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Visit website</span>
+                  <ExternalLink className="sm:ml-1 h-3.5 w-3.5" />
                 </a>
               </div>
             </div>
@@ -328,6 +336,7 @@ export const ToolCard = ({
           {isImageError ? (
             <div
               className={`absolute inset-0 flex items-center justify-center ${getGradientForTool()}`}
+              onClick={handleCardClick}
             >
               <ImageOff className="h-6 w-6 text-primary/40" />
             </div>
@@ -337,6 +346,7 @@ export const ToolCard = ({
               alt={tool.name}
               className="absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105"
               onError={handleImageError}
+              onClick={handleCardClick}
             />
           )}
         </div>
@@ -382,6 +392,7 @@ export const ToolCard = ({
           {isImageError ? (
             <div
               className={`absolute inset-0 flex flex-col items-center justify-center ${getGradientForTool()}`}
+              onClick={handleCardClick}
             >
               <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
               <span className="text-xs text-primary/60 font-medium">
@@ -398,6 +409,7 @@ export const ToolCard = ({
               )}
               onLoad={() => setIsImageLoaded(true)}
               onError={handleImageError}
+              onClick={handleCardClick}
             />
           )}
 
@@ -512,9 +524,8 @@ export const ToolCard = ({
               <div
                 className={cn(
                   'transition-all duration-300',
-                  isHovered || isToolSelected(tool.id)
-                    ? 'opacity-100'
-                    : 'opacity-0'
+                  'opacity-100 md:opacity-0 md:group-hover:opacity-100',
+                  isToolSelected(tool.id) && 'md:opacity-100'
                 )}
               >
                 <CompareButton
@@ -527,13 +538,12 @@ export const ToolCard = ({
               <div
                 className={cn(
                   'transition-all duration-300',
-                  isHovered || isToolSelected(tool.id)
-                    ? 'opacity-100'
-                    : 'opacity-0'
+                  'opacity-100 md:opacity-0 md:group-hover:opacity-100',
+                  isToolSelected(tool.id) && 'md:opacity-100'
                 )}
               >
                 <AskAIButton
-                  isActive={isToolSelected(tool.id)}
+                  isActive={showChatModal}
                   onClick={() => setShowChatModal(true)}
                   buttonText="Ask AI"
                 />
@@ -547,8 +557,8 @@ export const ToolCard = ({
                 className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                 onClick={handleLinkClick}
               >
-                Visit website
-                <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Visit website</span>
+                <ExternalLink className="sm:ml-1 h-3.5 w-3.5" />
               </a>
             </div>
           </div>

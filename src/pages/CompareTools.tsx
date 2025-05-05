@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { useSupabaseTools } from '@/hooks/useSupabaseTools';
+import { useSupabaseToolsByIds } from '@/hooks/useSupabaseToolsByIds';
 import { AITool } from '@/types/tools';
 import { cn } from '@/lib/utils';
 
@@ -26,14 +26,15 @@ const CompareTools = () => {
     tools: fetchedTools,
     loading,
     error: fetchError,
-  } = useSupabaseTools();
+  } = useSupabaseToolsByIds({ ids: toolIds });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     if (!loading && !fetchError) {
-      const filteredTools = fetchedTools.filter((tool) =>
-        toolIds.includes(tool.id)
-      );
-      setTools(filteredTools);
+      setTools(fetchedTools);
       setIsLoading(false);
     }
 
@@ -41,7 +42,7 @@ const CompareTools = () => {
       setError(fetchError);
       setIsLoading(false);
     }
-  }, [loading, fetchError, fetchedTools, toolIds]);
+  }, [loading, fetchError, fetchedTools]);
 
   const handleImageLoaded = (id: string) => {
     setIsImageLoadedMap((prev) => ({ ...prev, [id]: true }));
