@@ -29,8 +29,7 @@ export const CompareButton = ({
     >
       <GitCompare
         className={cn(
-          'h-3.5 w-3.5',
-          buttonText ? 'mr-1.5' : '',
+          buttonText ? 'h-3.5 w-3.5 mr-1.5' : 'h-4 w-4',
           isActive ? 'text-primary-foreground' : 'text-primary'
         )}
       />
