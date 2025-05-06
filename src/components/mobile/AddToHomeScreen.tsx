@@ -52,6 +52,7 @@ const AddToHomeScreen: React.FC = () => {
   };
 
   const handleInstallClick = () => {
+    setIsVisible(false);
     localStorage.setItem('add_to_home_prompt_interacted', 'installed');
     trackEvent('user_engagement', 'add_to_home_prompt_accepted', {
       browser_type: browser,
