@@ -96,6 +96,16 @@
     @apply text-2xl sm:text-3xl;
   }
 
+  /* Hide scrollbar but maintain functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
   /* Animations */
   @keyframes float {
     0% {

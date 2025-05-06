@@ -30,6 +30,7 @@ interface ToolCardProps {
   compact?: boolean;
   onFavoriteToggle?: (toolId: string, isFavorite: boolean) => void;
   isFavorite?: boolean;
+  todaysPick?: boolean;
 }
 
 export const ToolCard = ({
@@ -38,6 +39,7 @@ export const ToolCard = ({
   compact = false,
   onFavoriteToggle,
   isFavorite = false,
+  todaysPick = false,
 }: ToolCardProps) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
@@ -174,6 +176,14 @@ export const ToolCard = ({
                 Featured
               </Badge>
             )}
+            {todaysPick && (
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-1 bg-primary text-primary-foreground"
+              >
+                <Star className="h-3 w-3 fill-current" /> Today's Pick
+              </Badge>
+            )}
             {/* {tool.isAdminAdded && (
               <Badge
                 variant="secondary"
@@ -245,7 +255,10 @@ export const ToolCard = ({
             {tool.name}
           </h3>
           {tool.tagline && (
-            <p onClick={handleCardClick} className="text-sm mb-2 line-clamp-2">
+            <p
+              onClick={handleCardClick}
+              className="text-sm font-medium text-primary/90 mb-2.5 line-clamp-2 leading-snug"
+            >
               {tool.tagline}
             </p>
           )}
@@ -328,15 +341,14 @@ export const ToolCard = ({
 
   if (compact) {
     return (
-      <div
-        onClick={handleCardClick}
-        className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex cursor-pointer animate-fade-in"
-      >
-        <div className="relative w-1/3 overflow-hidden bg-secondary/30">
+      <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex cursor-pointer animate-fade-in">
+        <div
+          className="relative w-1/3 overflow-hidden bg-secondary/30"
+          onClick={handleCardClick}
+        >
           {isImageError ? (
             <div
               className={`absolute inset-0 flex items-center justify-center ${getGradientForTool()}`}
-              onClick={handleCardClick}
             >
               <ImageOff className="h-6 w-6 text-primary/40" />
             </div>
@@ -346,22 +358,81 @@ export const ToolCard = ({
               alt={tool.name}
               className="absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105"
               onError={handleImageError}
-              onClick={handleCardClick}
             />
           )}
         </div>
 
         <div className="flex-1 p-3 flex flex-col">
-          <h3 className="text-sm font-medium mb-1 line-clamp-1 group-hover:text-primary transition-colors duration-300">
-            {tool.name}
-          </h3>
+          <div className="flex justify-between items-start mb-1">
+            <h3
+              className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors duration-300"
+              onClick={handleCardClick}
+            >
+              {tool.name}
+            </h3>
+            <div className="flex flex-col gap-1">
+              {tool.featured && (
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border border-yellow-200 ml-1 text-[10px] px-1.5 py-0"
+                >
+                  <Star className="h-2 w-2 fill-yellow-500 text-yellow-500" />
+                  Featured
+                </Badge>
+              )}
+              {todaysPick && (
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-1 bg-primary text-primary-foreground ml-1 text-[10px] px-1.5 py-0"
+                >
+                  <Star className="h-2 w-2 fill-current" />
+                  Today's Pick
+                </Badge>
+              )}
+            </div>
+          </div>
           {tool.tagline && (
-            <p className="text-xs mb-1 line-clamp-1">{tool.tagline}</p>
+            <p
+              className="text-xs font-medium text-primary/80 mb-1.5 line-clamp-1 leading-snug"
+              onClick={handleCardClick}
+            >
+              {tool.tagline}
+            </p>
           )}
-          <p className="text-xs text-muted-foreground line-clamp-2">
+          <p
+            className="text-xs text-muted-foreground line-clamp-1 mb-1"
+            onClick={handleCardClick}
+          >
             {tool.description}
           </p>
+
+          <div className="flex items-center justify-between mt-auto">
+            <div className="flex items-center space-x-1">
+              <div onClick={(e) => e.stopPropagation()}>
+                <CompareButton
+                  isActive={isToolSelected(tool.id)}
+                  onClick={handleCompareClick}
+                  buttonText=""
+                  className="h-6 w-6 p-0 rounded-full flex items-center justify-center border-[0.5px]"
+                />
+              </div>
+              <div onClick={(e) => e.stopPropagation()}>
+                <AskAIButton
+                  isActive={showChatModal}
+                  onClick={() => setShowChatModal(true)}
+                  buttonText=""
+                  className="h-6 w-6 p-0 rounded-full flex items-center justify-center border-[0.5px]"
+                />
+              </div>
+            </div>
+          </div>
         </div>
+
+        <ToolChatModal
+          tool={tool}
+          isOpen={showChatModal}
+          onClose={() => setShowChatModal(false)}
+        />
       </div>
     );
   }
@@ -423,6 +494,14 @@ export const ToolCard = ({
                 Featured
               </Badge>
             )}
+            {todaysPick && (
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-1 bg-primary text-primary-foreground"
+              >
+                <Star className="h-3 w-3 fill-current" /> Today's Pick
+              </Badge>
+            )}
             {/* {tool.isAdminAdded && (
               <Badge
                 variant="secondary"
@@ -464,7 +543,10 @@ export const ToolCard = ({
           </div>
 
           {tool.tagline && (
-            <p onClick={handleCardClick} className="text-sm mb-2 line-clamp-1">
+            <p
+              onClick={handleCardClick}
+              className="text-sm font-medium text-primary/90 mb-2.5 line-clamp-1 leading-snug"
+            >
               {tool.tagline}
             </p>
           )}

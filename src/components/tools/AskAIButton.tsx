@@ -29,7 +29,8 @@ export const AskAIButton = ({
     >
       <Bot
         className={cn(
-          'h-4 w-4 mr-1.5',
+          'h-3.5 w-3.5',
+          buttonText ? 'mr-1.5' : '',
           isActive ? 'text-primary-foreground' : 'text-primary'
         )}
       />
