@@ -25,7 +25,7 @@ export const CompareToolsBar = () => {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border/50 shadow-lg z-50 transition-all duration-300">
+    <div className="fixed bottom-0 left-0 right-0 bg-slate-200/90 dark:bg-slate-800/90 backdrop-blur-sm border-t border-border shadow-lg z-50 transition-all duration-300">
       <div className="container px-4 md:px-8 mx-auto py-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

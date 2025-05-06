@@ -115,7 +115,7 @@ export const ToolCard = ({
   if (viewType === 'grid') {
     return (
       <div
-        className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col cursor-pointer"
+        className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col cursor-pointer touch-manipulation"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -216,12 +216,14 @@ export const ToolCard = ({
                 isActive={isToolSelected(tool.id)}
                 onClick={handleCompareClick}
                 buttonText="Compare"
+                className="h-10 px-4 shadow-sm hover:shadow-md"
               />
 
               <AskAIButton
                 isActive={showChatModal}
                 onClick={() => setShowChatModal(true)}
                 buttonText="Ask AI"
+                className="h-10 px-4 shadow-sm hover:shadow-md"
               />
 
               {/* {onFavoriteToggle && (
@@ -262,10 +264,7 @@ export const ToolCard = ({
               {tool.tagline}
             </p>
           )}
-          <p
-            onClick={handleCardClick}
-            className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-3"
-          >
+          <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-3">
             {tool.description}
           </p>
           <div className="mb-3">
@@ -341,7 +340,7 @@ export const ToolCard = ({
 
   if (compact) {
     return (
-      <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex cursor-pointer animate-fade-in">
+      <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex cursor-pointer animate-fade-in touch-manipulation">
         <div
           className="relative w-1/3 overflow-hidden bg-secondary/30"
           onClick={handleCardClick}
@@ -399,21 +398,18 @@ export const ToolCard = ({
               {tool.tagline}
             </p>
           )}
-          <p
-            className="text-xs text-muted-foreground line-clamp-1 mb-1"
-            onClick={handleCardClick}
-          >
+          <p className="text-xs text-muted-foreground line-clamp-1 mb-1">
             {tool.description}
           </p>
 
           <div className="flex items-center justify-between mt-auto">
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-2">
               <div onClick={(e) => e.stopPropagation()}>
                 <CompareButton
                   isActive={isToolSelected(tool.id)}
                   onClick={handleCompareClick}
                   buttonText=""
-                  className="h-6 w-6 p-0 rounded-full flex items-center justify-center border-[0.5px]"
+                  className="h-9 w-9 p-0 rounded-full flex items-center justify-center border shadow-sm hover:shadow-md active:scale-95 transition-all"
                 />
               </div>
               <div onClick={(e) => e.stopPropagation()}>
@@ -421,7 +417,7 @@ export const ToolCard = ({
                   isActive={showChatModal}
                   onClick={() => setShowChatModal(true)}
                   buttonText=""
-                  className="h-6 w-6 p-0 rounded-full flex items-center justify-center border-[0.5px]"
+                  className="h-9 w-9 p-0 rounded-full flex items-center justify-center border shadow-sm hover:shadow-md active:scale-95 transition-all"
                 />
               </div>
             </div>
@@ -439,7 +435,7 @@ export const ToolCard = ({
 
   return (
     <div
-      className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+      className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer touch-manipulation"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -550,11 +546,7 @@ export const ToolCard = ({
               {tool.tagline}
             </p>
           )}
-
-          <p
-            onClick={handleCardClick}
-            className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2"
-          >
+          <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2">
             {tool.description}
           </p>
 

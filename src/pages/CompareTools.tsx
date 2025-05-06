@@ -1,15 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { ArrowLeft, ExternalLink, Check, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  ExternalLink,
+  Check,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useSupabaseToolsByIds } from '@/hooks/useSupabaseToolsByIds';
 import { AITool } from '@/types/tools';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const CompareTools = () => {
   const { ids } = useParams<{ ids: string }>();
@@ -19,6 +37,10 @@ const CompareTools = () => {
   const [isImageLoadedMap, setIsImageLoadedMap] = useState<
     Record<string, boolean>
   >({});
+  const [activeToolIndex, setActiveToolIndex] = useState(0);
+  const [activeFeature, setActiveFeature] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+  const featureRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const toolIds = ids?.split(',') || [];
 
@@ -126,7 +148,7 @@ const CompareTools = () => {
             ) : (
               <div className="space-y-10">
                 {/* Tool headers for comparison */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="hidden md:grid md:grid-cols-4 gap-6">
                   <div className="hidden md:block"></div>{' '}
                   {/* Empty first column on desktop */}
                   {tools.map((tool) => (
@@ -205,10 +227,115 @@ const CompareTools = () => {
                   ))}
                 </div>
 
+                {/* Mobile Carousel View */}
+                <div className="md:hidden">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-lg font-medium">
+                      Tool {activeToolIndex + 1} of {tools.length}
+                    </h3>
+                    <Badge variant="outline" className="text-xs">
+                      Swipe to compare
+                    </Badge>
+                  </div>
+
+                  <Carousel
+                    className="w-full"
+                    onSelect={(api) => {
+                      const index = api?.selectedScrollSnap() || 0;
+                      setActiveToolIndex(index);
+                    }}
+                  >
+                    <CarouselContent>
+                      {tools.map((tool, index) => (
+                        <CarouselItem key={tool.id}>
+                          <div className="bg-card rounded-lg border border-border/60 shadow-sm p-5 flex flex-col items-center">
+                            <div className="relative h-20 w-20 rounded-md overflow-hidden bg-secondary/20 mb-3">
+                              {!isImageLoadedMap[tool.id] && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                                  <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                                </div>
+                              )}
+                              <img
+                                src={tool.imageUrl}
+                                alt={tool.name}
+                                className={cn(
+                                  'h-full w-full object-cover transition-opacity',
+                                  isImageLoadedMap[tool.id]
+                                    ? 'opacity-100'
+                                    : 'opacity-0'
+                                )}
+                                onLoad={() => handleImageLoaded(tool.id)}
+                              />
+                            </div>
+
+                            <h2 className="text-xl font-medium text-center mb-2">
+                              {tool.name}
+                            </h2>
+
+                            <div className="mb-3">
+                              <span
+                                className={cn(
+                                  'text-sm font-medium px-2.5 py-1 rounded-full',
+                                  {
+                                    'bg-green-100 text-green-800':
+                                      tool.pricing === 'Free',
+                                    'bg-blue-100 text-blue-800':
+                                      tool.pricing === 'Freemium',
+                                    'bg-purple-100 text-purple-800':
+                                      tool.pricing === 'Paid',
+                                    'bg-amber-100 text-amber-800':
+                                      tool.pricing === 'Free Trial',
+                                    'bg-gray-100 text-gray-800': ![
+                                      'Free',
+                                      'Freemium',
+                                      'Paid',
+                                      'Free Trial',
+                                    ].includes(tool.pricing),
+                                  }
+                                )}
+                              >
+                                {tool.pricing}
+                              </span>
+                            </div>
+
+                            <p className="text-sm text-muted-foreground text-center mb-5">
+                              {tool.description}
+                            </p>
+
+                            <div className="flex gap-3 mt-auto w-full justify-center">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="flex-1 max-w-32"
+                              >
+                                <Link to={`/tools/${tool.id}`}>Details</Link>
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                className="gap-1.5 flex-1 max-w-32"
+                                onClick={() => window.open(tool.url, '_blank')}
+                              >
+                                Visit
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <div className="flex justify-center mt-4">
+                      <CarouselPrevious className="static transform-none mx-1" />
+                      <CarouselNext className="static transform-none mx-1" />
+                    </div>
+                  </Carousel>
+                </div>
+
                 <Separator />
 
-                {/* Comparison table */}
-                <div className="rounded-lg border overflow-hidden">
+                {/* Desktop Comparison table */}
+                <div className="hidden md:block rounded-lg border overflow-hidden">
                   <div className="bg-secondary/40 p-4">
                     <h2 className="text-xl font-medium">Detailed Comparison</h2>
                   </div>
@@ -315,6 +442,146 @@ const CompareTools = () => {
                       ))}
                     </div>
                   </div>
+                </div>
+
+                {/* Mobile Comparison View */}
+                <div className="md:hidden rounded-lg border overflow-hidden">
+                  <div className="bg-secondary/40 p-4 flex justify-between items-center">
+                    <h2 className="text-xl font-medium">Detailed Comparison</h2>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Info className="h-3.5 w-3.5 mr-1" />
+                      <span>Tap feature to compare</span>
+                    </div>
+                  </div>
+
+                  <Tabs defaultValue="categories" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="categories">Categories</TabsTrigger>
+                      <TabsTrigger value="pricing">Pricing</TabsTrigger>
+                      <TabsTrigger value="features">Features</TabsTrigger>
+                      <TabsTrigger value="website">Website</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="categories" className="p-4">
+                      <div className="space-y-4">
+                        {tools.map((tool) => (
+                          <div
+                            key={`mcat-${tool.id}`}
+                            className="p-3 border rounded-lg"
+                          >
+                            <h3 className="font-medium mb-2">{tool.name}</h3>
+                            <div className="flex flex-wrap gap-1">
+                              {tool.category.map((cat, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground"
+                                >
+                                  {cat}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="pricing" className="p-4">
+                      <div className="space-y-4">
+                        {tools.map((tool) => (
+                          <div
+                            key={`mprice-${tool.id}`}
+                            className="p-3 border rounded-lg"
+                          >
+                            <h3 className="font-medium mb-2">{tool.name}</h3>
+                            <span
+                              className={cn(
+                                'text-xs font-medium px-2 py-1 rounded-full',
+                                {
+                                  'bg-green-100 text-green-800':
+                                    tool.pricing === 'Free',
+                                  'bg-blue-100 text-blue-800':
+                                    tool.pricing === 'Freemium',
+                                  'bg-purple-100 text-purple-800':
+                                    tool.pricing === 'Paid',
+                                  'bg-amber-100 text-amber-800':
+                                    tool.pricing === 'Free Trial',
+                                  'bg-gray-100 text-gray-800': ![
+                                    'Free',
+                                    'Freemium',
+                                    'Paid',
+                                    'Free Trial',
+                                  ].includes(tool.pricing),
+                                }
+                              )}
+                            >
+                              {tool.pricing}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="features" className="p-4">
+                      <div className="space-y-6">
+                        {allTags.map((tag) => (
+                          <div
+                            key={`mtag-${tag}`}
+                            className={cn(
+                              'p-3 border rounded-lg transition-colors',
+                              activeFeature === tag
+                                ? 'border-primary bg-primary/5'
+                                : ''
+                            )}
+                            onClick={() =>
+                              setActiveFeature(
+                                activeFeature === tag ? null : tag
+                              )
+                            }
+                            ref={(el) => (featureRefs.current[tag] = el)}
+                          >
+                            <h3 className="font-medium mb-2">{tag}</h3>
+                            <div className="space-y-2">
+                              {tools.map((tool) => (
+                                <div
+                                  key={`${tag}-${tool.id}`}
+                                  className="flex items-center gap-2"
+                                >
+                                  {tool.tags.includes(tag) ? (
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <X className="h-4 w-4 text-red-500" />
+                                  )}
+                                  <span className="text-sm">{tool.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="website" className="p-4">
+                      <div className="space-y-4">
+                        {tools.map((tool) => (
+                          <div
+                            key={`murl-${tool.id}`}
+                            className="p-3 border rounded-lg"
+                          >
+                            <h3 className="font-medium mb-2">{tool.name}</h3>
+                            <a
+                              href={tool.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                            >
+                              Visit website
+                              <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </div>
             )}
