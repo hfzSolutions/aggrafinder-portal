@@ -52,6 +52,7 @@ const Tools = () => {
       | 'list';
     return storedView || 'grid'; // Default to grid if no preference is stored
   });
+
   const [sortOption, setSortOption] = useState<'newest' | 'popular'>('newest');
   const [showFavorites, setShowFavorites] = useState(false);
   const [selectedFeaturedTool, setSelectedFeaturedTool] = useState<any | null>(
@@ -623,7 +624,10 @@ const Tools = () => {
                                 />
                               </div>
                               <div key="subscription">
-                                <InlineSubscription viewType={view} />
+                                <InlineSubscription
+                                  viewType={view}
+                                  compact={isMobile}
+                                />
                               </div>
                             </>
                           );

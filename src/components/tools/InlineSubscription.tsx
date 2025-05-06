@@ -9,9 +9,13 @@ import { cn } from '@/lib/utils';
 
 interface InlineSubscriptionProps {
   viewType?: 'grid' | 'list';
+  compact?: boolean;
 }
 
-const InlineSubscription = ({ viewType = 'grid' }: InlineSubscriptionProps) => {
+const InlineSubscription = ({
+  viewType = 'grid',
+  compact = false,
+}: InlineSubscriptionProps) => {
   const [email, setEmail] = useState('');
   const { toast } = useToast();
   const { subscribe, isLoading } = useNewsletterSubscription();
@@ -52,6 +56,48 @@ const InlineSubscription = ({ viewType = 'grid' }: InlineSubscriptionProps) => {
   };
 
   if (viewType === 'list') {
+    // Compact version for list view
+    if (compact) {
+      return (
+        <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 animate-fade-in">
+          <div className="flex">
+            <div className="relative w-1/4 min-w-[80px] overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary">
+                <Mail className="h-5 w-5" />
+              </div>
+            </div>
+
+            <div className="flex-1 p-3 flex flex-col">
+              <h3 className="text-sm font-medium mb-1 line-clamp-1">
+                Stay updated on AI tools
+              </h3>
+
+              <form onSubmit={handleSubmit} className="flex gap-2 mt-1">
+                <Input
+                  type="email"
+                  placeholder="Your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-9 text-xs bg-background/70 flex-grow"
+                  disabled={isLoading}
+                  required
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="h-9 px-3 transition-all duration-300 bg-gradient-to-r from-primary whitespace-nowrap text-xs"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Subscribing...' : 'Subscribe'}
+                </Button>
+              </form>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Regular list view
     return (
       <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 animate-fade-in">
         <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -110,6 +156,51 @@ const InlineSubscription = ({ viewType = 'grid' }: InlineSubscriptionProps) => {
     );
   }
 
+  // Compact version for grid view
+  if (compact) {
+    return (
+      <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex flex-col animate-fade-in">
+        <div className="relative w-full overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 p-3 flex items-center justify-center">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary">
+            <Mail className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="p-3 flex-1 flex flex-col">
+          <div className="text-center mb-2">
+            <h3 className="text-sm font-medium mb-1">
+              Stay updated on AI tools
+            </h3>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-2 mt-1 flex-1"
+          >
+            <Input
+              type="email"
+              placeholder="Your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-9 text-xs bg-background/70"
+              disabled={isLoading}
+              required
+            />
+            <Button
+              type="submit"
+              size="sm"
+              className="h-9 w-full transition-all duration-300 bg-gradient-to-r from-primary text-xs"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Subscribing...' : 'Subscribe'}
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular grid view
   return (
     <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex flex-col animate-fade-in">
       {/* Card decoration elements similar to ToolCard */}
