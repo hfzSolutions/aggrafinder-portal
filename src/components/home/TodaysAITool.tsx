@@ -15,10 +15,12 @@ import { AITool } from '@/types/tools';
 import { useScrollAnimation } from '@/utils/animations';
 import { useTodaysAITool } from '@/hooks/useTodaysAITool';
 import { ToolCard } from '@/components/tools/ToolCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const TodaysAITool = () => {
   const [ref, isVisible] = useScrollAnimation(0.1);
   const { todaysTools, loading, trackTodaysToolEvent } = useTodaysAITool();
+  const isMobile = useIsMobile();
 
   const handleToolClick = () => {
     trackTodaysToolEvent('view');
@@ -96,18 +98,12 @@ const TodaysAITool = () => {
                   style={{ transitionDelay: `${300 + index * 100}ms` }}
                   onClick={() => trackTodaysToolEvent('view', tool.id)}
                 >
-                  <div className="relative">
-                    <ToolCard tool={tool} />
-                    <div className="absolute top-2 right-2 z-10">
-                      <Badge
-                        variant="secondary"
-                        className="bg-primary text-primary-foreground"
-                      >
-                        <Star className="h-3 w-3 mr-1 fill-current" /> Today's
-                        Pick
-                      </Badge>
-                    </div>
-                  </div>
+                  <ToolCard
+                    tool={tool}
+                    viewType={isMobile ? 'list' : 'grid'}
+                    compact={isMobile}
+                    todaysPick={true}
+                  />
                 </div>
               ))}
             </div>

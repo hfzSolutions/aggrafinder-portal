@@ -6,9 +6,11 @@ import { useScrollAnimation } from '@/utils/animations';
 import { ToolCard } from '@/components/tools/ToolCard';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const FeaturedTools = () => {
   const [ref, isVisible] = useScrollAnimation(0.1);
+  const isMobile = useIsMobile();
   const {
     tools: featuredTools,
     loading,
@@ -53,7 +55,12 @@ const FeaturedTools = () => {
                 : 'opacity-0 translate-x-12'
             }`}
           >
-            <Link to="/tools">
+            <Link
+              to="/tools"
+              onClick={() => {
+                window.scrollTo(0, 0);
+              }}
+            >
               View all tools
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
@@ -92,7 +99,11 @@ const FeaturedTools = () => {
                   }`}
                   style={{ transitionDelay: `${300 + index * 100}ms` }}
                 >
-                  <ToolCard tool={tool} />
+                  <ToolCard
+                    tool={tool}
+                    viewType={isMobile ? 'list' : 'grid'}
+                    compact={isMobile}
+                  />
                 </div>
               ))}
         </div>

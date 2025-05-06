@@ -7,9 +7,11 @@ import { ToolCard } from '@/components/tools/ToolCard';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompareToolsBar } from '@/components/tools/CompareToolsBar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PopularTools = () => {
   const [ref, isVisible] = useScrollAnimation(0.1);
+  const isMobile = useIsMobile();
   const {
     tools: popularTools,
     loading,
@@ -55,7 +57,12 @@ const PopularTools = () => {
                   : 'opacity-0 translate-x-12'
               }`}
             >
-              <Link to="/tools">
+              <Link
+                to="/tools"
+                onClick={() => {
+                  window.scrollTo(0, 0);
+                }}
+              >
                 Explore all tools
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
@@ -96,7 +103,11 @@ const PopularTools = () => {
                     }`}
                     style={{ transitionDelay: `${300 + index * 100}ms` }}
                   >
-                    <ToolCard tool={tool} />
+                    <ToolCard
+                      tool={tool}
+                      viewType={isMobile ? 'list' : 'grid'}
+                      compact={isMobile}
+                    />
                   </div>
                 ))}
           </div>

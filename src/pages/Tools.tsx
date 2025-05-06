@@ -19,6 +19,8 @@ import {
   Clock,
   ArrowUpDown,
   Star,
+  Loader2,
+  ImageOff,
 } from 'lucide-react';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { useSupabaseCategories } from '@/hooks/useSupabaseCategories';
@@ -210,12 +212,12 @@ const Tools = () => {
 
         <main className="flex-grow pt-20 pb-20">
           <div className="bg-secondary/30 border-b border-border/20">
-            <div className="container px-4 md:px-8 mx-auto py-8 md:py-10">
+            <div className="container px-3 md:px-8 mx-auto py-5 md:py-10">
               <div className="max-w-3xl">
-                <h1 className="text-3xl md:text-4xl font-medium mb-3 animate-fade-in">
+                <h1 className="text-2xl md:text-4xl font-medium mb-2 md:mb-3 animate-fade-in">
                   AI Tools Collection
                 </h1>
-                <p className="text-muted-foreground mb-0 animate-fade-in max-w-2xl">
+                <p className="text-sm md:text-base text-muted-foreground mb-0 animate-fade-in max-w-2xl">
                   Browse our comprehensive collection of AI tools across various
                   categories. Find the perfect tool for your specific needs.
                 </p>
@@ -223,77 +225,112 @@ const Tools = () => {
             </div>
           </div>
 
-          <div className="container px-4 md:px-8 mx-auto py-8">
+          <div className="container px-3 md:px-8 mx-auto py-4 md:py-8">
             {recentlyViewedTools.length > 0 && (
-              <div className="mb-8 animate-fade-in">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-medium flex items-center">
-                    <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
-                    Recently viewed tools
+              <div className="mb-4 md:mb-6 animate-fade-in">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm md:text-base font-medium flex items-center text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1 text-muted-foreground/70" />
+                    Recently viewed
                   </h2>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => {
                       clearRecentlyViewed();
                       toast.success('Recently viewed tools cleared');
                     }}
-                    className="text-xs"
+                    className="text-xs px-2 py-0.5 h-auto text-muted-foreground hover:text-foreground"
                   >
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                    Clear history
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Clear
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex overflow-x-auto pb-1 gap-2 md:gap-3 hide-scrollbar">
                   {recentToolsLoading
                     ? Array(4)
                         .fill(0)
                         .map((_, index) => (
                           <div
                             key={`recent-skeleton-${index}`}
-                            className="space-y-3 animate-pulse"
+                            className="flex-shrink-0 w-36 md:w-44 animate-pulse"
                           >
-                            <Skeleton className="h-24 w-full rounded-lg" />
-                            <Skeleton className="h-5 w-3/4" />
-                            <Skeleton className="h-4 w-full" />
+                            <div className="flex items-center gap-2 p-2 rounded-lg border border-border/40 bg-background">
+                              <Skeleton className="h-8 w-8 rounded-md flex-shrink-0" />
+                              <div className="flex-1">
+                                <Skeleton className="h-3.5 w-full mb-1" />
+                                <Skeleton className="h-2.5 w-2/3" />
+                              </div>
+                            </div>
                           </div>
                         ))
                     : recentlyViewedTools.map((tool) => (
                         <div
                           key={`recent-${tool.id}`}
-                          className="animate-fade-in"
+                          className="flex-shrink-0 w-36 md:w-44 animate-fade-in"
+                          onClick={() => navigate(`/tools/${tool.id}`)}
                         >
-                          <ToolCard tool={tool} viewType="list" compact />
+                          <div className="flex items-center gap-2 p-2 rounded-lg border border-border/40 bg-background hover:border-primary/20 hover:shadow-sm transition-all duration-200 cursor-pointer">
+                            {tool.imageUrl ? (
+                              <img
+                                src={tool.imageUrl}
+                                alt={tool.name}
+                                className="h-8 w-8 rounded-md object-cover flex-shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    'none';
+                                  (
+                                    e.target as HTMLImageElement
+                                  ).nextElementSibling!.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={`h-8 w-8 rounded-md flex-shrink-0 items-center justify-center bg-secondary/50 ${
+                                tool.imageUrl ? 'hidden' : 'flex'
+                              }`}
+                            >
+                              <ImageOff className="h-4 w-4 text-muted-foreground/70" />
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                              <h3 className="text-xs font-medium truncate">
+                                {tool.name}
+                              </h3>
+                              <span className="text-[10px] text-muted-foreground truncate block">
+                                {tool.pricing}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       ))}
                 </div>
               </div>
             )}
 
-            <div className="lg:hidden mb-4">
+            <div className="lg:hidden mb-3">
               <Button
                 variant="outline"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="w-full justify-between"
+                className="w-full justify-between py-2 h-auto"
               >
                 <span className="flex items-center">
-                  <Sliders className="h-4 w-4 mr-2" />
+                  <Sliders className="h-3.5 w-3.5 mr-1.5" />
                   Filters
                 </span>
-                <span className="bg-secondary rounded-full px-2 py-0.5 text-xs">
+                <span className="bg-secondary rounded-full px-1.5 py-0.5 text-xs">
                   {filteredTools.length}
                 </span>
               </Button>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex flex-col lg:flex-row gap-3 lg:gap-6">
               <div
                 className={`lg:w-1/4 ${
                   isFilterOpen || window.innerWidth >= 1024 ? 'block' : 'hidden'
                 }`}
               >
-                <div className="sticky top-24 space-y-6">
+                <div className="sticky top-20 space-y-3 lg:space-y-6">
                   <div className="animate-slide-up">
                     <SearchBar
                       initialValue={searchTerm}
@@ -303,26 +340,28 @@ const Tools = () => {
                     />
                   </div>
 
-                  <div className="p-4 rounded-lg border border-border/50 bg-background/50 space-y-4">
-                    <h3 className="font-medium">Filters</h3>
+                  <div className="p-3 md:p-4 rounded-lg border border-border/50 bg-background/50 space-y-3 md:space-y-4">
+                    <h3 className="text-sm md:text-base font-medium">
+                      Filters
+                    </h3>
 
                     {categoriesLoading ? (
-                      <div className="space-y-4 animate-pulse">
+                      <div className="space-y-3 animate-pulse">
                         <div>
-                          <Skeleton className="h-4 w-16 mb-2" />
-                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-3 md:h-4 w-16 mb-1 md:mb-2" />
+                          <Skeleton className="h-8 md:h-10 w-full" />
                         </div>
                         <div>
-                          <Skeleton className="h-4 w-16 mb-2" />
-                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-3 md:h-4 w-16 mb-1 md:mb-2" />
+                          <Skeleton className="h-8 md:h-10 w-full" />
                         </div>
                         <div>
-                          <Skeleton className="h-4 w-16 mb-2" />
-                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-3 md:h-4 w-16 mb-1 md:mb-2" />
+                          <Skeleton className="h-8 md:h-10 w-full" />
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-3 animate-fade-in">
+                      <div className="space-y-2 md:space-y-3 animate-fade-in">
                         <FilterButton
                           label="Category"
                           options={categories}
@@ -344,7 +383,7 @@ const Tools = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full justify-start mt-4"
+                          className="w-full justify-start mt-2 md:mt-4 text-xs md:text-sm py-1 md:py-2 h-auto"
                           onClick={() => {
                             setActiveCategory('All');
                             setSelectedPricing('All');
@@ -357,7 +396,7 @@ const Tools = () => {
                             toast.success('All filters cleared');
                           }}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
+                          <Trash2 className="h-3 md:h-4 w-3 md:w-4 mr-1 md:mr-2" />
                           Clear all filters
                         </Button>
                       </div>
@@ -478,34 +517,37 @@ const Tools = () => {
                   <div
                     className={
                       view === 'grid'
-                        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
-                        : 'grid grid-cols-1 gap-4'
+                        ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6'
+                        : 'grid grid-cols-1 gap-2 md:gap-4'
                     }
                   >
-                    {Array(8)
+                    {Array(isMobile ? 6 : 8)
                       .fill(0)
                       .map((_, index) => (
-                        <div key={`skeleton-${index}`} className="space-y-3">
-                          {view === 'grid' ? (
+                        <div
+                          key={`skeleton-${index}`}
+                          className="space-y-2 md:space-y-3"
+                        >
+                          {view === 'grid' || isMobile ? (
                             <>
-                              <Skeleton className="h-48 w-full rounded-lg" />
-                              <Skeleton className="h-6 w-3/4" />
-                              <Skeleton className="h-16 w-full" />
-                              <div className="flex gap-2">
-                                <Skeleton className="h-6 w-16 rounded-full" />
-                                <Skeleton className="h-6 w-16 rounded-full" />
+                              <Skeleton className="h-32 md:h-48 w-full rounded-lg" />
+                              <Skeleton className="h-5 md:h-6 w-3/4" />
+                              <Skeleton className="h-10 md:h-16 w-full" />
+                              <div className="flex gap-1 md:gap-2">
+                                <Skeleton className="h-5 md:h-6 w-12 md:w-16 rounded-full" />
+                                <Skeleton className="h-5 md:h-6 w-12 md:w-16 rounded-full" />
                               </div>
                             </>
                           ) : (
-                            <div className="flex items-start gap-4 p-4 border rounded-lg">
-                              <Skeleton className="h-24 w-24 flex-shrink-0 rounded-lg" />
-                              <div className="flex-grow space-y-2">
-                                <Skeleton className="h-6 w-3/4" />
-                                <Skeleton className="h-4 w-full" />
-                                <Skeleton className="h-4 w-2/3" />
-                                <div className="flex gap-2 pt-2">
-                                  <Skeleton className="h-6 w-16 rounded-full" />
-                                  <Skeleton className="h-6 w-16 rounded-full" />
+                            <div className="flex items-start gap-3 md:gap-4 p-3 md:p-4 border rounded-lg">
+                              <Skeleton className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-lg" />
+                              <div className="flex-grow space-y-1 md:space-y-2">
+                                <Skeleton className="h-5 md:h-6 w-3/4" />
+                                <Skeleton className="h-3 md:h-4 w-full" />
+                                <Skeleton className="h-3 md:h-4 w-2/3" />
+                                <div className="flex gap-1 md:gap-2 pt-1 md:pt-2">
+                                  <Skeleton className="h-5 md:h-6 w-12 md:w-16 rounded-full" />
+                                  <Skeleton className="h-5 md:h-6 w-12 md:w-16 rounded-full" />
                                 </div>
                               </div>
                             </div>
@@ -516,9 +558,11 @@ const Tools = () => {
                 )}
 
                 {!isLoading && filteredTools.length === 0 && !error && (
-                  <div className="text-center py-12">
-                    <h3 className="text-lg font-medium mb-2">No tools found</h3>
-                    <p className="text-muted-foreground">
+                  <div className="text-center py-6 md:py-12">
+                    <h3 className="text-base md:text-lg font-medium mb-1 md:mb-2">
+                      No tools found
+                    </h3>
+                    <p className="text-sm md:text-base text-muted-foreground">
                       Try adjusting your filters or search term to find what
                       you're looking for.
                     </p>
@@ -541,8 +585,8 @@ const Tools = () => {
                     <div
                       className={
                         view === 'grid'
-                          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
-                          : 'grid grid-cols-1 gap-4'
+                          ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6'
+                          : 'grid grid-cols-1 gap-2 md:gap-4'
                       }
                     >
                       {filteredTools.map((tool, index) => {
@@ -553,9 +597,10 @@ const Tools = () => {
                               <div key={`tool-${tool.id}`}>
                                 <ToolCard
                                   tool={tool}
-                                  viewType={view}
+                                  viewType={isMobile ? 'list' : view}
                                   onFavoriteToggle={handleFavoriteToggle}
                                   isFavorite={isFavorite(tool.id)}
+                                  compact={isMobile}
                                 />
                               </div>
                               <div key="sponsor-ad">
@@ -571,9 +616,10 @@ const Tools = () => {
                               <div key={`tool-${tool.id}`}>
                                 <ToolCard
                                   tool={tool}
-                                  viewType={view}
+                                  viewType={isMobile ? 'list' : view}
                                   onFavoriteToggle={handleFavoriteToggle}
                                   isFavorite={isFavorite(tool.id)}
+                                  compact={isMobile}
                                 />
                               </div>
                               <div key="subscription">
@@ -587,9 +633,10 @@ const Tools = () => {
                           <div key={`tool-${tool.id}`}>
                             <ToolCard
                               tool={tool}
-                              viewType={view}
+                              viewType={isMobile ? 'list' : view}
                               onFavoriteToggle={handleFavoriteToggle}
                               isFavorite={isFavorite(tool.id)}
+                              compact={isMobile}
                             />
                           </div>
                         );
@@ -597,19 +644,25 @@ const Tools = () => {
                     </div>
                     {/* View More Button */}
                     {hasMore && (
-                      <div className="flex justify-center mt-10">
+                      <div className="flex justify-center mt-4 md:mt-8">
                         <Button
-                          onClick={loadNextPage}
+                          variant="outline"
+                          size={isMobile ? 'sm' : 'lg'}
+                          onClick={() => {
+                            if (!toolsLoading && hasMore) {
+                              loadNextPage();
+                            }
+                          }}
                           disabled={toolsLoading}
-                          className="px-8"
+                          className="w-full max-w-md py-1.5 md:py-2"
                         >
                           {toolsLoading ? (
                             <>
-                              <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                              Loading...
+                              <Loader2 className="mr-1.5 md:mr-2 h-3.5 md:h-4 w-3.5 md:w-4 animate-spin" />
+                              Loading more tools...
                             </>
                           ) : (
-                            'View More'
+                            'Load more tools'
                           )}
                         </Button>
                       </div>

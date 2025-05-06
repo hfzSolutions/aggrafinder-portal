@@ -1,22 +1,29 @@
-
-import { useState } from "react";
-import { X, ArrowRightLeft, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToolsCompare } from "@/hooks/useToolsCompare";
-import { cn } from "@/lib/utils";
+import { useState } from 'react';
+import { X, ArrowRightLeft, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToolsCompare } from '@/hooks/useToolsCompare';
+import { cn } from '@/lib/utils';
 
 export const CompareToolsBar = () => {
-  const [isImageLoadedMap, setIsImageLoadedMap] = useState<Record<string, boolean>>({});
-  const { selectedTools, clearSelectedTools, compareTools, canCompare, removeToolFromComparison } = useToolsCompare();
-  
+  const [isImageLoadedMap, setIsImageLoadedMap] = useState<
+    Record<string, boolean>
+  >({});
+  const {
+    selectedTools,
+    clearSelectedTools,
+    compareTools,
+    canCompare,
+    removeToolFromComparison,
+  } = useToolsCompare();
+
   const handleImageLoaded = (id: string) => {
-    setIsImageLoadedMap(prev => ({ ...prev, [id]: true }));
+    setIsImageLoadedMap((prev) => ({ ...prev, [id]: true }));
   };
-  
+
   if (selectedTools.length === 0) {
     return null;
   }
-  
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border/50 shadow-lg z-50 transition-all duration-300">
       <div className="container px-4 md:px-8 mx-auto py-4">
@@ -29,17 +36,16 @@ export const CompareToolsBar = () => {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              {selectedTools.length < 2 
-                ? "Select at least one more tool to compare" 
-                : "Ready to compare"
-              }
+              {selectedTools.length < 2
+                ? 'Select at least one more tool to compare'
+                : 'Ready to compare'}
             </p>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <div className="flex items-center gap-2 flex-wrap">
-              {selectedTools.map(tool => (
-                <div 
+              {selectedTools.map((tool) => (
+                <div
                   key={tool.id}
                   className="relative h-10 w-10 rounded-md overflow-hidden bg-secondary/20 border border-border/40 group"
                 >
@@ -48,16 +54,16 @@ export const CompareToolsBar = () => {
                       <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                     )}
                   </div>
-                  <img 
-                    src={tool.imageUrl} 
+                  <img
+                    src={tool.imageUrl}
                     alt={tool.name}
                     className={cn(
-                      "h-full w-full object-cover transition-opacity",
-                      isImageLoadedMap[tool.id] ? "opacity-100" : "opacity-0"
+                      'h-full w-full object-cover transition-opacity',
+                      isImageLoadedMap[tool.id] ? 'opacity-100' : 'opacity-0'
                     )}
                     onLoad={() => handleImageLoaded(tool.id)}
                   />
-                  <button 
+                  <button
                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/60 transition-opacity cursor-pointer"
                     onClick={() => removeToolFromComparison(tool)}
                     aria-label={`Remove ${tool.name} from comparison`}
@@ -67,19 +73,19 @@ export const CompareToolsBar = () => {
                 </div>
               ))}
             </div>
-            
+
             <div className="flex items-center gap-2 ml-auto">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={clearSelectedTools}
                 className="gap-1.5"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Clear
               </Button>
-              
-              <Button 
+
+              <Button
                 onClick={compareTools}
                 disabled={!canCompare}
                 size="sm"
