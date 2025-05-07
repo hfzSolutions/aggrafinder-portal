@@ -231,10 +231,10 @@ const Support = () => {
                     How do I submit an AI tool to the directory?
                   </h3>
                   <p className="text-muted-foreground">
-                    You can submit a new AI tool by going to the "Request Tool"
-                    page and filling out the submission form. Our team will
-                    review your submission and add it to our directory if it
-                    meets our criteria.
+                    To submit an AI tool, you need to log in to your account and
+                    access the submission form from your dashboard. Our team
+                    will review your submission and make it live if it meets our
+                    criteria.
                   </p>
                 </div>
 
@@ -243,21 +243,21 @@ const Support = () => {
                     How can I update information about my AI tool?
                   </h3>
                   <p className="text-muted-foreground">
-                    If you need to update information about your AI tool, please
-                    contact us through this support page with the details of the
-                    changes needed.
+                    You can update your tool information anytime, even after
+                    submission. Simply log in to your account, navigate to your
+                    dashboard, and edit the details of your submitted tool.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-medium mb-2">
-                    How are tools ranked in the directory?
+                    How long does the review process take?
                   </h3>
                   <p className="text-muted-foreground">
-                    Tools are ranked based on a combination of factors including
-                    user ratings, number of reviews, and overall popularity. We
-                    regularly update our ranking algorithm to ensure the most
-                    relevant tools appear first.
+                    We typically review submissions within 2-3 business days.
+                    Once approved, your tool will be immediately published to
+                    our directory. You'll receive a notification when your
+                    submission is approved.
                   </p>
                 </div>
 

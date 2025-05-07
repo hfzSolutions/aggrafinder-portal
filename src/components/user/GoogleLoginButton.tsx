@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getSiteUrl } from '@/utils/siteUrl';
 
 interface GoogleLoginButtonProps {
   className?: string;
@@ -17,7 +18,7 @@ const GoogleLoginButton = ({ className = '' }: GoogleLoginButtonProps) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${getSiteUrl()}/dashboard`,
         },
       });
 

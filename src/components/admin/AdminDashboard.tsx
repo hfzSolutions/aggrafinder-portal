@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSupabaseAdmin } from '@/hooks/useSupabaseAdmin';
+import { getSiteUrl } from '@/utils/siteUrl';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
 import { AIOucome } from '@/types/outcomes';
@@ -580,7 +581,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
             .single();
 
           if (!userFetchError && userData?.email) {
-            const baseUrl = window.location.origin;
+            const baseUrl = getSiteUrl();
             const toolDetailsUrl = `${baseUrl}/tools/${id}`;
 
             // Generate the HTML content using our template

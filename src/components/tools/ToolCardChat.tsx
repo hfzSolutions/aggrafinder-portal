@@ -5,6 +5,7 @@ import { Send, X, MessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { AITool } from '@/types/tools';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
+import { getSiteUrl } from '@/utils/siteUrl';
 
 type Message = {
   id: string;
@@ -82,7 +83,7 @@ const ToolCardChat = ({ tool, onClose }: ToolCardChatProps) => {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': window.location.origin,
+            'HTTP-Referer': getSiteUrl(),
           },
           body: JSON.stringify({
             model: 'qwen/qwen3-0.6b-04-28:free', // Using a free model for this feature

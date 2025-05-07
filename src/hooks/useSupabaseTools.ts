@@ -13,7 +13,7 @@ interface UseSupabaseToolsOptions {
   excludeId?: string; // Add this to exclude specific tools (useful for related tools)
   userId?: string; // Add this to filter by user ID
   includeUnapproved?: boolean; // Add this to include unapproved tools (for admin views)
-  sortBy?: 'created_at' | 'popularity';
+  sortBy?: 'created_at' | 'popularity' | 'random';
   customQuery?: (query: any) => any; // Allow custom query modifications
 }
 
@@ -132,6 +132,11 @@ export const useSupabaseTools = ({
           query = query.order('name', { ascending: true });
         } else if (sortBy === 'created_at') {
           query = query.order('created_at', { ascending: false });
+        } else if (sortBy === 'random') {
+          // No need to apply additional ordering as we're using ai_tools_random view
+          // which already has randomized ordering
+        } else {
+          // Default case - no specific sorting applied, will use the random order from view
         }
 
         query = query.range(

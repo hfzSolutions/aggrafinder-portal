@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet';
 import { useLocation } from 'react-router-dom';
+import { getSiteUrl } from './siteUrl';
 
 interface SEOProps {
   title?: string;
@@ -29,7 +30,7 @@ export const SEO = ({
   children,
 }: SEOProps) => {
   const { pathname } = useLocation();
-  const siteUrl = window.location.origin;
+  const siteUrl = getSiteUrl();
   const fullUrl = `${siteUrl}${pathname}`;
   const ogImageUrl = image.startsWith('http') ? image : `${siteUrl}${image}`;
 
@@ -106,12 +107,12 @@ export const generateHomeStructuredData = (featuredTools: any[] = []) => {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'DeepListAI',
-    url: window.location.origin,
+    url: getSiteUrl(),
     description:
       'Discover the most powerful and innovative AI tools to enhance your productivity, creativity, and workflow.',
     potentialAction: {
       '@type': 'SearchAction',
-      target: `${window.location.origin}/tools?search={search_term_string}`,
+      target: `${getSiteUrl()}/tools?search={search_term_string}`,
       'query-input': 'required name=search_term_string',
     },
   };
@@ -127,6 +128,6 @@ export const generateToolsCollectionStructuredData = () => {
     name: 'AI Tools Collection',
     description:
       'Browse our comprehensive collection of AI tools for various use cases and industries.',
-    url: `${window.location.origin}/tools`,
+    url: `${getSiteUrl()}/tools`,
   };
 };
