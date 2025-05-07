@@ -53,7 +53,9 @@ const Tools = () => {
     return storedView || 'grid'; // Default to grid if no preference is stored
   });
 
-  const [sortOption, setSortOption] = useState<'newest' | 'popular'>('newest');
+  const [sortOption, setSortOption] = useState<'newest' | 'popular' | 'random'>(
+    'random'
+  );
   const [showFavorites, setShowFavorites] = useState(false);
   const [selectedFeaturedTool, setSelectedFeaturedTool] = useState<any | null>(
     null
@@ -105,7 +107,9 @@ const Tools = () => {
         ? 'popularity'
         : sortOption === 'newest'
         ? 'created_at'
-        : '',
+        : sortOption === 'random'
+        ? 'random'
+        : 'random', // Default to random sorting
   });
 
   // Removed infinite scroll observer in favor of a 'See More' button approach
@@ -390,7 +394,7 @@ const Tools = () => {
                             setSelectedPricing('All');
                             setSearchTerm('');
                             setShowFavorites(false);
-                            setSortOption('newest');
+                            setSortOption('random');
                             setView('grid'); // Changed from 'list' to 'grid' to maintain grid as default
                             // Reset URL to clean state
                             navigate('/tools', { replace: true });
@@ -449,7 +453,17 @@ const Tools = () => {
                           <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
                           Sort by
                         </h3>
-                        <div className="flex space-x-2 w-full">
+                        <div className="flex flex-wrap gap-2 w-full">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`px-3 flex-1 ${
+                              sortOption === 'random' ? 'bg-secondary/70' : ''
+                            }`}
+                            onClick={() => setSortOption('random')}
+                          >
+                            Random
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

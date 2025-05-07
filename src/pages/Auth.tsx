@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
+import { getSiteUrl } from '@/utils/siteUrl';
 import { supabase } from '@/integrations/supabase/client';
 import GoogleLoginButton from '@/components/user/GoogleLoginButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -95,7 +96,7 @@ const Auth = () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: `${getSiteUrl()}/update-password`,
       });
       if (error) throw error;
       toast.success('Password reset email sent! Please check your inbox.');
