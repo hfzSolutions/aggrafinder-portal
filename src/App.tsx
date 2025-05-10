@@ -24,6 +24,8 @@ import CookiesPolicy from '@/pages/CookiesPolicy';
 import Support from '@/pages/Support';
 import Chat from '@/pages/Chat';
 import { ToolsCompareProvider } from './hooks/useToolsCompare';
+import { SharedChatProvider } from './contexts/SharedChatContext';
+import SharedToolChatModal from './components/tools/SharedToolChatModal';
 
 const queryClient = new QueryClient();
 
@@ -50,29 +52,32 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ToolsCompareProvider>
-          <UTMTracker />
-          <AddToHomeScreen />
+          <SharedChatProvider>
+            <UTMTracker />
+            <AddToHomeScreen />
+            <SharedToolChatModal />
 
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/tools" element={<Tools />} />
-            <Route path="/tools/:id" element={<ToolDetails />} />
-            <Route path="/tools/compare/:ids" element={<CompareTools />} />
-            <Route path="/resources" element={<Resources />} />
-            <Route path="/chat" element={<Chat />} />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/tools" element={<Tools />} />
+              <Route path="/tools/:id" element={<ToolDetails />} />
+              <Route path="/tools/compare/:ids" element={<CompareTools />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="/chat" element={<Chat />} />
 
-            <Route path="/outcomes" element={<Outcomes />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/update-password" element={<UpdatePassword />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms-of-service" element={<TermsOfService />} />
-            <Route path="/cookies-policy" element={<CookiesPolicy />} />
-            <Route path="/support" element={<Support />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="/outcomes" element={<Outcomes />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/cookies-policy" element={<CookiesPolicy />} />
+              <Route path="/support" element={<Support />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </SharedChatProvider>
         </ToolsCompareProvider>
       </BrowserRouter>
     </TooltipProvider>
