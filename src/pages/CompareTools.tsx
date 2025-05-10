@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -28,6 +29,8 @@ import { useSupabaseToolsByIds } from '@/hooks/useSupabaseToolsByIds';
 import { AITool } from '@/types/tools';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useSharedChat } from '@/contexts/SharedChatContext';
+import { useToolAnalytics } from '@/hooks/useToolAnalytics';
 
 const CompareTools = () => {
   const { ids } = useParams<{ ids: string }>();
@@ -41,6 +44,8 @@ const CompareTools = () => {
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const featureRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const { openChat } = useSharedChat();
+  const { trackEvent } = useToolAnalytics();
 
   const toolIds = ids?.split(',') || [];
 
@@ -78,6 +83,19 @@ const CompareTools = () => {
   // Get all unique tags from all tools
   const allTags = Array.from(new Set(tools.flatMap((tool) => tool.tags)));
 
+  // Function to open chat with all tools in comparison
+  const handleOpenComparisonChat = () => {
+    if (tools.length > 0) {
+      // Open chat with the first tool and pass all tools for comparison context
+      openChat(tools[0], tools);
+
+      // Track the event
+      tools.forEach((tool) => {
+        trackEvent(tool.id, 'comparison_chat_open');
+      });
+    }
+  };
+
   return (
     <>
       <Helmet>
@@ -111,6 +129,17 @@ const CompareTools = () => {
             <p className="text-muted-foreground mb-8">
               Side-by-side comparison of selected AI tools
             </p>
+
+            {!isLoading && !error && tools.length >= 2 && (
+              <Button
+                onClick={handleOpenComparisonChat}
+                className="mb-6 bg-primary/10 hover:bg-primary/20 text-primary gap-2"
+                size="sm"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Compare with AI
+              </Button>
+            )}
 
             {isLoading ? (
               <div className="space-y-8">
