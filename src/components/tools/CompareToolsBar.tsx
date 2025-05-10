@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { X, ArrowRightLeft, Trash2 } from 'lucide-react';
+import { X, ArrowRightLeft, Trash2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToolsCompare } from '@/hooks/useToolsCompare';
 import { cn } from '@/lib/utils';
+import { useSharedChat } from '@/contexts/SharedChatContext';
+import { useToolAnalytics } from '@/hooks/useToolAnalytics';
 
 export const CompareToolsBar = () => {
   const [isImageLoadedMap, setIsImageLoadedMap] = useState<
@@ -15,9 +17,24 @@ export const CompareToolsBar = () => {
     canCompare,
     removeToolFromComparison,
   } = useToolsCompare();
+  const { openChat } = useSharedChat();
+  const { trackEvent } = useToolAnalytics();
 
   const handleImageLoaded = (id: string) => {
     setIsImageLoadedMap((prev) => ({ ...prev, [id]: true }));
+  };
+
+  // Function to open chat with all selected tools
+  const handleOpenComparisonChat = () => {
+    if (selectedTools.length > 0) {
+      // Open chat with the first tool and pass all tools for comparison context
+      openChat(selectedTools[0], selectedTools);
+
+      // Track the event
+      selectedTools.forEach((tool) => {
+        trackEvent(tool.id, 'comparison_chat_open');
+      });
+    }
   };
 
   if (selectedTools.length === 0) {
@@ -83,6 +100,16 @@ export const CompareToolsBar = () => {
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Clear
+              </Button>
+
+              <Button
+                onClick={handleOpenComparisonChat}
+                disabled={!canCompare}
+                size="sm"
+                className="gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Compare with AI
               </Button>
 
               <Button

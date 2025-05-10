@@ -13,6 +13,7 @@ type Message = {
   toolId?: string; // The ID of the tool this message is about
   toolName?: string; // The name of the tool for display purposes
   toolCard?: AITool; // The tool card data to display in the chat
+  comparisonToolCards?: AITool[]; // Array of tools for comparison display
 };
 
 type SharedChatContextType = {
@@ -21,11 +22,12 @@ type SharedChatContextType = {
   isLoading: boolean;
   typingIndicator: boolean;
   currentTool: AITool | null;
+  comparisonTools: AITool[] | null;
   input: string;
   suggestions: string[];
   loadingSuggestions: boolean;
   setInput: (input: string) => void;
-  openChat: (tool: AITool) => void;
+  openChat: (tool: AITool, comparisonTools?: AITool[]) => void;
   closeChat: () => void;
   sendMessage: () => Promise<void>;
   handleSuggestionClick: (suggestion: string) => void;
@@ -51,6 +53,7 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [typingIndicator, setTypingIndicator] = useState(false);
   const [currentTool, setCurrentTool] = useState<AITool | null>(null);
+  const [comparisonTools, setComparisonTools] = useState<AITool[] | null>(null);
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -117,6 +120,11 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
     // Set loading state for suggestions
     setLoadingSuggestions(true);
 
+    // Check if this is a comparison chat with multiple tools
+    const isComparisonMode = messages.some((msg) =>
+      msg.id?.includes('welcome-comparison')
+    );
+
     try {
       // Create Anthropic client instance
       const anthropic = new Anthropic({
@@ -138,14 +146,18 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
         model: 'claude-3-5-sonnet-20240620',
         max_tokens: 150,
         temperature: 0.7,
-        system: `You are an AI assistant helping users learn about ${currentTool.name}, an AI tool. Based on the conversation history, generate 3-4 follow-up questions the user might want to ask next. Make these questions diverse, natural, and relevant to the conversation context. Each question should be concise (under 10 words if possible). Return ONLY the questions as a JSON array of strings with no additional text.`,
+        system: isComparisonMode
+          ? `You are an AI assistant helping users compare multiple AI tools. Based on the conversation history, generate 3-4 follow-up questions focused on comparing the tools. Questions should help users understand differences, strengths, weaknesses, and best use cases for each tool. Each question should be concise (under 10 words if possible). Return ONLY the questions as a JSON array of strings with no additional text.`
+          : `You are an AI assistant helping users learn about ${currentTool.name}, an AI tool. Based on the conversation history, generate 3-4 follow-up questions the user might want to ask next. Make these questions diverse, natural, and relevant to the conversation context. Each question should be concise (under 10 words if possible). Return ONLY the questions as a JSON array of strings with no additional text.`,
         messages: [
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Here's the conversation so far about ${currentTool.name}:\n${conversationHistory}\n\nGenerate 3-4 natural follow-up questions as JSON array.`,
+                text: isComparisonMode
+                  ? `Here's the conversation so far about comparing tools:\n${conversationHistory}\n\nGenerate 3-4 natural follow-up comparison questions as JSON array.`
+                  : `Here's the conversation so far about ${currentTool.name}:\n${conversationHistory}\n\nGenerate 3-4 natural follow-up questions as JSON array.`,
               },
             ],
           },
@@ -174,6 +186,33 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (parseError) {
         console.error('Error parsing suggestions:', parseError);
         // Fallback to default suggestions if parsing fails
+        if (isComparisonMode) {
+          setSuggestions([
+            `Which tool has the best features?`,
+            `How do the pricing plans compare?`,
+            `Which is more suitable for beginners?`,
+            `What are the main differences between them?`,
+          ]);
+        } else {
+          setSuggestions([
+            `What can I do with ${currentTool.name}?`,
+            `How much does ${currentTool.name} cost?`,
+            `What are the main features of ${currentTool.name}?`,
+            `How does ${currentTool.name} compare to alternatives?`,
+          ]);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+      // Fallback to default suggestions if API call fails
+      if (isComparisonMode) {
+        setSuggestions([
+          `Which tool has the best features?`,
+          `How do the pricing plans compare?`,
+          `Which is more suitable for beginners?`,
+          `What are the main differences between them?`,
+        ]);
+      } else {
         setSuggestions([
           `What can I do with ${currentTool.name}?`,
           `How much does ${currentTool.name} cost?`,
@@ -181,15 +220,6 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
           `How does ${currentTool.name} compare to alternatives?`,
         ]);
       }
-    } catch (error) {
-      console.error('Error generating suggestions:', error);
-      // Fallback to default suggestions if API call fails
-      setSuggestions([
-        `What can I do with ${currentTool.name}?`,
-        `How much does ${currentTool.name} cost?`,
-        `What are the main features of ${currentTool.name}?`,
-        `How does ${currentTool.name} compare to alternatives?`,
-      ]);
     } finally {
       // Always reset loading state
       setLoadingSuggestions(false);
@@ -197,31 +227,36 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Add welcome message when opening chat with a new tool
-  const openChat = (tool: AITool) => {
+  const openChat = (tool: AITool, toolsToCompare?: AITool[]) => {
     setCurrentTool(tool);
+    setComparisonTools(toolsToCompare || null);
     setIsOpen(true);
 
     // Track when chat is opened
     trackChatEvent(tool.id, 'open');
 
-    // Check if we already have a welcome message for this tool
-    const hasWelcomeForTool = messages.some(
-      (msg) =>
-        msg.toolId === tool.id &&
-        msg.role === 'assistant' &&
-        msg.id.includes('welcome')
-    );
+    // Check if this is a comparison chat with multiple tools
+    // Use toolsToCompare directly instead of comparisonTools state which hasn't updated yet
+    if (toolsToCompare && toolsToCompare.length > 1) {
+      // Create a system message that includes information about all tools being compared
+      const toolNames = toolsToCompare.map((t) => t.name).join(', ');
+      const toolDescriptions = toolsToCompare
+        .map((t) => `${t.name}: ${t.description}`)
+        .join('\n');
+      const toolCategories = Array.from(
+        new Set(toolsToCompare.flatMap((t) => t.category))
+      ).join(', ');
 
-    if (!hasWelcomeForTool) {
       const welcomeMessage: Message = {
-        id: `welcome-${tool.id}-${Date.now()}`,
+        id: `welcome-comparison-${Date.now()}`,
         role: 'assistant',
-        content: `👋 Hi! I can tell you more about ${tool.name}. What would you like to know?`,
+        content: `👋 Hi! I'm here to help you compare ${toolNames}. I can analyze their features, pricing, use cases, and help you determine which one might be best for your specific needs.`,
         isTyping: true,
         displayContent: '',
         toolId: tool.id,
-        toolName: tool.name,
-        toolCard: tool, // Include the tool card data in the welcome message
+        toolName: `Comparing: ${toolNames}`,
+        toolCard: toolsToCompare[0], // Set first tool as the primary tool
+        comparisonToolCards: toolsToCompare, // Include all tools for comparison display
       };
 
       setMessages((prev) => [...prev, welcomeMessage]);
@@ -229,16 +264,56 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
       // Start typing animation for welcome message
       animateTyping(welcomeMessage.id, welcomeMessage.content);
 
-      // Set default initial suggestions
+      // Set comparison-focused suggestions
       setSuggestions([
-        `What can I do with ${tool.name}?`,
-        `How much does ${tool.name} cost?`,
-        `What are the main features of ${tool.name}?`,
-        `How does ${tool.name} compare to alternatives?`,
+        `What are the key differences between these tools?`,
+        `Which tool offers the best value for money?`,
+        `Which tool is easier to use?`,
+        `What are the unique strengths of each tool?`,
       ]);
+
+      // Track the chat open event for all tools
+      toolsToCompare.forEach((t) => {
+        if (t.id !== tool.id) trackChatEvent(t.id, 'open');
+      });
     } else {
-      // If we already have messages for this tool, generate new suggestions
-      generateSuggestions();
+      // Regular single tool chat
+      // Check if we already have a welcome message for this tool
+      const hasWelcomeForTool = messages.some(
+        (msg) =>
+          msg.toolId === tool.id &&
+          msg.role === 'assistant' &&
+          msg.id.includes('welcome')
+      );
+
+      if (!hasWelcomeForTool) {
+        const welcomeMessage: Message = {
+          id: `welcome-${tool.id}-${Date.now()}`,
+          role: 'assistant',
+          content: `👋 Hi! I can tell you more about ${tool.name}. What would you like to know?`,
+          isTyping: true,
+          displayContent: '',
+          toolId: tool.id,
+          toolName: tool.name,
+          toolCard: tool, // Include the tool card data in the welcome message
+        };
+
+        setMessages((prev) => [...prev, welcomeMessage]);
+
+        // Start typing animation for welcome message
+        animateTyping(welcomeMessage.id, welcomeMessage.content);
+
+        // Set default initial suggestions
+        setSuggestions([
+          `What can I do with ${tool.name}?`,
+          `How much does ${tool.name} cost?`,
+          `What are the main features of ${tool.name}?`,
+          `How does ${tool.name} compare to alternatives?`,
+        ]);
+      } else {
+        // If we already have messages for this tool, generate new suggestions
+        generateSuggestions();
+      }
     }
   };
 
@@ -295,24 +370,44 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
         content: input.trim(),
       });
 
+      // Check if this is a comparison chat with multiple tools
+      const isComparisonMode = messages.some((msg) =>
+        msg.id?.includes('welcome-comparison')
+      );
+
       // Call Anthropic API
       const response = await anthropic.messages.create({
         model: 'claude-3-5-sonnet-20240620',
         max_tokens: 1000,
         temperature: 0.7,
-        system: `You are an AI assistant helping users learn about ${
-          currentTool.name
-        }, an AI tool. 
-        
-        Here's what you know about ${currentTool.name}:
-        - Description: ${currentTool.description}
-        - Category: ${currentTool.category.join(', ')}
-        - Pricing: ${currentTool.pricing}
-        - Website: ${currentTool.url}
-        
-        Your goal is to provide helpful, accurate information about this tool. If you don't know something specific about the tool that wasn't provided in the context, you can acknowledge that limitation and offer to help with what you do know.
-        
-        Keep your responses conversational, helpful, and concise (generally under 150 words unless more detail is specifically requested).`,
+        system: isComparisonMode
+          ? `You are an AI assistant helping users compare multiple AI tools. 
+          
+          You're currently in a comparison chat where the user is comparing different tools. Your goal is to provide helpful, comparative analysis between the tools, highlighting their differences, strengths, weaknesses, and best use cases.
+          
+          When comparing tools, consider:
+          - Feature differences and similarities
+          - Pricing and value proposition
+          - Target audience and use cases
+          - Unique selling points of each tool
+          - Limitations of each tool
+          
+          Present balanced comparisons that help the user make an informed decision based on their specific needs. When appropriate, you can recommend which tool might be better for specific use cases.
+          
+          Keep your responses conversational, helpful, and structured for easy comparison.`
+          : `You are an AI assistant helping users learn about ${
+              currentTool.name
+            }, an AI tool. 
+            
+            Here's what you know about ${currentTool.name}:
+            - Description: ${currentTool.description}
+            - Category: ${currentTool.category.join(', ')}
+            - Pricing: ${currentTool.pricing}
+            - Website: ${currentTool.url}
+            
+            Your goal is to provide helpful, accurate information about this tool. If you don't know something specific about the tool that wasn't provided in the context, you can acknowledge that limitation and offer to help with what you do know.
+            
+            Keep your responses conversational, helpful, and concise (generally under 150 words unless more detail is specifically requested).`,
         messages: conversationHistory,
       });
 
@@ -405,6 +500,7 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
     isLoading,
     typingIndicator,
     currentTool,
+    comparisonTools,
     input,
     suggestions,
     loadingSuggestions,

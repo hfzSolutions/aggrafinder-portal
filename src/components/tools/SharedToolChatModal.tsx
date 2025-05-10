@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useSharedChat } from '@/contexts/SharedChatContext';
 import { Badge } from '@/components/ui/badge';
+import { ComparisonToolCards } from '@/components/tools/ComparisonToolCards';
 
 const SharedToolChatModal = () => {
   const {
@@ -28,6 +29,7 @@ const SharedToolChatModal = () => {
     isLoading,
     typingIndicator,
     currentTool,
+    comparisonTools,
     input,
     suggestions,
     loadingSuggestions,
@@ -78,9 +80,21 @@ const SharedToolChatModal = () => {
               </div>
               <div>
                 <DialogTitle className="text-base font-medium">
-                  {currentTool.name}
+                  {/* {messages.some((msg) =>
+                    msg.id?.includes('welcome-comparison')
+                  )
+                    ? 'Tool Comparison'
+                    : currentTool.name} */}
+                  AI Assistant
                 </DialogTitle>
-                <p className="text-xs text-muted-foreground">AI Assistant</p>
+                <p className="text-xs text-muted-foreground">
+                  {/* {messages.some((msg) =>
+                    msg.id?.includes('welcome-comparison')
+                  )
+                    ? 'Comparing multiple tools'
+                    : 'AI Assistant'} */}
+                  Ask me anything
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
@@ -159,56 +173,65 @@ const SharedToolChatModal = () => {
                           </Badge>
                         )} */}
 
-                      {/* Display tool card if available */}
-                      {message.toolCard && (
-                        <div className="mb-3 p-3 rounded-lg bg-background/80 border border-border/40 shadow-sm hover:shadow-md transition-all duration-200 group">
-                          <div className="flex items-center gap-3">
-                            {message.toolCard.imageUrl ? (
-                              <img
-                                src={message.toolCard.imageUrl}
-                                alt={message.toolCard.name}
-                                className="w-14 h-14 rounded-md object-cover shadow-sm"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display =
-                                    'none';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-14 h-14 rounded-md bg-primary/10 flex items-center justify-center shadow-sm">
-                                <span className="text-sm font-medium text-primary">
-                                  {message.toolCard.name
-                                    .substring(0, 2)
-                                    .toUpperCase()}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-sm truncate">
-                                  {message.toolCard.name}
-                                </h4>
-                                {message.toolCard.url && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      window.open(
-                                        message.toolCard?.url,
-                                        '_blank'
-                                      );
-                                    }}
-                                  >
-                                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                                  </Button>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {message.toolCard.tagline}
-                              </p>
-                              <div className="flex items-center gap-1 mt-1.5">
-                                {/* <Badge
+                      {/* Display comparison tool cards if in comparison mode */}
+                      {message.id?.includes('welcome-comparison') &&
+                      ((message.comparisonToolCards &&
+                        message.comparisonToolCards.length > 1) ||
+                        (comparisonTools && comparisonTools.length > 1)) ? (
+                        <ComparisonToolCards
+                          tools={message.comparisonToolCards || comparisonTools}
+                        />
+                      ) : (
+                        message.toolCard && (
+                          <div className="mb-3 p-3 rounded-lg bg-background/80 border border-border/40 shadow-sm hover:shadow-md transition-all duration-200 group">
+                            <div className="flex items-center gap-3">
+                              {message.toolCard.imageUrl ? (
+                                <img
+                                  src={message.toolCard.imageUrl}
+                                  alt={message.toolCard.name}
+                                  className="w-14 h-14 rounded-md object-cover shadow-sm"
+                                  onError={(e) => {
+                                    (
+                                      e.target as HTMLImageElement
+                                    ).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-14 h-14 rounded-md bg-primary/10 flex items-center justify-center shadow-sm">
+                                  <span className="text-sm font-medium text-primary">
+                                    {message.toolCard.name
+                                      .substring(0, 2)
+                                      .toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-medium text-sm truncate">
+                                    {message.toolCard.name}
+                                  </h4>
+                                  {message.toolCard.url && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(
+                                          message.toolCard?.url,
+                                          '_blank'
+                                        );
+                                      }}
+                                    >
+                                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                                    </Button>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {message.toolCard.tagline}
+                                </p>
+                                <div className="flex items-center gap-1 mt-1.5">
+                                  {/* <Badge
                                   variant="outline"
                                   className="text-[10px] px-1.5 py-0 bg-primary/5"
                                 >
@@ -223,15 +246,16 @@ const SharedToolChatModal = () => {
                                       {message.toolCard.category[0]}
                                     </Badge>
                                   )} */}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          {/* {message.toolCard.description && (
+                            {/* {message.toolCard.description && (
                             <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground line-clamp-2 group-hover:line-clamp-none transition-all duration-300">
                               {message.toolCard.description}
                             </div>
                           )} */}
-                        </div>
+                          </div>
+                        )
                       )}
 
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">
