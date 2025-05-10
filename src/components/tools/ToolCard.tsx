@@ -220,8 +220,7 @@ export const ToolCard = ({
               />
 
               <AskAIButton
-                isActive={showChatModal}
-                onClick={() => setShowChatModal(true)}
+                tool={tool}
                 buttonText="Ask AI"
                 className="h-10 px-4 shadow-sm hover:shadow-md"
               />
@@ -329,11 +328,7 @@ export const ToolCard = ({
 
         <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/10 rounded-xl pointer-events-none transition-all duration-300"></div>
 
-        <ToolChatModal
-          tool={tool}
-          isOpen={showChatModal}
-          onClose={() => setShowChatModal(false)}
-        />
+        {/* Shared chat modal is now rendered at the app level */}
       </div>
     );
   }
@@ -414,8 +409,7 @@ export const ToolCard = ({
               </div>
               <div onClick={(e) => e.stopPropagation()}>
                 <AskAIButton
-                  isActive={showChatModal}
-                  onClick={() => setShowChatModal(true)}
+                  tool={tool}
                   buttonText=""
                   className="h-9 w-9 p-0 rounded-full flex items-center justify-center border shadow-sm hover:shadow-md active:scale-95 transition-all"
                 />
@@ -424,11 +418,7 @@ export const ToolCard = ({
           </div>
         </div>
 
-        <ToolChatModal
-          tool={tool}
-          isOpen={showChatModal}
-          onClose={() => setShowChatModal(false)}
-        />
+        {/* Shared chat modal is now rendered at the app level */}
       </div>
     );
   }
@@ -616,11 +606,7 @@ export const ToolCard = ({
                   isToolSelected(tool.id) && 'md:opacity-100'
                 )}
               >
-                <AskAIButton
-                  isActive={showChatModal}
-                  onClick={() => setShowChatModal(true)}
-                  buttonText="Ask AI"
-                />
+                <AskAIButton tool={tool} buttonText="Ask AI" />
               </div>
             </div>
             <div className="flex items-center gap-2">
