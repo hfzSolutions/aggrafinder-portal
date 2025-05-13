@@ -1,9 +1,29 @@
+import React from 'react';
+
+interface ToolSubmissionNotificationEmailProps {
+  toolName: string;
+  submitterName: string;
+  toolUrl: string;
+  siteUrl: string;
+  adminDashboardUrl: string;
+}
+
+export const ToolSubmissionNotificationEmailTemplate = ({
+  toolName,
+  submitterName,
+  toolUrl,
+  siteUrl,
+  adminDashboardUrl,
+}: ToolSubmissionNotificationEmailProps) => {
+  const logoUrl = `${siteUrl}/images/web-logo.png`;
+
+  return `
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reset Your Password</title>
+    <title>New Tool Submission on DeepList AI</title>
     <style type="text/css">
       /* Base styles */
       body,
@@ -86,60 +106,51 @@
     <div class="email-container">
       <div class="header">
         <img
-          src="{{ .SiteURL }}/images/web-logo.png"
+          src="${logoUrl}"
           alt="DeepList AI"
           class="logo"
         />
       </div>
 
       <div class="content">
-        <h1>Reset Your Password</h1>
+        <h1>New Tool Submission</h1>
 
-        <p>Hello,</p>
+        <p>Hello Admin,</p>
 
         <p>
-          We received a request to reset the password for your DeepList AI
-          account. To complete this process, please click the button below:
+          A new tool <strong>${toolName}</strong> has been submitted by ${submitterName} and is pending your review.
         </p>
 
         <div style="text-align: center">
-          <a href="{{ .ConfirmationURL }}" class="button">Reset My Password</a>
+          <a href="${adminDashboardUrl}" class="button">Review Tool</a>
         </div>
-
+        
         <div class="info-box">
-          <p class="help-text">
-            This password reset link will expire in 24 hours. If you didn't
-            request a password reset, you can safely ignore this email.
-          </p>
+          <p style="margin-bottom: 10px;"><strong>Tool Details:</strong></p>
+          <p style="margin-bottom: 5px;">Name: ${toolName}</p>
+          <p style="margin-bottom: 5px;">Submitted by: ${submitterName}</p>
+          <p style="margin-bottom: 0;">Tool URL: ${toolUrl}</p>
         </div>
 
         <p>
           If the button above doesn't work, copy and paste the following link
-          into your browser:
+          into your browser to access the admin dashboard:
         </p>
-        <p class="link-fallback">{{ .ConfirmationURL }}</p>
+        <p class="link-fallback">${adminDashboardUrl}</p>
 
-        <p>
-          For security reasons, this link can only be used once. If you need to
-          reset your password again, please visit
-          <a href="{{ .SiteURL }}/auth">our website</a> and request another
-          reset.
-        </p>
-
-        <p>Thank you,<br />The DeepList AI Team</p>
+        <p>Thank you,<br />DeepList AI System</p>
       </div>
 
       <div class="footer">
         <p>© 2025 DeepList AI. All rights reserved.</p>
         <p>
-          If you have any questions, please contact our support team at
-          <a href="mailto:support@deeplistai.com">support@deeplistai.com</a>
-        </p>
-        <p>
-          This email was sent to you because you requested a password reset for
-          your account.
+          This is an automated notification sent to administrators when new tools are submitted.
         </p>
       </div>
     </div>
   </body>
 </html>
+`;
+};
+
+export default ToolSubmissionNotificationEmailTemplate;
