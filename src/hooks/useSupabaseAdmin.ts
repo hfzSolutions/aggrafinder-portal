@@ -342,6 +342,65 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       if (error) throw error;
 
+      // Send email notification to admin
+      try {
+        // Import the email template dynamically to avoid circular dependencies
+        const { ToolSubmissionNotificationEmailTemplate } = await import(
+          '@/templates/ToolSubmissionNotificationEmail'
+        );
+
+        // Get submitter information
+        let submitterName = 'Anonymous User';
+        if (toolData.user_id) {
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', toolData.user_id)
+            .single();
+
+          if (!userError && userData) {
+            submitterName = userData.full_name || 'Registered User';
+          }
+        }
+
+        const baseUrl =
+          typeof window !== 'undefined'
+            ? `${window.location.protocol}//${window.location.host}`
+            : import.meta.env.VITE_SITE_URL || 'https://deeplistai.com';
+
+        const toolUrl = `${baseUrl}/tools/${data.id}`;
+        const adminDashboardUrl = `${baseUrl}/admin`;
+
+        // Generate the HTML content using our template
+        const htmlContent = ToolSubmissionNotificationEmailTemplate({
+          toolName: toolData.name,
+          submitterName,
+          toolUrl,
+          siteUrl: baseUrl,
+          adminDashboardUrl,
+        });
+
+        // Send the email to admin
+        const { data: emailData, error: emailError } =
+          await supabase.functions.invoke('send-email-with-resend', {
+            body: {
+              from: 'DeepList AI <team@deeplistai.com>',
+              to: import.meta.env.VITE_ADMIN_EMAIL, // Admin email address
+              subject: `New Tool Submission: "${toolData.name}"`,
+              html: htmlContent,
+            },
+          });
+
+        if (emailError) {
+          console.error('Error sending admin notification email:', emailError);
+        } else {
+          console.log('Admin notification email sent successfully:', emailData);
+        }
+      } catch (emailError) {
+        console.error('Failed to send admin notification email:', emailError);
+        // Don't throw - email failure shouldn't prevent the tool submission
+      }
+
       return { success: true };
     } catch (error: any) {
       console.error('Error submitting tool:', error);
@@ -590,6 +649,62 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
             toolsData.length - successCount
           } tools skipped because they already exist.`,
         };
+      }
+
+      // Send email notification to admin about bulk submission
+      try {
+        // Import the email template dynamically to avoid circular dependencies
+        const { ToolSubmissionNotificationEmailTemplate } = await import(
+          '@/templates/ToolSubmissionNotificationEmail'
+        );
+
+        // Get submitter information
+        let submitterName = 'Admin User'; // Bulk submissions are typically done by admins
+
+        const baseUrl =
+          typeof window !== 'undefined'
+            ? `${window.location.protocol}//${window.location.host}`
+            : import.meta.env.VITE_SITE_URL || 'https://deeplistai.com';
+
+        const adminDashboardUrl = `${baseUrl}/admin`;
+
+        // Generate the HTML content using our template
+        const htmlContent = ToolSubmissionNotificationEmailTemplate({
+          toolName: `${successCount} tools (Bulk Submission)`,
+          submitterName,
+          toolUrl: `${baseUrl}/admin`,
+          siteUrl: baseUrl,
+          adminDashboardUrl,
+        });
+
+        // Send the email to admin
+        const { data: emailData, error: emailError } =
+          await supabase.functions.invoke('send-email-with-resend', {
+            body: {
+              from: 'DeepList AI <team@deeplistai.com>',
+              to: import.meta.env.VITE_ADMIN_EMAIL, // Admin email address
+              subject: `New Bulk Tool Submission: ${successCount} tools added`,
+              html: htmlContent,
+            },
+          });
+
+        if (emailError) {
+          console.error(
+            'Error sending admin notification email for bulk submission:',
+            emailError
+          );
+        } else {
+          console.log(
+            'Admin notification email sent successfully for bulk submission:',
+            emailData
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          'Failed to send admin notification email for bulk submission:',
+          emailError
+        );
+        // Don't throw - email failure shouldn't prevent the tool submission
       }
 
       return { success: true, count: successCount };
