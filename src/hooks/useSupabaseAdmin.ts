@@ -350,7 +350,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
         if (toolData.user_id) {
           const { data: userData, error: userError } = await supabase
             .from('profiles')
-            .select('full_name, email')
+            .select('username, email')
             .eq('id', toolData.user_id)
             .single();
 
