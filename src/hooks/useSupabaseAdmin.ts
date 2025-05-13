@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { AITool } from '@/types/tools';
 import { AIOucome } from '@/types/outcomes';
 import { compressImage } from '@/utils/imageCompression';
+import ToolSubmissionNotificationEmailTemplate from '@/templates/ToolSubmissionNotificationEmail';
 
 interface UseSupabaseAdminReturn {
   // Outcomes management
@@ -344,11 +345,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       // Send email notification to admin
       try {
-        // Import the email template dynamically to avoid circular dependencies
-        const { ToolSubmissionNotificationEmailTemplate } = await import(
-          '@/templates/ToolSubmissionNotificationEmail'
-        );
-
         // Get submitter information
         let submitterName = 'Anonymous User';
         if (toolData.user_id) {
@@ -653,11 +649,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       // Send email notification to admin about bulk submission
       try {
-        // Import the email template dynamically to avoid circular dependencies
-        const { ToolSubmissionNotificationEmailTemplate } = await import(
-          '@/templates/ToolSubmissionNotificationEmail'
-        );
-
         // Get submitter information
         let submitterName = 'Admin User'; // Bulk submissions are typically done by admins
 
