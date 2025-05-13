@@ -355,7 +355,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
             .single();
 
           if (!userError && userData) {
-            submitterName = userData.full_name || 'Registered User';
+            submitterName = userData.username || 'Registered User';
           }
         }
 
