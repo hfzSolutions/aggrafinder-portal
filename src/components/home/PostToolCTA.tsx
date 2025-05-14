@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gift, Upload, ArrowRight, CheckCircle } from 'lucide-react';
+import {
+  Gift,
+  ArrowRight,
+  CheckCircle,
+  Rocket,
+  Zap,
+  Users,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { trackEvent } from '@/utils/analytics';
 import { useScrollAnimation } from '@/utils/animations';
@@ -37,7 +44,7 @@ const PostToolCTA = () => {
       </div>
 
       <div className="container px-4 md:px-6 mx-auto relative z-10">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 max-w-6xl mx-auto">
           <div className="flex-1 space-y-5">
             <div
               className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary shadow-sm border border-primary/10 backdrop-blur-sm transition-all duration-700 ${
@@ -67,9 +74,9 @@ const PostToolCTA = () => {
                   : 'opacity-0 translate-y-8'
               }`}
             >
-              Be among the first to showcase your AI tool to our growing
-              community. Connect with early adopters looking for innovative AI
-              solutions.
+              Built something with AI? You can add it to the directory for free.
+              This platform is designed to make it easier for people to explore
+              and learn about AI tools
             </p>
 
             <ul
@@ -91,20 +98,9 @@ const PostToolCTA = () => {
                       : 'text-primary/70'
                   }`}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
+                  <CheckCircle className="h-5 w-5" />
                 </div>
-                <span>Get valuable feedback from early adopters</span>
+                <span>Let others see what you’ve created</span>
               </li>
               <li
                 className={`flex items-start transition-all duration-300 ${
@@ -118,20 +114,9 @@ const PostToolCTA = () => {
                       : 'text-primary/70'
                   }`}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
+                  <CheckCircle className="h-5 w-5" />
                 </div>
-                <span>Increase visibility in a curated collection</span>
+                <span>Help people discover tools more easily</span>
               </li>
               <li
                 className={`flex items-start transition-all duration-300 ${
@@ -145,22 +130,9 @@ const PostToolCTA = () => {
                       : 'text-primary/70'
                   }`}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
+                  <CheckCircle className="h-5 w-5" />
                 </div>
-                <span>
-                  Establish your presence in the emerging AI community
-                </span>
+                <span>Be part of a growing list of AI projects</span>
               </li>
             </ul>
           </div>
@@ -172,15 +144,37 @@ const PostToolCTA = () => {
                 : 'opacity-0 translate-x-12'
             }`}
           >
-            {/* Card container with cloud image and floating animation */}
-            <div className="relative w-48 h-48 mb-8 transition-all duration-500 hover:scale-105">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-xl opacity-70"></div>
-              <img
-                src="/images/cloud-upload.png"
-                alt="Cloud upload"
-                className="w-full h-full object-contain relative z-10"
-              />
-              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-2 bg-black/10 dark:bg-white/10 rounded-full blur-md"></div>
+            {/* Interactive feature cards */}
+            <div className="relative space-y-4 mb-6 max-w-md">
+              {/* Feature cards with hover effects */}
+              <div className="bg-white/5 backdrop-blur-sm border border-primary/10 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:translate-y-[-2px] hover:bg-primary/5">
+                <div className="flex items-start">
+                  <div className="bg-primary/10 p-2 rounded-lg mr-3">
+                    <Rocket className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1">Launch Your AI Tool</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Share your project with people exploring new and practical
+                      uses of AI.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/5 backdrop-blur-sm border border-primary/10 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:translate-y-[-2px] hover:bg-primary/5">
+                <div className="flex items-start">
+                  <div className="bg-primary/10 p-2 rounded-lg mr-3">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1">Join Our Community</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Become part of the emerging AI ecosystem
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <Button
