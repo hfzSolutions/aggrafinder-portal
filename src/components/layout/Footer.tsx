@@ -198,19 +198,33 @@ const Footer = () => {
             <p className="text-sm text-muted-foreground">
               © {currentYear} DeepList AI. All rights reserved.
             </p>
-            <a
-              href="https://www.producthunt.com/posts/deeplist-ai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-deeplist&#0045;ai"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=963846&theme=light&t=1746945244932"
-                alt="DeepList&#0032;AI - A&#0032;simple&#0032;way&#0032;to&#0032;discover&#0032;how&#0032;AI&#0032;can&#0032;help&#0032;you | Product Hunt"
-                style={{ width: '250px', height: '54px' }}
-                width="250"
-                height="54"
-              />
-            </a>
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <a
+                href="https://open-launch.com/projects/deeplist-ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open-Launch Top 3 Daily Winner"
+              >
+                <img
+                  src="https://open-launch.com/images/badges/top3-light.svg"
+                  alt="Open-Launch Top 3 Daily Winner"
+                  style={{ width: '195px', height: 'auto' }}
+                />
+              </a>
+              <a
+                href="https://www.producthunt.com/posts/deeplist-ai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-deeplist&#0045;ai"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=963846&theme=light&t=1746945244932"
+                  alt="DeepList&#0032;AI - A&#0032;simple&#0032;way&#0032;to&#0032;discover&#0032;how&#0032;AI&#0032;can&#0032;help&#0032;you | Product Hunt"
+                  style={{ width: '250px', height: '54px' }}
+                  width="250"
+                  height="54"
+                />
+              </a>
+            </div>
           </div>
         </div>
       </div>
