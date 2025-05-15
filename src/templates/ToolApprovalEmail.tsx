@@ -131,9 +131,9 @@ export const ToolApprovalEmailTemplate = ({
       </div>
 
       <div class="info-box">
-        <p style="margin-bottom: 10px;"><strong>Tool Badge Available:</strong></p>
+        <p style="margin-bottom: 10px;"><strong>Your Tool Badge is Ready:</strong></p>
         <p class="help-text">
-          A badge is now available on your dashboard. Adding it to your website lets visitors know your tool is listed on DeepList AI.
+          A badge is available in your dashboard. You can add it to your site to show your tool is listed on DeepList AI.
         </p>
       </div>
 
