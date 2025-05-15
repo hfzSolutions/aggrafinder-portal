@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="20" viewBox="0 0 160 20">
+  <rect width="160" height="20" rx="10" fill="#f3f4f6"/>
+  <text x="10" y="14" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#111827">Find me on</text>
+  <text x="70" y="14" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="bold" fill="#6366f1">DeepList AI</text>
+</svg>

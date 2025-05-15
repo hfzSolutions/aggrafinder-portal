@@ -123,6 +123,20 @@ export const ToolApprovalEmailTemplate = ({
           <a href="${toolUrl}" class="button">View Your Tool</a>
         </div>
 
+      <div class="info-box">
+        <p style="margin-bottom: 10px;"><strong>Write the First Comment:</strong></p>
+        <p class="help-text">
+          Got a tip or something cool to share about this tool? Start things off by leaving the first comment to help others learn more about it.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p style="margin-bottom: 10px;"><strong>Tool Badge Available:</strong></p>
+        <p class="help-text">
+          A badge is now available on your dashboard. Adding it to your website lets visitors know your tool is listed on DeepList AI.
+        </p>
+      </div>
+
         
         <p>
           If the button above doesn't work, copy and paste the following link
