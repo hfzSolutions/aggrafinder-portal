@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { ToolBadge } from '@/components/tools/ToolBadge';
 import { ToolSubmissionForm } from '@/components/admin/ToolSubmissionForm';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -280,6 +281,19 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
                         {tool.pricing}
                       </Badge>
                     </div>
+                    {tool.approvalStatus === 'approved' && (
+                      <div className="mt-3 border-t pt-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <div className="flex-shrink-0">
+                            <ToolBadge toolId={tool.id} toolName={tool.name} />
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            Add this badge to show your tool is LISTED ON
+                            DeepList AI
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col gap-2">
                     <Button
