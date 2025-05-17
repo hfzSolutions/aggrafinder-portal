@@ -16,6 +16,7 @@ import { useScrollAnimation } from '@/utils/animations';
 import { useTodaysAITool } from '@/hooks/useTodaysAITool';
 import { ToolCard } from '@/components/tools/ToolCard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SectionHeader } from '@/components/ui/section-header';
 
 const TodaysAITool = () => {
   const [ref, isVisible] = useScrollAnimation(0.1);
@@ -35,36 +36,20 @@ const TodaysAITool = () => {
     <section
       // @ts-ignore
       ref={ref}
-      className="py-16 bg-gradient-to-r from-primary/5 to-secondary/5"
+      className="py-12 bg-gradient-to-r from-primary/5 to-secondary/5"
     >
       <div className="container px-4 md:px-8 mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-12">
-          <div className="flex-1 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary">
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm font-medium">Today's Pick</span>
-            </div>
-
-            <h2
-              className={`text-3xl md:text-4xl font-bold transition-all duration-700 ${
-                isVisible
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-12'
-              }`}
-            >
-              Daily AI Tool Spotlight
-            </h2>
-
-            <p
-              className={`text-muted-foreground max-w-2xl transition-all duration-700 delay-100 ${
-                isVisible
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-12'
-              }`}
-            >
-              Every day we highlight a different AI tool to help you stay
-              updated with the latest innovations.
-            </p>
+          <div className="flex-1">
+            <SectionHeader
+              title="Daily AI Tool Spotlight"
+              description="Every day we highlight a different AI tool to help you stay updated with the latest innovations."
+              badge={{
+                text: "Today's Pick",
+                icon: <Calendar className="h-4 w-4" />,
+              }}
+              isVisible={isVisible}
+            />
           </div>
         </div>
 

@@ -216,7 +216,7 @@ const Tools = () => {
         <Header />
 
         <main className="flex-grow pt-20 pb-20">
-          <div className="bg-secondary/30 border-b border-border/20">
+          {/* <div className="bg-secondary/30 border-b border-border/20">
             <div className="container px-3 md:px-8 mx-auto py-5 md:py-10">
               <div className="max-w-3xl">
                 <h1 className="text-2xl md:text-4xl font-medium mb-2 md:mb-3 animate-fade-in">
@@ -228,7 +228,7 @@ const Tools = () => {
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="container px-3 md:px-8 mx-auto py-4 md:py-8">
             {recentlyViewedTools.length > 0 && (

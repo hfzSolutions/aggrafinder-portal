@@ -13,6 +13,7 @@ import {
   Cpu,
   Mail,
 } from 'lucide-react';
+import { SectionHeader } from '@/components/ui/section-header';
 
 const Newsletter = () => {
   const [ref, isVisible] = useScrollAnimation(0.1);
@@ -55,7 +56,7 @@ const Newsletter = () => {
     <section
       // @ts-ignore
       ref={ref}
-      className="w-full py-12 md:py-16 bg-gradient-to-br from-secondary/20 to-background relative overflow-hidden border-t border-b"
+      className="w-full py-12 bg-gradient-to-br from-secondary/20 to-background relative overflow-hidden border-t border-b"
     >
       {/* Background decoration elements */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
@@ -80,35 +81,17 @@ const Newsletter = () => {
       <div className="container px-4 md:px-6 mx-auto relative z-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
           <div className="flex-1 space-y-5">
-            <div
-              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary shadow-sm border border-primary/10 backdrop-blur-sm transition-all duration-700 ${
-                isVisible
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-8'
-              }`}
-            >
-              <Sparkles className="h-4 w-4" />
-              <span className="text-sm font-medium">Stay Informed</span>
-            </div>
-            <h2
-              className={`text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary transition-all duration-700 delay-100 ${
-                isVisible
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-8'
-              }`}
-            >
-              Get the Latest AI Updates
-            </h2>
-            <p
-              className={`text-muted-foreground max-w-[600px] text-lg transition-all duration-700 delay-200 ${
-                isVisible
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-8'
-              }`}
-            >
-              Join our community and receive curated AI tools, exclusive
-              insights, and early access to new features.
-            </p>
+            <SectionHeader
+              title="Get the Latest AI Updates"
+              description="Subscribe to our newsletter to stay updated with the latest AI tools and trends. No spam, just valuable insights."
+              badge={{
+                text: 'Stay Informed',
+                icon: <Sparkles className="h-4 w-4" />,
+              }}
+              isVisible={isVisible}
+              titleClassName="text-3xl md:text-4xl lg:text-5xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
+              descriptionClassName="max-w-[600px] text-lg"
+            />
           </div>
 
           <div
