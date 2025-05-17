@@ -154,7 +154,7 @@ const Hero = () => {
             }`}
             style={staggeredDelay(6)}
           >
-            <span>Popular searches:</span>
+            {/* <span>Popular searches:</span>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => navigate('/tools?category=Text+Generation')}
@@ -174,7 +174,7 @@ const Hero = () => {
               >
                 Code Assistants
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
