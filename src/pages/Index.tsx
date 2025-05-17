@@ -8,6 +8,7 @@ import TodaysAITool from '@/components/home/TodaysAITool';
 import PopularTools from '@/components/home/PopularTools';
 import Newsletter from '@/components/home/Newsletter';
 import PostToolCTA from '@/components/home/PostToolCTA';
+import UseCases from '@/components/home/UseCases';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { MessageCircle, ArrowRight } from 'lucide-react';
@@ -35,7 +36,7 @@ const Index = () => {
 
       <main>
         <Hero />
-        <CategoryShortcuts />
+        <UseCases />
         <FeaturedTools />
         <TodaysAITool />
         <PostToolCTA />

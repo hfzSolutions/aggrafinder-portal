@@ -7,6 +7,7 @@ import { ToolCard } from '@/components/tools/ToolCard';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SectionHeader } from '@/components/ui/section-header';
 
 const FeaturedTools = () => {
   const [ref, isVisible] = useScrollAnimation(0.1);
@@ -21,31 +22,15 @@ const FeaturedTools = () => {
     <section
       // @ts-ignore
       ref={ref}
-      className="pb-20"
+      className="py-12"
     >
       <div className="container px-4 md:px-8 mx-auto">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
-          <div>
-            <h2
-              className={`text-3xl md:text-4xl font-bold mb-4 transition-all duration-700 ${
-                isVisible
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-12'
-              }`}
-            >
-              Featured AI Tools
-            </h2>
-            <p
-              className={`text-muted-foreground max-w-2xl transition-all duration-700 delay-100 ${
-                isVisible
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-12'
-              }`}
-            >
-              Discover our handpicked selection of the most innovative and
-              powerful AI tools available today.
-            </p>
-          </div>
+          <SectionHeader
+            title="Featured AI Tools"
+            description="Discover our handpicked selection of the most innovative and powerful AI tools available today."
+            isVisible={isVisible}
+          />
           <Button
             asChild
             variant="ghost"
