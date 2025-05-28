@@ -42,6 +42,7 @@ interface UseSupabaseAdminReturn {
     tags: string[];
     user_id?: string;
     is_admin_added: boolean;
+    tool_type: string;
   }) => Promise<{ success: boolean; error?: string }>;
 
   updateTool: (
@@ -296,6 +297,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
     tags: string[];
     user_id?: string;
     is_admin_added: boolean;
+    tool_type: string;
   }): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
@@ -374,6 +376,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
           toolUrl,
           siteUrl: baseUrl,
           adminDashboardUrl,
+          toolType: toolData.tool_type,
         });
 
         // Send the email to admin
@@ -473,13 +476,26 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
       tags: string[];
       user_id?: string;
       is_admin_added: boolean;
+      tool_type: string;
     }
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
 
+      // Handle image_url if it's undefined or null
+      if (toolData.image_url === undefined || toolData.image_url === null) {
+        // Keep the existing image or set to null if no image exists
+        const { data: currentTool, error: fetchError } = await supabase
+          .from('ai_tools')
+          .select('image_url')
+          .eq('id', id)
+          .single();
+
+        if (fetchError) throw fetchError;
+        toolData.image_url = currentTool?.image_url || null;
+      }
       // Handle image compression if it's a new file
-      if (toolData.image_url instanceof File) {
+      else if (toolData.image_url instanceof File) {
         const file = await compressImage(toolData.image_url, {
           maxSizeMB: 1,
           maxWidthOrHeight: 1200,
@@ -500,7 +516,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
         if (uploadError) throw uploadError;
 
         toolData.image_url = filePath;
-      } else {
+      } else if (typeof toolData.image_url === 'string') {
         const existingImagePath = toolData.image_url.includes(
           import.meta.env.VITE_STORAGE_URL
         )

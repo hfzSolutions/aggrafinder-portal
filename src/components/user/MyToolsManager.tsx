@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
+
+// Extended AITool interface with quick tool properties
+interface ExtendedAITool extends AITool {
+  tool_type?: 'external' | 'quick';
+  isPublic?: boolean;
+  usageCount?: number;
+  prompt?: string;
+}
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,9 +27,12 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Bot,
+  Globe,
 } from 'lucide-react';
 import { ToolBadge } from '@/components/tools/ToolBadge';
 import { ToolSubmissionForm } from '@/components/admin/ToolSubmissionForm';
+import { QuickToolForm } from '@/components/quick-tools/QuickToolForm';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,13 +58,22 @@ import {
 
 interface MyToolsManagerProps {
   userId: string;
+  toolType?: 'external' | 'quick';
+  showActionButton?: boolean;
 }
 
-export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
-  const [userTools, setUserTools] = useState<AITool[]>([]);
+export const MyToolsManager = ({
+  userId,
+  toolType = 'external',
+  showActionButton = true,
+}: MyToolsManagerProps) => {
+  const [userTools, setUserTools] = useState<ExtendedAITool[]>([]);
   const [loading, setLoading] = useState(true);
   const [openSubmitDialog, setOpenSubmitDialog] = useState(false);
-  const [editingTool, setEditingTool] = useState<AITool | null>(null);
+  const [openQuickToolDialog, setOpenQuickToolDialog] = useState(false);
+  const [editingTool, setEditingTool] = useState<ExtendedAITool | null>(null);
+  const [editingQuickTool, setEditingQuickTool] =
+    useState<ExtendedAITool | null>(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [toolToDelete, setToolToDelete] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,21 +84,41 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
     try {
       setLoading(true);
 
-      // Get total count for pagination
-      const { count, error: countError } = await supabase
+      // Build query with tool type filter
+      let query = supabase
         .from('ai_tools')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId);
+
+      // Add tool type filter
+      if (toolType === 'quick') {
+        query = query.eq('tool_type', 'quick');
+      } else {
+        // For external tools or if not specified
+        query = query.eq('tool_type', 'external');
+      }
+
+      // Get total count for pagination
+      const { count, error: countError } = await query;
 
       if (countError) throw countError;
 
       setTotalTools(count || 0);
 
       // Get paginated data
-      const { data, error } = await supabase
+      let dataQuery = supabase
         .from('ai_tools')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId);
+
+      // Add tool type filter to data query
+      if (toolType === 'quick') {
+        dataQuery = dataQuery.eq('tool_type', 'quick');
+      } else {
+        dataQuery = dataQuery.eq('tool_type', 'external');
+      }
+
+      const { data, error } = await dataQuery
         .order('created_at', { ascending: false })
         .range(
           (currentPage - 1) * itemsPerPage,
@@ -87,7 +127,7 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
 
       if (error) throw error;
 
-      const tools: AITool[] = data.map((tool) => ({
+      const tools: ExtendedAITool[] = data.map((tool) => ({
         id: tool.id,
         name: tool.name,
         tagline: tool.tagline,
@@ -106,6 +146,11 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
           | 'pending'
           | 'approved'
           | 'rejected',
+        // Add quick tool specific properties
+        tool_type: tool.tool_type as 'external' | 'quick',
+        isPublic: tool.is_public || false,
+        usageCount: tool.usage_count || 0,
+        prompt: tool.prompt || '',
       }));
 
       setUserTools(tools);
@@ -121,9 +166,14 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
     fetchUserTools();
   }, [userId, currentPage]);
 
-  const handleEditTool = (tool: AITool) => {
-    setEditingTool(tool);
-    setOpenSubmitDialog(true);
+  const handleEditTool = (tool: ExtendedAITool) => {
+    if (tool.tool_type === 'quick') {
+      setEditingQuickTool(tool);
+      setOpenQuickToolDialog(true);
+    } else {
+      setEditingTool(tool);
+      setOpenSubmitDialog(true);
+    }
   };
 
   const handleDeleteClick = (toolId: string) => {
@@ -181,6 +231,12 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
     fetchUserTools();
   };
 
+  const handleQuickToolSuccess = () => {
+    setOpenQuickToolDialog(false);
+    setEditingQuickTool(null);
+    fetchUserTools();
+  };
+
   const getStatusBadge = (status: string | undefined) => {
     switch (status) {
       case 'approved':
@@ -207,29 +263,67 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">My AI Tools</h2>
-        <Button
-          onClick={() => {
-            setEditingTool(null);
-            setOpenSubmitDialog(true);
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Submit New Tool
-        </Button>
-      </div>
+      {/* Action button that shows at the top when showActionButton is true */}
+      {showActionButton && (
+        <div className="flex justify-end mb-4">
+          {toolType === 'quick' ? (
+            <Button
+              onClick={() => setOpenQuickToolDialog(true)}
+              variant="default"
+              className="shadow-sm"
+              size="sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Quick Tool
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setOpenSubmitDialog(true)}
+              variant="default"
+              className="shadow-sm"
+              size="sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Submit New Tool
+            </Button>
+          )}
+        </div>
+      )}
 
       {userTools.length === 0 && !loading ? (
         <div className="text-center p-8 border border-dashed rounded-lg bg-muted/50">
-          <h3 className="text-lg font-medium mb-2">No tools yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Submit your AI tools to share with the community
-          </p>
-          <Button onClick={() => setOpenSubmitDialog(true)} variant="default">
-            <Plus className="w-4 h-4 mr-2" />
-            Submit Your First Tool
-          </Button>
+          <div className="inline-flex bg-primary/10 p-3 rounded-full mb-3">
+            {toolType === 'quick' ? (
+              <Bot className="h-6 w-6 text-primary" />
+            ) : (
+              <Globe className="h-6 w-6 text-primary" />
+            )}
+          </div>
+          <h3 className="text-lg font-medium mb-4">
+            You don't have any {toolType === 'quick' ? 'quick' : 'external'}{' '}
+            tools yet
+          </h3>
+          {toolType === 'quick' ? (
+            <Button
+              onClick={() => setOpenQuickToolDialog(true)}
+              variant="default"
+              size="lg"
+              className="font-medium"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create Your First Quick Tool
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setOpenSubmitDialog(true)}
+              variant="default"
+              size="lg"
+              className="font-medium"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Submit Your First Tool
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -265,7 +359,23 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
                           {tool.description}
                         </p>
                       </div>
-                      <div>{getStatusBadge(tool.approvalStatus)}</div>
+
+                      <div className="flex flex-col gap-1 items-end">
+                        <div>{getStatusBadge(tool.approvalStatus)}</div>
+                        <Badge
+                          variant={tool.isPublic ? 'default' : 'outline'}
+                          className="text-xs"
+                        >
+                          {tool.isPublic ? 'Public' : 'Private'}
+                        </Badge>
+                        {toolType === 'quick' ? (
+                          <div className="text-xs text-muted-foreground">
+                            {tool.usageCount} uses
+                          </div>
+                        ) : (
+                          <></>
+                        )}
+                      </div>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {tool.category.map((cat) => (
@@ -277,40 +387,67 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
                           {cat}
                         </Badge>
                       ))}
-                      <Badge variant="outline" className="text-xs">
-                        {tool.pricing}
-                      </Badge>
                     </div>
-                    {tool.approvalStatus === 'approved' && (
-                      <div className="mt-3 border-t pt-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                          <div className="flex-shrink-0">
-                            <ToolBadge toolId={tool.id} toolName={tool.name} />
+                    {toolType === 'external' &&
+                      tool.approvalStatus === 'approved' && (
+                        <div className="mt-3 border-t pt-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <div className="flex-shrink-0">
+                              <ToolBadge
+                                toolId={tool.id}
+                                toolName={tool.name}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              Add this badge to show your tool is LISTED ON
+                              DeepList AI
+                            </span>
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            Add this badge to show your tool is LISTED ON
-                            DeepList AI
-                          </span>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => window.open(`/tools/${tool.id}`, '_blank')}
-                      disabled={tool.approvalStatus !== 'approved'}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEditTool(tool)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    {toolType === 'external' ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            window.open(`/tools/${tool.id}`, '_blank')
+                          }
+                          disabled={tool.approvalStatus !== 'approved'}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditTool(tool)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            window.open(`/quick-tools/${tool.id}`, '_blank')
+                          }
+                          disabled={tool.approvalStatus !== 'approved'}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditTool(tool)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -417,6 +554,39 @@ export const MyToolsManager = ({ userId }: MyToolsManagerProps) => {
             onSuccess={handleSubmitSuccess}
             userId={userId}
             editMode={!!editingTool}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Tool Dialog */}
+      <Dialog open={openQuickToolDialog} onOpenChange={setOpenQuickToolDialog}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingQuickTool ? 'Edit Quick Tool' : 'Create Quick Tool'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingQuickTool
+                ? 'Update your text-only AI tool'
+                : 'Create a quick AI tool that you can use in your workflows'}
+            </DialogDescription>
+          </DialogHeader>
+          <QuickToolForm
+            userId={userId}
+            onSuccess={handleQuickToolSuccess}
+            editMode={!!editingQuickTool}
+            toolToEdit={
+              editingQuickTool
+                ? {
+                    id: editingQuickTool.id,
+                    name: editingQuickTool.name,
+                    description: editingQuickTool.description,
+                    prompt: editingQuickTool.prompt || '',
+                    category: editingQuickTool.category,
+                    is_public: editingQuickTool.isPublic,
+                  }
+                : undefined
+            }
           />
         </DialogContent>
       </Dialog>

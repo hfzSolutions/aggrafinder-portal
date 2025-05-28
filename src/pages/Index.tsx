@@ -9,6 +9,7 @@ import PopularTools from '@/components/home/PopularTools';
 import Newsletter from '@/components/home/Newsletter';
 import PostToolCTA from '@/components/home/PostToolCTA';
 import UseCases from '@/components/home/UseCases';
+import QuickTools from '@/components/home/QuickTools';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { MessageCircle, ArrowRight } from 'lucide-react';
@@ -38,25 +39,24 @@ const Index = () => {
         <Hero />
         <UseCases />
         <FeaturedTools />
+        <QuickTools />
         <TodaysAITool />
         <PostToolCTA />
         <PopularTools />
-        {/* Mobile-only Explore All Tools button */}
-        {isMobile && (
-          <div className="py-8 px-4 flex justify-center bg-secondary/10">
-            <Button asChild className="w-full max-w-xs group">
-              <Link
-                to="/tools"
-                onClick={() => {
-                  window.scrollTo(0, 0);
-                }}
-              >
-                Explore All Tools
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-          </div>
-        )}
+        <div className="py-8 px-4 flex justify-center bg-secondary/10">
+          <Button asChild className="w-full max-w-xs group">
+            <Link
+              to="/tools"
+              onClick={() => {
+                window.scrollTo(0, 0);
+              }}
+            >
+              Explore All Tools
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </Button>
+        </div>
+
         {/* <Newsletter /> */}
       </main>
 

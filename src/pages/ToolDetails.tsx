@@ -68,7 +68,7 @@ const ToolDetails = () => {
         setLoading(true);
 
         const { data, error: supabaseError } = await supabase
-          .from('ai_tools')
+          .from('ai_tools_random')
           .select('*')
           .eq('id', id)
           .single();

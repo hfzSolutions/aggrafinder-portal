@@ -17,7 +17,7 @@ const PopularTools = () => {
     tools: popularTools,
     loading,
     error,
-  } = useSupabaseTools({ limit: 4 });
+  } = useSupabaseTools({ limit: 4, toolType: 'external' });
 
   return (
     <>

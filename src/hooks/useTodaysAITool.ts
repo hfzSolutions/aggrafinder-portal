@@ -66,10 +66,11 @@ export const useTodaysAITool = () => {
           const toolIds = featuredData.map((item) => item.tool_id);
 
           const { data: toolsData, error: toolsError } = await supabase
-            .from('ai_tools')
+            .from('ai_tools_random')
             .select('*')
             .in('id', toolIds)
-            .eq('approval_status', 'approved');
+            .eq('approval_status', 'approved')
+            .eq('tool_type', 'external');
 
           if (!toolsError && toolsData && toolsData.length > 0) {
             selectedTools = toolsData.map((tool) => transformToolData(tool));
@@ -80,9 +81,10 @@ export const useTodaysAITool = () => {
         if (selectedTools.length < 4) {
           // Get a selection of high-quality tools
           const { data, error } = await supabase
-            .from('ai_tools')
+            .from('ai_tools_random')
             .select('*')
             .eq('approval_status', 'approved')
+            .eq('tool_type', 'external')
             .order('created_at', { ascending: false })
             .limit(4);
 

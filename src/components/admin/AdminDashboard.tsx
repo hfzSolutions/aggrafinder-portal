@@ -560,7 +560,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
       // First, get the tool details to get the user ID and tool name
       const { data: toolData, error: toolFetchError } = await supabase
         .from('ai_tools')
-        .select('name, user_id, url')
+        .select('name, user_id, url, tool_type')
         .eq('id', id)
         .single();
 
@@ -590,6 +590,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               userName: userData.full_name || 'there',
               toolUrl: toolDetailsUrl,
               siteUrl: baseUrl,
+              toolType: toolData.tool_type,
             });
 
             const { data, error } = await supabase.functions.invoke(

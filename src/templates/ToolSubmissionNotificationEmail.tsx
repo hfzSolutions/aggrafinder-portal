@@ -6,6 +6,7 @@ interface ToolSubmissionNotificationEmailProps {
   toolUrl: string;
   siteUrl: string;
   adminDashboardUrl: string;
+  toolType: string;
 }
 
 export const ToolSubmissionNotificationEmailTemplate = ({
@@ -14,6 +15,7 @@ export const ToolSubmissionNotificationEmailTemplate = ({
   toolUrl,
   siteUrl,
   adminDashboardUrl,
+  toolType,
 }: ToolSubmissionNotificationEmailProps) => {
   const logoUrl = `${siteUrl}/images/web-logo.png`;
 
@@ -129,6 +131,7 @@ export const ToolSubmissionNotificationEmailTemplate = ({
           <p style="margin-bottom: 10px;"><strong>Tool Details:</strong></p>
           <p style="margin-bottom: 5px;">Name: ${toolName}</p>
           <p style="margin-bottom: 5px;">Submitted by: ${submitterName}</p>
+          <p style="margin-bottom: 5px;">Tool Type: ${toolType}</p>
           <p style="margin-bottom: 0;">Tool URL: ${toolUrl}</p>
         </div>
 

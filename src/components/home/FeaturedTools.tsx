@@ -16,7 +16,7 @@ const FeaturedTools = () => {
     tools: featuredTools,
     loading,
     error,
-  } = useSupabaseTools({ featured: true });
+  } = useSupabaseTools({ featured: true, toolType: 'external' });
 
   return (
     <section

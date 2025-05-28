@@ -1,7 +1,14 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Share2, CheckCircle, Twitter, Facebook, Linkedin, Mail, Link2 } from 'lucide-react';
+import {
+  Share2,
+  CheckCircle,
+  Twitter,
+  Facebook,
+  Linkedin,
+  Mail,
+  Link2,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,15 +23,15 @@ export interface ShareButtonProps {
   toolName: string;
   toolUrl: string;
   className?: string;
-  showText?: boolean;  // Make showText optional
+  showText?: boolean; // Make showText optional
 }
 
-const ShareButton = ({ 
-  toolId, 
-  toolName, 
-  toolUrl, 
+const ShareButton = ({
+  toolId,
+  toolName,
+  toolUrl,
   className = '',
-  showText = true  // Default value for showText
+  showText = true, // Default value for showText
 }: ShareButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { trackEvent } = useToolAnalytics();
@@ -40,33 +47,50 @@ const ShareButton = ({
     }
   };
 
-  const handleShare = (platform: 'twitter' | 'facebook' | 'linkedin' | 'email' | 'native') => {
+  const handleShare = (
+    platform: 'twitter' | 'facebook' | 'linkedin' | 'email' | 'native'
+  ) => {
     let shareUrl = '';
     const text = `Check out ${toolName} - An AI tool I found`;
     const url = window.location.href;
 
-    const analyticsAction = `share_${platform}` as 'share_twitter' | 'share_facebook' | 'share_linkedin' | 'share_email' | 'share_native';
+    const analyticsAction = `share_${platform}` as
+      | 'share_twitter'
+      | 'share_facebook'
+      | 'share_linkedin'
+      | 'share_email'
+      | 'share_native';
 
     switch (platform) {
       case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+          text
+        )}&url=${encodeURIComponent(url)}`;
         break;
       case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+          url
+        )}`;
         break;
       case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+          url
+        )}`;
         break;
       case 'email':
-        shareUrl = `mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(`${text}: ${url}`)}`;
+        shareUrl = `mailto:?subject=${encodeURIComponent(
+          text
+        )}&body=${encodeURIComponent(`${text}: ${url}`)}`;
         break;
       case 'native':
         if (navigator.share) {
-          navigator.share({
-            title: toolName,
-            text: text,
-            url: url,
-          }).catch(err => console.error('Error sharing:', err));
+          navigator
+            .share({
+              title: toolName,
+              text: text,
+              url: url,
+            })
+            .catch((err) => console.error('Error sharing:', err));
         }
         break;
     }
@@ -89,20 +113,21 @@ const ShareButton = ({
   };
 
   // If browser supports Web Share API and we're on mobile, use native share
-  const canUseNativeShare = typeof navigator !== 'undefined' && 
-                            navigator.share && 
-                            window.innerWidth < 768;
+  const canUseNativeShare =
+    typeof navigator !== 'undefined' &&
+    navigator.share &&
+    window.innerWidth < 768;
 
   if (canUseNativeShare) {
     return (
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         size="sm"
         className={className}
         onClick={handleNativeShare}
       >
         <Share2 className="h-4 w-4 mr-2" />
-        {showText && "Share"}
+        {showText && 'Share'}
       </Button>
     );
   }
@@ -110,13 +135,9 @@ const ShareButton = ({
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className={className}
-        >
+        <Button variant="outline" size="sm" className={className}>
           <Share2 className="h-4 w-4 mr-2" />
-          {showText && "Share"}
+          {showText && 'Share'}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
