@@ -633,7 +633,7 @@ export const QuickToolChat = ({
     setMessages((prev) => [...prev, assistantMessage]);
 
     // Immediately scroll to show the bot response appearing
-    setTimeout(() => scrollToBottom(), 50);
+    scrollToBottom();
 
     try {
       // Create Anthropic client instance
@@ -768,11 +768,19 @@ export const QuickToolChat = ({
   };
 
   const scrollToBottom = () => {
-    // Use scrollIntoView with block: 'nearest' to prevent scrolling the entire page
+    // Use scrollIntoView with block: 'end' and add a small delay with extra scroll to ensure messages aren't hidden
     messagesEndRef.current?.scrollIntoView({
       behavior: 'smooth',
-      block: 'nearest',
+      block: 'end',
     });
+
+    // Add a small additional scroll after a short delay to ensure the message is visible above the textarea
+    setTimeout(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop += 20; // Add extra 20px of scroll to push content above the textarea
+      }
+    }, 150);
+
     setHasNewMessage(false);
   };
 
@@ -801,7 +809,7 @@ export const QuickToolChat = ({
 
       {/* Messages Area - No card styling */}
       <div
-        className="flex-1 overflow-y-auto p-4 space-y-4 relative bg-transparent"
+        className="flex-1 overflow-y-auto p-0 sm:p-4 space-y-4 relative bg-transparent"
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
@@ -863,7 +871,7 @@ export const QuickToolChat = ({
                       : 'bg-muted/80 rounded-tl-sm'
                   )}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                  <p className="text-base whitespace-pre-wrap leading-relaxed">
                     {message.role === 'user' ? (
                       message.content
                     ) : message.isTyping && !message.displayContent ? (
@@ -946,7 +954,7 @@ export const QuickToolChat = ({
       )}
 
       {/* Input Area with Modern Card Styling */}
-      <div className="p-4 border border-primary/60 rounded-2xl bg-background/95 shadow-md mx-4 mb-4 backdrop-blur-sm sticky bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg">
+      <div className="p-4 border border-primary/60 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm sticky bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg">
         <div className="flex items-start gap-3 w-full">
           <div className="flex flex-col gap-2">
             {isBotTyping ? (
@@ -999,7 +1007,7 @@ export const QuickToolChat = ({
               placeholder={
                 !user && getUserMessageCount() >= 2
                   ? 'Sign in to continue chatting...'
-                  : `Ask ${toolName} anything...`
+                  : 'Ask your question here...'
               }
               disabled={
                 isLoading ||
@@ -1008,17 +1016,18 @@ export const QuickToolChat = ({
                 (!user && getUserMessageCount() >= 2)
               } // Disable input when bot is typing, ad is showing, or user reached limit
               className={cn(
-                'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-14 py-2.5 min-h-[60px] resize-none bg-background/50 text-foreground placeholder:text-muted-foreground/70',
+                'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-14 py-2.5 min-h-[40px] resize-none bg-background/50 text-foreground placeholder:text-muted-foreground/70 text-base placeholder:text-base',
                 (isLoading ||
                   isBotTyping ||
                   isShowingAd ||
                   (!user && getUserMessageCount() >= 2)) &&
                   'opacity-60' // Reduce opacity when disabled
               )}
+              rows={1}
             />
             <motion.div
               whileTap={{ scale: 0.95 }}
-              className="absolute right-3 bottom-2.5"
+              className="absolute right-3 top-1/2 -translate-y-1/2"
             >
               <Button
                 size="icon"
@@ -1066,9 +1075,11 @@ export const QuickToolChat = ({
               <span>Sign in to continue</span>
             </button>
           ) : (
-            <p className="text-xs text-muted-foreground/80 px-2 py-0.5 rounded-full bg-muted/20 inline-flex items-center">
+            <>
+              {/* <p className="text-xs text-muted-foreground/80 px-2 py-0.5 rounded-full bg-muted/20 inline-flex items-center">
               AI may make mistakes. Please verify results.
-            </p>
+            </p> */}
+            </>
           )}
         </div>
       </div>
