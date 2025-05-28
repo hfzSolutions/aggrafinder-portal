@@ -286,7 +286,7 @@ const QuickToolDetails = () => {
                 <Button onClick={handleBackClick}>Return to Tools</Button>
               </Card>
             ) : tool ? (
-              <div className="animate-fade-in animate-in fade-in-50 duration-500">
+              <div>
                 {/* Mobile Tool Header */}
                 {isMobile && (
                   <div className="mb-3 p-3 rounded-lg bg-background/80 border border-border/20 backdrop-blur-sm">
@@ -298,17 +298,9 @@ const QuickToolDetails = () => {
                             className="bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/30 text-xs px-2 py-0.5 rounded-md flex items-center shrink-0"
                           >
                             <Zap className="h-2.5 w-2.5 mr-1" />
-                            Quick Tool
+                            Quick Tool: {tool.name}
                           </Badge>
                         </div>
-                        <h1 className="text-lg font-semibold tracking-tight leading-tight truncate">
-                          {tool.name}
-                        </h1>
-                        {!showInfo && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {tool.description}
-                          </p>
-                        )}
                       </div>
                       <Button
                         variant="ghost"
@@ -325,7 +317,10 @@ const QuickToolDetails = () => {
                     </div>
                     {showInfo && (
                       <>
-                        <p className="text-sm text-muted-foreground mt-3 mb-3">
+                        <h1 className="text-lg font-semibold tracking-tight leading-tight truncate mt-3">
+                          {tool.name}
+                        </h1>
+                        <p className="text-sm text-muted-foreground mb-3">
                           {tool.description}
                         </p>
 
