@@ -39,6 +39,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserPreferences } from '@/components/user/UserPreferences';
 import { ProfileManager } from '@/components/user/ProfileManager';
 import { MyToolsManager } from '@/components/user/MyToolsManager';
+import { QuickToolForm } from '@/components/quick-tools/QuickToolForm';
+import { ToolSubmissionForm } from '@/components/admin/ToolSubmissionForm';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -51,6 +53,8 @@ const Dashboard = () => {
   const [editingOutcome, setEditingOutcome] = useState<AIOucome | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [outcomeToDelete, setOutcomeToDelete] = useState<string | null>(null);
+  const [isQuickToolDialogOpen, setIsQuickToolDialogOpen] = useState(false);
+  const [isToolSubmitDialogOpen, setIsToolSubmitDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -280,6 +284,50 @@ const Dashboard = () => {
         <main className="flex-grow pt-20">
           <div className="container px-4 md:px-8 mx-auto py-8">
             <div className="max-w-[90vw] mx-auto overflow-y-auto">
+              <Dialog
+                open={isToolSubmitDialogOpen}
+                onOpenChange={setIsToolSubmitDialogOpen}
+              >
+                <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Submit New AI Tool</DialogTitle>
+                    <DialogDescription>
+                      Share an AI tool with the community. Submissions require
+                      admin approval before they appear publicly.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ToolSubmissionForm
+                    onSuccess={() => {
+                      setIsToolSubmitDialogOpen(false);
+                      toast.success('Tool submitted successfully!');
+                    }}
+                    userId={user?.id}
+                  />
+                </DialogContent>
+              </Dialog>
+
+              <Dialog
+                open={isQuickToolDialogOpen}
+                onOpenChange={setIsQuickToolDialogOpen}
+              >
+                <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Create Quick Tool</DialogTitle>
+                    <DialogDescription>
+                      Create a quick AI tool that you can use in your workflows.
+                      Submissions require admin approval before they appear
+                      publicly.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <QuickToolForm
+                    userId={user?.id}
+                    onSuccess={() => {
+                      setIsQuickToolDialogOpen(false);
+                      toast.success('Quick Tool created successfully!');
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
               <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
@@ -313,17 +361,54 @@ const Dashboard = () => {
 
               <Tabs defaultValue="tools">
                 <TabsList className="mb-4">
-                  <TabsTrigger value="tools">My Tools</TabsTrigger>
+                  <TabsTrigger value="tools">External Tools</TabsTrigger>
+                  <TabsTrigger value="quicktools">Quick Tools</TabsTrigger>
                   {/* <TabsTrigger value="creations">My Creations</TabsTrigger> */}
                   <TabsTrigger value="profile">Profile</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="tools">
-                  <div className="bg-card border rounded-lg shadow-sm mb-6">
-                    <div className="p-6">
-                      {user && <MyToolsManager userId={user.id} />}
-                    </div>
-                  </div>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-5">
+                      <div>
+                        <CardTitle>External Tools</CardTitle>
+                        <CardDescription>
+                          Manage your external AI tools and integrations
+                        </CardDescription>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {user && (
+                        <MyToolsManager
+                          userId={user.id}
+                          toolType="external"
+                          showActionButton={true}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="quicktools">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-5">
+                      <div>
+                        <CardTitle>Quick Tools</CardTitle>
+                        <CardDescription>
+                          Manage your quick AI tools for faster workflows
+                        </CardDescription>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {user && (
+                        <MyToolsManager
+                          userId={user.id}
+                          toolType="quick"
+                          showActionButton={true}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
                 </TabsContent>
 
                 {/* <TabsContent value="creations">

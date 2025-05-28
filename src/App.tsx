@@ -7,7 +7,9 @@ import { Helmet } from 'react-helmet';
 import Index from '@/pages/Index';
 import Tools from '@/pages/Tools';
 import ToolDetails from '@/pages/ToolDetails';
+import QuickToolDetails from '@/pages/QuickToolDetails';
 import CompareTools from '@/pages/CompareTools';
+
 import Resources from '@/pages/Resources';
 import UTMTracker from './components/analytics/UTMTracker';
 import AddToHomeScreen from './components/mobile/AddToHomeScreen';
@@ -61,7 +63,9 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/tools" element={<Tools />} />
               <Route path="/tools/:id" element={<ToolDetails />} />
+              <Route path="/quick-tools/:id" element={<QuickToolDetails />} />
               <Route path="/tools/compare/:ids" element={<CompareTools />} />
+
               <Route path="/resources" element={<Resources />} />
               <Route path="/chat" element={<Chat />} />
 

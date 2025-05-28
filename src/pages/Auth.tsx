@@ -36,7 +36,14 @@ const Auth = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && isMounted) {
-        navigate('/dashboard');
+        // Check if there's a return URL saved
+        const returnUrl = localStorage.getItem('returnUrl');
+        if (returnUrl) {
+          localStorage.removeItem('returnUrl');
+          navigate(returnUrl);
+        } else {
+          navigate('/dashboard');
+        }
       }
       setIsCheckingSession(false);
     });
@@ -62,7 +69,14 @@ const Auth = () => {
       toast.success(
         'Account created! Please check your email for verification.'
       );
-      navigate('/dashboard');
+      // Check if there's a return URL saved
+      const returnUrl = localStorage.getItem('returnUrl');
+      if (returnUrl) {
+        localStorage.removeItem('returnUrl');
+        navigate(returnUrl);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Error signing up');
     } finally {
@@ -83,7 +97,14 @@ const Auth = () => {
       if (error) throw error;
 
       toast.success('Signed in successfully!');
-      navigate('/dashboard');
+      // Check if there's a return URL saved
+      const returnUrl = localStorage.getItem('returnUrl');
+      if (returnUrl) {
+        localStorage.removeItem('returnUrl');
+        navigate(returnUrl);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Error signing in');
     } finally {

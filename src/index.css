@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animations */
+@keyframes subtle-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(59, 130, 246, 0);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    transform: scale(1.01);
+  }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 1.6s ease-in-out 2;
+}
+
+.rounded-subtle {
+  border-radius: 18%;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

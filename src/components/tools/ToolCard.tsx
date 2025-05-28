@@ -66,7 +66,7 @@ export const ToolCard = ({
   };
 
   const handleCardClick = () => {
-    navigate(`/tools/${tool.id}`);
+    window.open(`/tools/${tool.id}`, '_blank');
     trackEvent(tool.id, 'view');
   };
 

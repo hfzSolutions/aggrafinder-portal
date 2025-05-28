@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, AlertTriangle, Youtube } from 'lucide-react';
+import { Loader2, AlertTriangle, Youtube, Globe } from 'lucide-react';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +25,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -72,6 +74,7 @@ const formSchema = z.object({
   pricing: z.enum(['Free', 'Freemium', 'Paid', 'Free Trial']),
   featured: z.boolean().default(false),
   tags: z.array(z.string()).default([]),
+  isPublic: z.boolean().default(true),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -146,6 +149,7 @@ export function ToolSubmissionForm({
       pricing: editMode && toolToEdit ? toolToEdit.pricing : 'Free',
       featured: editMode && toolToEdit ? toolToEdit.featured : false,
       tags: editMode && toolToEdit ? toolToEdit.tags : [],
+      isPublic: editMode && toolToEdit ? toolToEdit.isPublic !== false : true,
     },
   });
 
@@ -165,6 +169,10 @@ export function ToolSubmissionForm({
         ? prev.filter((c) => c !== category)
         : [...prev, category]
     );
+  };
+
+  const handlePublicToggle = (checked: boolean) => {
+    form.setValue('isPublic', checked);
   };
 
   const handleAddTag = () => {
@@ -250,6 +258,8 @@ export function ToolSubmissionForm({
         tags: values.tags,
         user_id: userId,
         is_admin_added: false,
+        tool_type: 'external',
+        is_public: values.isPublic,
       };
 
       if (editMode && toolToEdit) {
@@ -538,6 +548,30 @@ export function ToolSubmissionForm({
               </FormItem>
             )}
           />
+
+          {/* Visibility Settings */}
+          <div className="border rounded-lg p-5 bg-card shadow-sm">
+            <div className="flex items-center mb-4">
+              <Globe className="h-5 w-5 mr-2 text-primary" />
+              <h3 className="text-base font-medium">Visibility Settings</h3>
+            </div>
+
+            <div className="flex items-center space-x-3 p-3 bg-muted/10 rounded-md">
+              <Switch
+                id="public"
+                checked={form.watch('isPublic')}
+                onCheckedChange={handlePublicToggle}
+              />
+              <div>
+                <Label htmlFor="public" className="font-medium block mb-0.5">
+                  Make this tool public
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Public tools will be visible to all users
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="flex justify-end pt-4">
             <Button type="submit" disabled={isSubmitting || adminActionLoading}>

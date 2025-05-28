@@ -5,6 +5,7 @@ interface ToolApprovalEmailProps {
   userName: string;
   toolUrl: string;
   siteUrl: string;
+  toolType: string;
 }
 
 export const ToolApprovalEmailTemplate = ({
@@ -12,8 +13,10 @@ export const ToolApprovalEmailTemplate = ({
   userName,
   toolUrl,
   siteUrl,
+  toolType,
 }: ToolApprovalEmailProps) => {
   const logoUrl = `${siteUrl}/images/web-logo.png`;
+  const showBadgeInfo = toolType !== 'quick';
 
   return `
 <!DOCTYPE html>
@@ -130,12 +133,16 @@ export const ToolApprovalEmailTemplate = ({
         </p>
       </div>
 
-      <div class="info-box">
+      ${
+        showBadgeInfo
+          ? `<div class="info-box">
         <p style="margin-bottom: 10px;"><strong>Your Tool Badge is Ready:</strong></p>
         <p class="help-text">
           A badge is available in your dashboard. You can add it to your site to show your tool is listed on DeepList AI.
         </p>
-      </div>
+      </div>`
+          : ''
+      }
 
         
         <p>

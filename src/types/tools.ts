@@ -16,6 +16,11 @@ export interface AITool {
   upvotes?: number; // Add upvotes property for sorting
   isAdminAdded?: boolean; // Flag to indicate if the tool was added by an admin
   aiChatEnabled?: boolean; // Flag to enable AI chat for this tool
+  // New properties for quick tools
+  tool_type?: 'external' | 'quick'; // Type of tool (external link or quick AI tool)
+  is_public?: boolean; // Whether the tool is publicly visible
+  usage_count?: number; // Number of times the tool has been used
+  prompt?: string; // AI prompt for quick tools
 }
 
 export type AnalyticsAction =

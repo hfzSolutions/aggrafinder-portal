@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,7 +21,13 @@ import {
   Star,
   Loader2,
   ImageOff,
+  ExternalLink,
+  Zap,
+  Plus,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { useSupabaseCategories } from '@/hooks/useSupabaseCategories';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,6 +39,7 @@ import { useRecentlyViewedTools } from '@/hooks/useRecentlyViewedTools';
 import { useToolAnalytics } from '@/hooks/useToolAnalytics';
 import { toast } from 'sonner';
 import { SponsorAdCard } from '@/components/tools/SponsorAdCard';
+import QuickToolsSection from '@/components/tools/QuickToolsSection';
 
 const Tools = () => {
   const location = useLocation();
@@ -40,6 +47,8 @@ const Tools = () => {
   const searchParams = new URLSearchParams(location.search);
   const initialCategory = searchParams.get('category') || 'All';
   const initialSearch = searchParams.get('search') || '';
+  const initialToolType =
+    (searchParams.get('type') as 'all' | 'quick' | 'external') || 'all';
   const isMobile = useIsMobile();
 
   const [searchTerm, setSearchTerm] = useState(initialSearch);
@@ -60,44 +69,51 @@ const Tools = () => {
   const [selectedFeaturedTool, setSelectedFeaturedTool] = useState<any | null>(
     null
   );
+  const [toolType, setToolType] = useState<'all' | 'quick' | 'external'>(
+    initialToolType
+  );
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // Track scroll position for tab styling
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollPosition(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // QuickToolsSection will use the same view state as the main tools
 
   const { favoriteTools, addFavorite, removeFavorite, isFavorite } =
     useFavoriteTools();
+
   const {
     recentlyViewedTools,
     addRecentlyViewed,
     clearRecentlyViewed,
     isLoading: recentToolsLoading,
   } = useRecentlyViewedTools();
+
   const { trackEvent } = useToolAnalytics();
 
   const { categories, loading: categoriesLoading } = useSupabaseCategories();
-  // Fetch featured tools separately
-  const { tools: featuredTools, loading: featuredToolsLoading } =
-    useSupabaseTools({
-      featured: true,
-      limit: 5, // Limit to 5 featured tools
-    });
 
-  // Select a random featured tool when featuredTools are loaded
-  useEffect(() => {
-    if (featuredTools.length > 0 && !featuredToolsLoading) {
-      const randomIndex = Math.floor(Math.random() * featuredTools.length);
-      setSelectedFeaturedTool(featuredTools[randomIndex]);
-    }
-  }, [featuredTools, featuredToolsLoading]);
-
+  // Separate calls for quick tools and external tools
   const {
-    tools: filteredTools,
-    loading: toolsLoading,
-    error,
-    hasMore,
-    loadNextPage,
+    tools: quickToolsData,
+    loading: quickToolsLoading,
+    error: quickToolsError,
+    hasMore: hasMoreQuickTools,
+    loadNextQuickToolsPage,
+    quickTools,
   } = useSupabaseTools({
     category: activeCategory !== 'All' ? activeCategory : undefined,
     search: searchTerm,
     pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
     loadMore: true,
+    toolType: 'quick', // Specifically fetch quick tools
     ...(showFavorites &&
       favoriteTools.length > 0 && {
         customQuery: (query) => query.in('id', favoriteTools),
@@ -112,6 +128,53 @@ const Tools = () => {
         : 'random', // Default to random sorting
   });
 
+  const {
+    tools: externalToolsData,
+    loading: externalToolsLoading,
+    error: externalToolsError,
+    hasMore: hasMoreExternalTools,
+    loadNextExternalToolsPage,
+    externalTools,
+  } = useSupabaseTools({
+    category: activeCategory !== 'All' ? activeCategory : undefined,
+    search: searchTerm,
+    pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
+    loadMore: true,
+    toolType: 'external', // Specifically fetch external tools
+    ...(showFavorites &&
+      favoriteTools.length > 0 && {
+        customQuery: (query) => query.in('id', favoriteTools),
+      }),
+    sortBy:
+      sortOption === 'popular'
+        ? 'popularity'
+        : sortOption === 'newest'
+        ? 'created_at'
+        : sortOption === 'random'
+        ? 'random'
+        : 'random', // Default to random sorting
+  });
+
+  // Combined values for backward compatibility
+  const filteredTools =
+    toolType === 'quick'
+      ? quickToolsData
+      : toolType === 'external'
+      ? externalToolsData
+      : [...quickToolsData, ...externalToolsData];
+  const toolsLoading =
+    toolType === 'quick' || toolType === 'all'
+      ? quickToolsLoading
+      : externalToolsLoading;
+  const error = quickToolsError || externalToolsError;
+  const hasMore =
+    toolType === 'quick'
+      ? hasMoreQuickTools
+      : toolType === 'external'
+      ? hasMoreExternalTools
+      : hasMoreQuickTools || hasMoreExternalTools;
+  // Removed loadNextPage variable as it's not being used
+
   // Removed infinite scroll observer in favor of a 'See More' button approach
   // This gives users more control over when to load additional content
 
@@ -121,6 +184,7 @@ const Tools = () => {
     if (searchTerm) params.set('search', searchTerm);
     if (activeCategory !== 'All') params.set('category', activeCategory);
     if (selectedPricing !== 'All') params.set('pricing', selectedPricing);
+    if (toolType !== 'all') params.set('tool_type', toolType);
 
     const newUrl = `${location.pathname}${
       params.toString() ? '?' + params.toString() : ''
@@ -130,6 +194,7 @@ const Tools = () => {
     searchTerm,
     activeCategory,
     selectedPricing,
+    toolType,
     navigate,
     location.pathname,
   ]);
@@ -140,6 +205,7 @@ const Tools = () => {
     const categoryParam = params.get('category');
     const searchParam = params.get('search');
     const pricingParam = params.get('pricing');
+    const typeParam = params.get('type') as 'all' | 'quick' | 'external';
 
     if (categoryParam && categoryParam !== activeCategory) {
       setActiveCategory(categoryParam);
@@ -151,6 +217,10 @@ const Tools = () => {
 
     if (pricingParam && pricingParam !== selectedPricing) {
       setSelectedPricing(pricingParam);
+    }
+
+    if (typeParam && typeParam !== toolType) {
+      setToolType(typeParam);
     }
   }, [location.search]);
 
@@ -191,10 +261,18 @@ const Tools = () => {
   };
 
   const getSubscriptionIndex = () => {
-    if (filteredTools.length <= 3) return null;
-    // Increase the index to show more tools before the subscription
-    // This will reduce the gap between the last tool and the email section
-    return Math.min(8, Math.floor(filteredTools.length / 2));
+    if (toolType === 'quick') {
+      if (quickTools.length <= 3) return null;
+      return Math.min(8, Math.floor(quickTools.length / 2));
+    } else if (toolType === 'external') {
+      if (externalTools.length <= 3) return null;
+      return Math.min(8, Math.floor(externalTools.length / 2));
+    } else {
+      // For 'all' type
+      const totalTools = quickTools.length + externalTools.length;
+      if (totalTools <= 3) return null;
+      return Math.min(8, Math.floor(totalTools / 2));
+    }
   };
 
   const subscriptionIndex = getSubscriptionIndex();
@@ -274,7 +352,13 @@ const Tools = () => {
                         <div
                           key={`recent-${tool.id}`}
                           className="flex-shrink-0 w-36 md:w-44 animate-fade-in"
-                          onClick={() => navigate(`/tools/${tool.id}`)}
+                          onClick={() => {
+                            if (tool.tool_type === 'quick') {
+                              navigate(`/quick-tools/${tool.id}`);
+                            } else {
+                              navigate(`/tools/${tool.id}`);
+                            }
+                          }}
                         >
                           <div className="flex items-center gap-2 p-2 rounded-lg border border-border/40 bg-background hover:border-primary/20 hover:shadow-sm transition-all duration-200 cursor-pointer">
                             {tool.imageUrl ? (
@@ -367,6 +451,52 @@ const Tools = () => {
                       </div>
                     ) : (
                       <div className="space-y-2 md:space-y-3 animate-fade-in">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1.5">
+                            Tool Type
+                          </p>
+                          <div className="flex flex-wrap gap-2 w-full mb-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`px-3 flex-1 ${
+                                toolType === 'all'
+                                  ? 'bg-secondary/70 border-primary/30'
+                                  : ''
+                              }`}
+                              onClick={() => setToolType('all')}
+                            >
+                              All Tools
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`px-3 flex-1 ${
+                                toolType === 'quick'
+                                  ? 'bg-secondary/70 border-primary/30'
+                                  : ''
+                              }`}
+                              onClick={() => setToolType('quick')}
+                            >
+                              <Zap className="h-3 w-3 mr-1" />
+                              Quick
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`px-3 flex-1 ${
+                                toolType === 'external'
+                                  ? 'bg-secondary/70 border-primary/30'
+                                  : ''
+                              }`}
+                              onClick={() => setToolType('external')}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              External
+                            </Button>
+                          </div>
+                        </div>
+
                         <FilterButton
                           label="Category"
                           options={categories}
@@ -395,6 +525,7 @@ const Tools = () => {
                             setSearchTerm('');
                             setShowFavorites(false);
                             setSortOption('random');
+                            setToolType('all');
                             setView('grid'); // Changed from 'list' to 'grid' to maintain grid as default
                             // Reset URL to clean state
                             navigate('/tools', { replace: true });
@@ -412,8 +543,19 @@ const Tools = () => {
                         <Skeleton className="h-4 w-20" />
                       ) : (
                         <>
-                          {filteredTools.length}{' '}
-                          {filteredTools.length === 1 ? 'tool' : 'tools'} found
+                          {toolType === 'quick'
+                            ? quickTools.length
+                            : toolType === 'external'
+                            ? externalTools.length
+                            : quickTools.length + externalTools.length}{' '}
+                          {(toolType === 'quick'
+                            ? quickTools.length
+                            : toolType === 'external'
+                            ? externalTools.length
+                            : quickTools.length + externalTools.length) === 1
+                            ? 'tool'
+                            : 'tools'}{' '}
+                          found
                         </>
                       )}
                     </div>
@@ -492,6 +634,7 @@ const Tools = () => {
               </div>
 
               <div className="lg:w-3/4">
+                {/* Tab component removed - now using filter buttons for tool type selection */}
                 {searchTerm && (
                   <div className="mb-4 flex items-center">
                     <Button
@@ -512,7 +655,6 @@ const Tools = () => {
                     </span>
                   </div>
                 )}
-
                 {error && (
                   <div className="text-center py-12">
                     <h3 className="text-lg font-medium mb-2 text-red-500">
@@ -527,13 +669,12 @@ const Tools = () => {
                     </Button>
                   </div>
                 )}
-
                 {isLoading && (
                   <div
                     className={
                       view === 'grid'
-                        ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6'
-                        : 'grid grid-cols-1 gap-2 md:gap-4'
+                        ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6'
+                        : 'grid grid-cols-1 gap-3 md:gap-4'
                     }
                   >
                     {Array(isMobile ? 6 : 8)
@@ -571,122 +712,190 @@ const Tools = () => {
                       ))}
                   </div>
                 )}
-
-                {!isLoading && filteredTools.length === 0 && !error && (
-                  <div className="text-center py-6 md:py-12">
-                    <h3 className="text-base md:text-lg font-medium mb-1 md:mb-2">
-                      No tools found
-                    </h3>
-                    <p className="text-sm md:text-base text-muted-foreground">
-                      Try adjusting your filters or search term to find what
-                      you're looking for.
-                    </p>
-                    <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                      <Button
-                        onClick={() => {
-                          setSearchTerm('');
-                          setActiveCategory('All');
-                          setSelectedPricing('All');
-                        }}
-                      >
-                        Reset filters
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {!isLoading && filteredTools.length > 0 && (
-                  <>
-                    <div
-                      className={
-                        view === 'grid'
-                          ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6'
-                          : 'grid grid-cols-1 gap-2 md:gap-4'
-                      }
-                    >
-                      {filteredTools.map((tool, index) => {
-                        // Insert sponsor ad after the 4th tool
-                        if (index === 4) {
-                          return (
-                            <>
-                              <div key={`tool-${tool.id}`}>
-                                <ToolCard
-                                  tool={tool}
-                                  viewType={isMobile ? 'list' : view}
-                                  onFavoriteToggle={handleFavoriteToggle}
-                                  isFavorite={isFavorite(tool.id)}
-                                  compact={isMobile}
-                                />
-                              </div>
-                              <div key="sponsor-ad">
-                                <SponsorAdCard viewType={view} />
-                              </div>
-                            </>
-                          );
-                        }
-
-                        if (index === 12) {
-                          return (
-                            <>
-                              <div key={`tool-${tool.id}`}>
-                                <ToolCard
-                                  tool={tool}
-                                  viewType={isMobile ? 'list' : view}
-                                  onFavoriteToggle={handleFavoriteToggle}
-                                  isFavorite={isFavorite(tool.id)}
-                                  compact={isMobile}
-                                />
-                              </div>
-                              <div key="subscription">
-                                <InlineSubscription
-                                  viewType={view}
-                                  compact={isMobile}
-                                />
-                              </div>
-                            </>
-                          );
-                        }
-
-                        return (
-                          <div key={`tool-${tool.id}`}>
-                            <ToolCard
-                              tool={tool}
-                              viewType={isMobile ? 'list' : view}
-                              onFavoriteToggle={handleFavoriteToggle}
-                              isFavorite={isFavorite(tool.id)}
-                              compact={isMobile}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {/* View More Button */}
-                    {hasMore && (
-                      <div className="flex justify-center mt-4 md:mt-8">
+                {!isLoading &&
+                  ((toolType === 'all' &&
+                    quickTools.length === 0 &&
+                    externalTools.length === 0) ||
+                    (toolType === 'quick' && quickTools.length === 0) ||
+                    (toolType === 'external' && externalTools.length === 0)) &&
+                  !error && (
+                    <div className="text-center py-6 md:py-12">
+                      <h3 className="text-base md:text-lg font-medium mb-1 md:mb-2">
+                        No{' '}
+                        {toolType === 'quick'
+                          ? 'quick'
+                          : toolType === 'external'
+                          ? 'external'
+                          : ''}{' '}
+                        tools found
+                      </h3>
+                      <p className="text-sm md:text-base text-muted-foreground">
+                        Try adjusting your filters or search term to find what
+                        you're looking for.
+                      </p>
+                      <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
                         <Button
-                          variant="outline"
-                          size={isMobile ? 'sm' : 'lg'}
                           onClick={() => {
-                            if (!toolsLoading && hasMore) {
-                              loadNextPage();
-                            }
+                            setSearchTerm('');
+                            setActiveCategory('All');
+                            setSelectedPricing('All');
                           }}
-                          disabled={toolsLoading}
-                          className="w-full max-w-md py-1.5 md:py-2"
                         >
-                          {toolsLoading ? (
-                            <>
-                              <Loader2 className="mr-1.5 md:mr-2 h-3.5 md:h-4 w-3.5 md:w-4 animate-spin" />
-                              Loading more tools...
-                            </>
-                          ) : (
-                            'Load more tools'
-                          )}
+                          Reset filters
                         </Button>
                       </div>
-                    )}
-                  </>
+                    </div>
+                  )}
+                {/* Show Quick Tools section if viewing all tools or specifically quick tools */}
+                {(toolType === 'all' || toolType === 'quick') && !isLoading && (
+                  <div className="mt-8">
+                    <QuickToolsSection
+                      category={
+                        activeCategory !== 'All' ? activeCategory : undefined
+                      }
+                      searchTerm={searchTerm}
+                      showHeader={true}
+                      isHomePage={false}
+                      showAllTools={toolType === 'quick'}
+                      tools={quickTools}
+                      view={view}
+                      isMobile={isMobile}
+                      setToolType={setToolType}
+                    />
+                  </div>
                 )}
+                {/* Only show external tools section if viewing all tools or specifically external tools */}
+                {(toolType === 'all' || toolType === 'external') &&
+                  !isLoading &&
+                  externalTools.length > 0 && (
+                    <>
+                      {(toolType === 'all' || toolType === 'external') && (
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 mt-8">
+                          <div>
+                            <h2 className="text-lg md:text-xl font-semibold mb-1 flex items-center">
+                              <ExternalLink className="h-4 w-4 mr-2 text-primary" />
+                              External Tools
+                              <Badge
+                                variant="outline"
+                                className="ml-2 bg-primary/10 text-primary text-xs px-2 py-0 h-5"
+                              >
+                                Third-party
+                              </Badge>
+                            </h2>
+                            <p className="text-xs text-muted-foreground max-w-2xl">
+                              Curated collection of external AI tools from
+                              around the web
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 mt-3 md:mt-0">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              asChild
+                              className="h-8 text-xs px-3 border-primary/30 text-primary hover:bg-primary/10"
+                            >
+                              <Link to="/dashboard">
+                                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                                Add External Tool
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      <div
+                        className={
+                          view === 'grid'
+                            ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6'
+                            : 'grid grid-cols-1 gap-2 md:gap-4'
+                        }
+                      >
+                        {externalTools.map((tool, index) => {
+                          // Insert sponsor ad after the 4th tool
+                          if (index === 4) {
+                            return (
+                              <>
+                                <div key={`tool-${tool.id}`}>
+                                  <ToolCard
+                                    tool={tool}
+                                    viewType={isMobile ? 'list' : view}
+                                    onFavoriteToggle={handleFavoriteToggle}
+                                    isFavorite={isFavorite(tool.id)}
+                                    compact={isMobile}
+                                  />
+                                </div>
+                                <div key="sponsor-ad">
+                                  <SponsorAdCard viewType={view} />
+                                </div>
+                              </>
+                            );
+                          }
+
+                          if (index === 12) {
+                            return (
+                              <>
+                                <div key={`tool-${tool.id}`}>
+                                  <ToolCard
+                                    tool={tool}
+                                    viewType={isMobile ? 'list' : view}
+                                    onFavoriteToggle={handleFavoriteToggle}
+                                    isFavorite={isFavorite(tool.id)}
+                                    compact={isMobile}
+                                  />
+                                </div>
+                                <div key="subscription">
+                                  <InlineSubscription
+                                    viewType={view}
+                                    compact={isMobile}
+                                  />
+                                </div>
+                              </>
+                            );
+                          }
+
+                          return (
+                            <div key={`tool-${tool.id}`}>
+                              <ToolCard
+                                tool={tool}
+                                viewType={isMobile ? 'list' : view}
+                                onFavoriteToggle={handleFavoriteToggle}
+                                isFavorite={isFavorite(tool.id)}
+                                compact={isMobile}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                {/* Load More Button for External Tools - Only shown when viewing external tools or all tools and there are more external tools */}
+                {!isLoading &&
+                  externalTools.length > 0 &&
+                  hasMoreExternalTools &&
+                  (toolType === 'external' || toolType === 'all') && (
+                    <div className="flex justify-center mt-4 md:mt-8">
+                      <Button
+                        variant="outline"
+                        size={isMobile ? 'sm' : 'lg'}
+                        onClick={() => {
+                          if (!externalToolsLoading && hasMoreExternalTools) {
+                            loadNextExternalToolsPage();
+                          }
+                        }}
+                        disabled={externalToolsLoading}
+                        className="w-full max-w-md py-1.5 md:py-2"
+                      >
+                        {externalToolsLoading ? (
+                          <>
+                            <Loader2 className="mr-1.5 md:mr-2 h-3.5 md:h-4 w-3.5 md:w-4 animate-spin" />
+                            Loading more external tools...
+                          </>
+                        ) : (
+                          'Load more external tools'
+                        )}
+                      </Button>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
