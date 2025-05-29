@@ -940,9 +940,7 @@ export const QuickToolChat = ({
                   <p
                     className={cn(
                       'text-base whitespace-pre-wrap leading-relaxed break-words',
-                      message.content &&
-                        message.content.length > 500 &&
-                        'max-h-[300px] overflow-y-auto pr-2'
+                      message.content
                     )}
                   >
                     {message.role === 'user' ? (
@@ -965,16 +963,7 @@ export const QuickToolChat = ({
                       </>
                     )}
                   </p>
-                  {message.content && message.content.length > 500 && (
-                    <div
-                      className={cn(
-                        'absolute bottom-0 left-0 right-0 h-8 pointer-events-none rounded-b-2xl',
-                        message.role === 'user'
-                          ? 'bg-gradient-to-t from-primary to-primary/0'
-                          : 'bg-gradient-to-t from-muted/80 to-transparent'
-                      )}
-                    ></div>
-                  )}
+                  {/* Removed the visual scroll indicator gradient div */}
                 </motion.div>
                 {message.role === 'user' && (
                   <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 items-center justify-center text-primary-foreground">
