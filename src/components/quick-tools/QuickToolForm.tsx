@@ -54,6 +54,13 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { compressImage } from '@/utils/imageCompression';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface QuickToolFormProps {
   userId: string;
@@ -509,7 +516,7 @@ export const QuickToolForm = ({
         temperature: 0.7,
         system:
           formData.prompt +
-          '\n\nIMPORTANT: Keep your responses brief, concise, and to the point. Aim for 2-3 short paragraphs maximum. Focus on providing the most relevant information without unnecessary details. You can ONLY generate text responses - do not attempt to generate images, audio, or video content.', // Use the prompt as the system message with brevity instruction
+          "\n\nIMPORTANT: Keep your responses helpful and engaging. Focus on providing valuable assistance based on the tool's purpose. You can ONLY generate text responses - do not attempt to generate images, audio, or video content. Always be direct and straight to the point. Avoid unnecessary explanations, introductions, or verbose language. Get to the answer immediately without wasting time.",
         messages: [
           ...messages
             .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
@@ -740,35 +747,10 @@ export const QuickToolForm = ({
                       </Badge>
                     </div>
 
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Start by adding categories for your tool. This will help
-                      you get AI suggestions to fill out the rest of the form.
-                    </p>
-
-                    {/* Category Selector - Redesigned */}
+                    {/* Category Selector - Using dropdown similar to pricing in ToolSubmissionForm */}
                     <div className="mb-4">
-                      <div className="flex gap-2 mb-3">
-                        <div className="relative flex-1">
-                          <Input
-                            placeholder="Search categories..."
-                            value={searchCategory}
-                            onChange={(e) => setSearchCategory(e.target.value)}
-                            onClick={() => setShowCategorySelector(true)}
-                            className="w-full"
-                          />
-                          <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setShowCategorySelector(true)}
-                        >
-                          Browse All
-                        </Button>
-                      </div>
-
-                      {/* Selected Categories Display - Redesigned */}
-                      <div className="flex flex-wrap gap-2 min-h-[40px]">
+                      {/* Selected Categories Display */}
+                      <div className="flex flex-wrap gap-2 min-h-[40px] mb-3">
                         {formData.selectedCategories.length > 0 ? (
                           formData.selectedCategories.map((category) => (
                             <Badge
@@ -791,93 +773,49 @@ export const QuickToolForm = ({
                         ) : (
                           <div className="flex items-center justify-center w-full p-3 border border-dashed rounded-md bg-muted/5">
                             <p className="text-sm text-muted-foreground">
-                              No categories selected yet
+                              No categories selected
                             </p>
                           </div>
                         )}
                       </div>
-                    </div>
 
-                    {/* Category Dropdown */}
-                    {showCategorySelector && (
-                      <div className="border rounded-md shadow-md overflow-hidden mt-2">
-                        <div className="flex justify-between items-center p-3 border-b bg-muted/10">
-                          <p className="text-sm font-medium">
-                            Select Categories (max 3)
-                          </p>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 rounded-full"
-                            onClick={() => setShowCategorySelector(false)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-
-                        <div className="max-h-[200px] overflow-y-auto p-3">
+                      {/* Category Dropdown - Similar to pricing dropdown in ToolSubmissionForm */}
+                      <Select
+                        onValueChange={(value) => handleCategoryChange(value)}
+                        disabled={formData.selectedCategories.length >= 3}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
                           {categoriesLoading ? (
                             <div className="flex justify-center py-4">
                               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                             </div>
-                          ) : filteredCategories.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {filteredCategories.map((category) => (
-                                <div
-                                  key={category.id}
-                                  className="flex items-center space-x-2 py-1.5"
-                                >
-                                  <Checkbox
-                                    id={`category-${category.id}`}
-                                    checked={formData.selectedCategories.includes(
-                                      category.name
-                                    )}
-                                    onCheckedChange={() =>
-                                      handleCategoryChange(category.name)
-                                    }
-                                    disabled={
-                                      formData.selectedCategories.length >= 3 &&
-                                      !formData.selectedCategories.includes(
-                                        category.name
-                                      )
-                                    }
-                                  />
-                                  <label
-                                    htmlFor={`category-${category.id}`}
-                                    className="text-sm cursor-pointer"
-                                  >
-                                    {category.name}
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
                           ) : (
-                            <div className="text-center py-4 text-muted-foreground">
-                              No categories found
-                            </div>
+                            categories.map((category) => (
+                              <SelectItem
+                                key={category.id}
+                                value={category.name}
+                                disabled={formData.selectedCategories.includes(
+                                  category.name
+                                )}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))
                           )}
-                        </div>
-
-                        <div className="flex justify-between items-center p-3 border-t bg-muted/10">
-                          <p className="text-xs text-muted-foreground">
-                            {formData.selectedCategories.length}/3 selected
-                          </p>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="primary"
-                            onClick={() => setShowCategorySelector(false)}
-                          >
-                            Done
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {formData.selectedCategories.length}/3 categories
+                        selected
+                      </p>
+                    </div>
 
                     {/* AI Suggestion Button */}
                     {formData.selectedCategories.length > 0 && (
-                      <div className="mt-4 pt-4 border-t">
+                      <div className="mt-4 pt-4">
                         {/* User Suggestion Input */}
                         <div className="mb-4">
                           <Label
@@ -900,7 +838,7 @@ export const QuickToolForm = ({
                           type="button"
                           variant="default"
                           size="default"
-                          className="w-full justify-center"
+                          className="justify-center"
                           onClick={generateToolSuggestions}
                           disabled={isGeneratingSuggestion}
                         >
@@ -916,10 +854,6 @@ export const QuickToolForm = ({
                             </>
                           )}
                         </Button>
-                        <p className="text-xs text-center text-muted-foreground mt-2">
-                          Let AI suggest tool ideas based on your selected
-                          categories and context
-                        </p>
                       </div>
                     )}
                   </div>
