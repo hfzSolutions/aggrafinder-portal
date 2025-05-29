@@ -1070,46 +1070,45 @@ export const QuickToolChat = ({
           </div>
 
           <motion.div
-            className="flex-1 relative"
+            className="flex flex-row items-center w-full gap-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <Textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                setInput(newValue);
-                setIsMessageTooLong(newValue.length > MAX_MESSAGE_LENGTH);
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                !user && getUserMessageCount() >= 2
-                  ? 'Sign in to continue chatting...'
-                  : 'Ask your question here...'
-              }
-              disabled={
-                isLoading ||
-                isBotTyping ||
-                isShowingAd ||
-                (!user && getUserMessageCount() >= 2)
-              } // Disable input when bot is typing, ad is showing, or user reached limit
-              className={cn(
-                'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-16 py-2.5 min-h-[40px] resize-none bg-background/50 text-foreground placeholder:text-muted-foreground/70 text-base placeholder:text-base',
-                (isLoading ||
+            <div className="flex-grow relative w-full">
+              <Textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setInput(newValue);
+                  setIsMessageTooLong(newValue.length > MAX_MESSAGE_LENGTH);
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  !user && getUserMessageCount() >= 2
+                    ? 'Sign in to continue chatting...'
+                    : 'Ask your question here...'
+                }
+                disabled={
+                  isLoading ||
                   isBotTyping ||
                   isShowingAd ||
-                  (!user && getUserMessageCount() >= 2)) &&
-                  'opacity-60', // Reduce opacity when disabled
-                isMessageTooLong && 'border-red-500 focus:border-red-500'
-              )}
-              rows={1}
-            />
-            <motion.div
-              whileTap={{ scale: 0.95 }}
-              className="absolute right-2 top-1/4 -translate-y-1/2"
-            >
+                  (!user && getUserMessageCount() >= 2)
+                } // Disable input when bot is typing, ad is showing, or user reached limit
+                className={cn(
+                  'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-4 py-2.5 min-h-[40px] resize-none bg-background/50 text-foreground placeholder:text-muted-foreground/70 text-base placeholder:text-base',
+                  (isLoading ||
+                    isBotTyping ||
+                    isShowingAd ||
+                    (!user && getUserMessageCount() >= 2)) &&
+                    'opacity-60', // Reduce opacity when disabled
+                  isMessageTooLong && 'border-red-500 focus:border-red-500'
+                )}
+                rows={1}
+              />
+            </div>
+            <motion.div whileTap={{ scale: 0.95 }} className="flex-shrink-0">
               <Button
                 size="icon"
                 onClick={
