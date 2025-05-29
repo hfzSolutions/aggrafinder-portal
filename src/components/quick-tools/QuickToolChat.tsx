@@ -11,6 +11,7 @@ import {
   ExternalLink,
   LogIn,
   Lock,
+  ArrowUp,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
@@ -185,7 +186,7 @@ const ChatSponsorAd = ({
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.2 }}
-        className="max-w-[85%] rounded-2xl rounded-tl-sm p-3.5 bg-muted/50 shadow-sm border border-primary/10 hover:border-primary/20 transition-all duration-300 relative"
+        className="max-w-[85%] rounded-2xl rounded-tl-sm p-3.5 bg-muted/50 shadow-sm"
         onClick={handleAdClick}
         style={{ cursor: 'pointer' }}
       >
@@ -218,7 +219,7 @@ const ChatSponsorAd = ({
             </div>
           </div>
         )}
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <div className="relative h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
             {!isImageLoaded && (
               <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
@@ -344,6 +345,10 @@ export const QuickToolChat = ({
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false); // State for reset confirmation dialog
   const [user, setUser] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  // Add state for message length limit
+  const [isMessageTooLong, setIsMessageTooLong] = useState(false);
+  const MAX_MESSAGE_LENGTH = 1000; // Set maximum character limit
+
   const { toast } = useToast();
   const { trackChatEvent } = useAIChatAnalytics();
   const { incrementUsageCount } = useQuickToolUsage();
@@ -564,7 +569,7 @@ export const QuickToolChat = ({
   }, []);
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isMessageTooLong) return;
 
     // Check if user is authenticated and message limit
     const userMessageCount = getUserMessageCount();
@@ -746,7 +751,15 @@ export const QuickToolChat = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Check if the device is likely a mobile device
+    const isMobileDevice =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+
+    // On desktop: Enter sends message, Shift+Enter creates new line
+    // On mobile: Enter creates new line, explicit send button click required
+    if (e.key === 'Enter' && !e.shiftKey && !isMobileDevice) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -918,13 +931,20 @@ export const QuickToolChat = ({
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.2 }}
                   className={cn(
-                    'max-w-[85%] rounded-2xl p-3.5 shadow-sm',
+                    'max-w-[85%] rounded-2xl p-3.5 shadow-sm relative',
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground rounded-tr-sm'
                       : 'bg-muted/80 rounded-tl-sm'
                   )}
                 >
-                  <p className="text-base whitespace-pre-wrap leading-relaxed">
+                  <p
+                    className={cn(
+                      'text-base whitespace-pre-wrap leading-relaxed break-words',
+                      message.content &&
+                        message.content.length > 500 &&
+                        'max-h-[300px] overflow-y-auto pr-2'
+                    )}
+                  >
                     {message.role === 'user' ? (
                       message.content
                     ) : !message.displayContent && message.isTyping ? (
@@ -945,6 +965,16 @@ export const QuickToolChat = ({
                       </>
                     )}
                   </p>
+                  {message.content && message.content.length > 500 && (
+                    <div
+                      className={cn(
+                        'absolute bottom-0 left-0 right-0 h-8 pointer-events-none rounded-b-2xl',
+                        message.role === 'user'
+                          ? 'bg-gradient-to-t from-primary to-primary/0'
+                          : 'bg-gradient-to-t from-muted/80 to-transparent'
+                      )}
+                    ></div>
+                  )}
                 </motion.div>
                 {message.role === 'user' && (
                   <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 items-center justify-center text-primary-foreground">
@@ -960,7 +990,7 @@ export const QuickToolChat = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2 }}
-              className="flex items-start gap-2 justify-start"
+              className="flex items-center gap-3 justify-start"
             >
               <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
                 {imageUrl ? (
@@ -976,7 +1006,7 @@ export const QuickToolChat = ({
                     }}
                   />
                 ) : (
-                  <Bot className="h-4 w-4 text-primary" />
+                  <ArrowUp className="h-4 w-4" />
                 )}
               </div>
               <div className="max-w-[85%] rounded-2xl rounded-tl-sm p-3.5 bg-muted/80 shadow-sm">
@@ -1012,7 +1042,7 @@ export const QuickToolChat = ({
         data-input-area
         className="p-4 border border-primary/60 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm sticky bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
       >
-        <div className="flex items-start gap-3 w-full">
+        <div className="flex items-center gap-3 w-full">
           <div className="flex flex-col gap-2">
             {isBotTyping ? (
               <Button
@@ -1059,7 +1089,11 @@ export const QuickToolChat = ({
             <Textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setInput(newValue);
+                setIsMessageTooLong(newValue.length > MAX_MESSAGE_LENGTH);
+              }}
               onKeyDown={handleKeyDown}
               placeholder={
                 !user && getUserMessageCount() >= 2
@@ -1073,18 +1107,19 @@ export const QuickToolChat = ({
                 (!user && getUserMessageCount() >= 2)
               } // Disable input when bot is typing, ad is showing, or user reached limit
               className={cn(
-                'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-14 py-2.5 min-h-[40px] resize-none bg-background/50 text-foreground placeholder:text-muted-foreground/70 text-base placeholder:text-base',
+                'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-16 py-2.5 min-h-[40px] resize-none bg-background/50 text-foreground placeholder:text-muted-foreground/70 text-base placeholder:text-base',
                 (isLoading ||
                   isBotTyping ||
                   isShowingAd ||
                   (!user && getUserMessageCount() >= 2)) &&
-                  'opacity-60' // Reduce opacity when disabled
+                  'opacity-60', // Reduce opacity when disabled
+                isMessageTooLong && 'border-red-500 focus:border-red-500'
               )}
               rows={1}
             />
             <motion.div
               whileTap={{ scale: 0.95 }}
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              className="absolute right-2 top-1 -translate-y-1/2"
             >
               <Button
                 size="icon"
@@ -1093,27 +1128,33 @@ export const QuickToolChat = ({
                     ? handleLoginRedirect
                     : handleSendMessage
                 }
-                disabled={!input.trim() || isLoading} // Always enabled when there's input, but changes behavior based on auth state
+                disabled={!input.trim() || isLoading || isMessageTooLong} // Disable when message is too long
                 className={cn(
-                  'h-8 w-8 rounded-full transition-all duration-300 shadow-sm text-primary-foreground',
+                  'h-10 w-10 rounded-full transition-all duration-300 shadow-sm text-primary-foreground flex items-center justify-center',
                   !user && getUserMessageCount() >= 2
                     ? 'bg-orange-500 hover:bg-orange-600'
+                    : isMessageTooLong
+                    ? 'bg-red-500 hover:bg-red-600 cursor-not-allowed'
                     : 'bg-primary hover:bg-primary/90'
                 )}
               >
                 {isLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : !user && getUserMessageCount() >= 2 ? (
-                  <LogIn className="h-3.5 w-3.5" />
+                  <LogIn className="h-4 w-4" />
                 ) : (
-                  <Send className="h-3.5 w-3.5" />
+                  <ArrowUp className="h-4 w-4" />
                 )}
               </Button>
             </motion.div>
           </motion.div>
         </div>
         <div className="flex items-center justify-center mt-2">
-          {!user && getUserMessageCount() < 2 ? (
+          {isMessageTooLong ? (
+            <p className="text-xs text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/20 inline-flex items-center">
+              Message too long ({input.length}/{MAX_MESSAGE_LENGTH} characters)
+            </p>
+          ) : !user && getUserMessageCount() < 2 ? (
             <div className="flex items-center gap-3">
               <p className="text-xs text-muted-foreground/80 px-2 py-0.5 rounded-full bg-muted/20 inline-flex items-center">
                 AI may make mistakes. Please verify results.
