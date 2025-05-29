@@ -91,64 +91,61 @@ export const SponsorAdCard = ({
     });
   };
 
-  // Grid view
   if (viewType === 'grid') {
     return (
       <div
-        className={cn(
-          'group relative rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 h-full flex flex-col cursor-pointer p-1 animate-float'
-        )}
+        className="group relative rounded-xl overflow-hidden bg-background border border-primary/30 shadow-sm hover:shadow-lg hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col cursor-pointer"
         onClick={handleAdClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Moving gradient border */}
-        <div className="absolute inset-0 animate-moving-gradient rounded-xl opacity-80"></div>
+        <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent rounded-tl-xl"></div>
+          <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-primary/20 to-transparent rounded-br-xl"></div>
+        </div>
 
-        {/* Shine effect overlay */}
-        <div className="absolute inset-0 animate-shine rounded-xl z-10 opacity-40"></div>
-
-        {/* Content container */}
-        <div className="relative bg-background/95 dark:bg-background/95 rounded-xl z-20 flex flex-col h-full px-5 py-3">
-          <div className="relative h-32 w-full rounded-lg overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 mb-3 shadow-md">
-            {!isImageLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
-                <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-              </div>
-            )}
-
-            <img
-              src={ad.image_url}
-              alt={ad.title}
-              className={cn(
-                'h-full w-full object-cover transition-all duration-500 transform group-hover:scale-105',
-                isImageLoaded ? 'opacity-100' : 'opacity-0'
-              )}
-              onLoad={() => setIsImageLoaded(true)}
-            />
-
-            <div className="absolute top-2 left-2">
-              <Badge
-                variant="secondary"
-                className="flex items-center gap-1 bg-primary/20 text-primary border border-primary/30 text-xs px-2 py-0.5 font-medium shadow-sm"
-              >
-                <Sparkles className="h-2.5 w-2.5 text-primary" /> Ad
-              </Badge>
+        <div className="relative pt-[56.25%] w-full overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
+          {!isImageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
+              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
             </div>
+          )}
+
+          <img
+            src={ad.image_url}
+            alt="Sponsored Advertisement"
+            className={cn(
+              'absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105',
+              isImageLoaded ? 'opacity-100' : 'opacity-0'
+            )}
+            onLoad={() => setIsImageLoaded(true)}
+          />
+
+          <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+          <div className="absolute top-3 left-3 z-10">
+            <Badge
+              variant="secondary"
+              className="flex items-center gap-1 bg-primary/10 text-primary border border-primary/20"
+            >
+              <Sparkles className="h-3 w-3 text-primary" /> Sponsored
+            </Badge>
           </div>
 
-          <h3 className="font-semibold text-base text-foreground/90 mb-2 line-clamp-1">
+          {/* Button moved to bottom of card */}
+        </div>
+
+        <div className="p-4 flex-grow flex flex-col">
+          <h3 className="font-medium text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors duration-200">
             {ad.title}
           </h3>
-          <p className="text-muted-foreground text-sm mb-3 flex-grow line-clamp-2">
+          <p className="text-muted-foreground text-sm mb-3 line-clamp-3">
             {ad.description}
           </p>
-
-          <div className="mt-auto">
+          <div className="mt-auto pt-2">
             <Button
               size="sm"
-              variant="default"
-              className="w-full h-8 rounded-full bg-primary hover:bg-primary/90 transition-all duration-300"
+              className="w-full justify-center gap-1.5"
               onClick={(e) => {
                 e.stopPropagation();
                 window.open(ad.link, '_blank');
@@ -161,7 +158,7 @@ export const SponsorAdCard = ({
                 });
               }}
             >
-              {ad.link_text} <ExternalLink className="ml-1 h-3 w-3" />
+              {ad.link_text} <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
@@ -172,86 +169,72 @@ export const SponsorAdCard = ({
   // List view
   return (
     <div
-      className={cn(
-        'group relative rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer p-1 animate-pulse-glow',
-        compact ? 'max-w-md' : 'w-full'
-      )}
+      className="group flex items-start gap-4 p-4 border border-primary/30 rounded-lg hover:border-primary/40 hover:shadow-md transition-all duration-300 cursor-pointer bg-background"
       onClick={handleAdClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Moving gradient border */}
-      <div className="absolute inset-0 animate-moving-gradient rounded-lg opacity-80"></div>
-
-      {/* Shine effect overlay */}
-      <div className="absolute inset-0 animate-shine rounded-lg z-10 opacity-40"></div>
-
-      {/* Content container */}
-      <div className="relative bg-background/95 dark:bg-background/95 rounded-lg z-20 px-5 py-3 w-full">
-        <div className="flex items-center gap-3">
-          <div className="relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 shadow-md">
-            {!isImageLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
-                <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-              </div>
-            )}
-
-            <img
-              src={ad.image_url}
-              alt={ad.title}
-              className={cn(
-                'h-full w-full object-cover transition-all duration-500 transform group-hover:scale-105',
-                isImageLoaded ? 'opacity-100' : 'opacity-0'
-              )}
-              onLoad={() => setIsImageLoaded(true)}
-            />
-
-            <div className="absolute top-2 left-2">
-              <Badge
-                variant="secondary"
-                className="flex items-center gap-1 bg-primary/20 text-primary border border-primary/30 text-xs px-2 py-0.5 font-medium shadow-sm"
-              >
-                <Sparkles className="h-2.5 w-2.5 text-primary" /> Ad
-              </Badge>
-            </div>
+      <div className="relative h-24 w-24 flex-shrink-0 rounded-md overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
+        {!isImageLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
+            <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
           </div>
+        )}
 
-          <div className="flex-grow">
-            <h3 className="font-semibold text-base text-foreground/90 mb-2">
-              {ad.title}
-            </h3>
+        <img
+          src={ad.image_url}
+          alt="Sponsored Advertisement"
+          className={cn(
+            'h-full w-full object-cover transition-opacity',
+            isImageLoaded ? 'opacity-100' : 'opacity-0'
+          )}
+          onLoad={() => setIsImageLoaded(true)}
+        />
 
-            {!compact && (
-              <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                {ad.description}
-              </p>
-            )}
+        <div className="absolute top-1 left-1">
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1 bg-primary/10 text-primary border border-primary/20 text-xs px-1.5 py-0.5"
+          >
+            <Sparkles className="h-2.5 w-2.5 text-primary" /> Ad
+          </Badge>
+        </div>
+      </div>
 
-            <div className="flex items-center justify-between mt-1">
-              <Button
-                size="sm"
-                variant="default"
-                className="h-8 px-3 text-xs rounded-full bg-primary hover:bg-primary/90 transition-all duration-300"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(ad.link, '_blank');
-                  trackEvent('sponsor_ad', 'click_url', {
-                    ad_id: ad.id,
-                    ad_title: ad.title,
-                    ad_link: ad.link,
-                    view_type: viewType,
-                    click_type: 'button',
-                    compact: compact,
-                  });
-                }}
-              >
-                {ad.link_text} <ExternalLink className="ml-1 h-3 w-3" />
-              </Button>
-              <span className="text-xs font-medium px-2 py-1 rounded-full bg-muted/50">
-                Sponsored
-              </span>
-            </div>
-          </div>
+      <div className="flex-grow">
+        <div className="flex justify-between items-start mb-1">
+          <h3 className="font-medium text-base group-hover:text-primary transition-colors duration-200">
+            {ad.title}
+          </h3>
+        </div>
+
+        {!compact && (
+          <p className="text-muted-foreground text-sm mb-2 line-clamp-2">
+            {ad.description}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between mt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs rounded-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(ad.link, '_blank');
+              trackEvent('sponsor_ad', 'click_url', {
+                ad_id: ad.id,
+                ad_title: ad.title,
+                ad_link: ad.link,
+                view_type: viewType,
+                click_type: 'button',
+                compact: compact,
+              });
+            }}
+          >
+            {ad.link_text} <ExternalLink className="ml-1 h-3 w-3" />
+          </Button>
+          <span className="text-xs text-muted-foreground">Sponsored</span>
         </div>
       </div>
     </div>
