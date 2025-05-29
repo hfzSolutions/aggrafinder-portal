@@ -366,14 +366,17 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
             ? `${window.location.protocol}//${window.location.host}`
             : import.meta.env.VITE_SITE_URL || 'https://deeplistai.com';
 
-        const toolUrl = `${baseUrl}/tools/${data.id}`;
+        const toolDetailsUrl =
+          toolData.tool_type === 'quick'
+            ? `${baseUrl}/quick-tools/${data.id}`
+            : `${baseUrl}/tools/${data.id}`;
         const adminDashboardUrl = `${baseUrl}/admin`;
 
         // Generate the HTML content using our template
         const htmlContent = ToolSubmissionNotificationEmailTemplate({
           toolName: toolData.name,
           submitterName,
-          toolUrl,
+          toolUrl: toolDetailsUrl,
           siteUrl: baseUrl,
           adminDashboardUrl,
           toolType: toolData.tool_type,
