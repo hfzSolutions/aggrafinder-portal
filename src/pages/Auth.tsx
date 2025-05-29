@@ -36,14 +36,18 @@ const Auth = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && isMounted) {
-        // Check if there's a return URL saved
-        const returnUrl = localStorage.getItem('returnUrl');
-        if (returnUrl) {
-          localStorage.removeItem('returnUrl');
-          navigate(returnUrl);
+        let returnUrl = localStorage.getItem('returnUrl');
+
+        if (!returnUrl) {
+          returnUrl = sessionStorage.getItem('googleAuthReturnUrl');
+          if (returnUrl) {
+            sessionStorage.removeItem('googleAuthReturnUrl');
+          }
         } else {
-          navigate('/dashboard');
+          localStorage.removeItem('returnUrl');
         }
+
+        navigate(returnUrl || '/dashboard');
       }
       setIsCheckingSession(false);
     });
@@ -57,26 +61,12 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
+      const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
-
       toast.success(
         'Account created! Please check your email for verification.'
       );
-      // Check if there's a return URL saved
-      const returnUrl = localStorage.getItem('returnUrl');
-      if (returnUrl) {
-        localStorage.removeItem('returnUrl');
-        navigate(returnUrl);
-      } else {
-        navigate('/dashboard');
-      }
     } catch (error: any) {
       toast.error(error.message || 'Error signing up');
     } finally {
@@ -87,24 +77,13 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
       if (error) throw error;
-
       toast.success('Signed in successfully!');
-      // Check if there's a return URL saved
-      const returnUrl = localStorage.getItem('returnUrl');
-      if (returnUrl) {
-        localStorage.removeItem('returnUrl');
-        navigate(returnUrl);
-      } else {
-        navigate('/dashboard');
-      }
     } catch (error: any) {
       toast.error(error.message || 'Error signing in');
     } finally {
@@ -228,7 +207,7 @@ const Auth = () => {
                         className="space-y-4"
                       >
                         <p className="text-sm text-muted-foreground">
-                          Enter your email address and we'll send you a link to
+                          Enter your email address and we’ll send you a link to
                           reset your password.
                         </p>
                         <div className="space-y-2">
@@ -312,7 +291,6 @@ const Auth = () => {
                           'Create Account'
                         )}
                       </Button>
-
                       <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
                           <span className="w-full border-t" />
@@ -323,7 +301,6 @@ const Auth = () => {
                           </span>
                         </div>
                       </div>
-
                       <GoogleLoginButton />
                     </form>
                   </CardContent>
