@@ -289,10 +289,10 @@ const QuickToolDetails = () => {
               <div>
                 {/* Mobile Tool Header */}
                 {isMobile && (
-                  <div className="mb-3 p-3 rounded-lg bg-background/80 border border-border/20 backdrop-blur-sm">
+                  <div className="fixed top-[60px] left-0 right-0 z-50 px-3 py-1 bg-background/95 border border-border/20 backdrop-blur-sm shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 pt-1">
                           <Badge
                             variant="outline"
                             className="bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/30 text-xs px-2 py-0.5 rounded-md flex items-center shrink-0"
@@ -316,7 +316,7 @@ const QuickToolDetails = () => {
                       </Button>
                     </div>
                     {showInfo && (
-                      <>
+                      <div className="px-3">
                         <h1 className="text-lg font-semibold tracking-tight leading-tight truncate mt-3">
                           {tool.name}
                         </h1>
@@ -432,10 +432,11 @@ const QuickToolDetails = () => {
                             </div>
                           )}
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                   {/* Side Panel - Tool Information */}
                   {(showInfo || !isMobile) && (
