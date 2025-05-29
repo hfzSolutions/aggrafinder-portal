@@ -61,6 +61,36 @@ interface QuickToolChatProps {
   imageUrl?: string; // Add imageUrl prop
 }
 
+// Create a function to check for sponsor ads that can be reused
+const checkForSponsorAds = async () => {
+  try {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('sponsor_ads')
+      .select('*')
+      .lte('start_date', now)
+      .gte('end_date', now)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      if (error.code !== 'PGRST116') {
+        console.error('Error checking sponsor ads:', error);
+      }
+      return { available: false, data: null };
+    }
+
+    return {
+      available: data && data.length > 0,
+      data: data && data.length > 0 ? data[0] : null,
+    };
+  } catch (error) {
+    console.error('Error checking sponsor ads:', error);
+    return { available: false, data: null };
+  }
+};
+
 // New component for chat-specific sponsor ad display
 const ChatSponsorAd = ({
   messageCount,
@@ -107,45 +137,15 @@ const ChatSponsorAd = ({
     // Only fetch ad when the component mounts
     const fetchActiveSponsorAd = async () => {
       try {
-        const now = new Date().toISOString();
-        const { data, error } = await supabase
-          .from('sponsor_ads')
-          .select('*')
-          .lte('start_date', now)
-          .gte('end_date', now)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+        // Use the shared function to check for ads and get the data in one call
+        const { available, data } = await checkForSponsorAds();
 
-        if (error) {
-          if (error.code !== 'PGRST116') {
-            console.error('Error fetching active sponsor ad:', error);
-          }
-          // Add dummy response for sponsor ad
-          // const dummyAd = {
-          //   id: '3dc4917c-3075-44c9-8cbf-2e40a2c1c14e',
-          //   title: 'Premium AI Solution',
-          //   description:
-          //     'Boost your productivity with our cutting-edge Al tools.',
-          //   image_url:
-          //     'https://letsenhance.io/static/73136da51c245e80edc6ccfe44888a99/1015f/MainBefore.jpg',
-          //   link: 'https://www.google.com',
-          //   link_text: 'Learn More',
-          //   start_date: '2025-04-28T05:55:18.986+00:00',
-          //   end_date: '2025-05-27T16:00:00+00:00',
-          //   is_active: true,
-          //   created_at: '2025-04-28T05:57:57.976181+00:00',
-          //   updated_at: '2025-05-25T21:18:18.643+00:00',
-          // };
-
-          // setSponsorAd(dummyAd);
+        if (!available || !data) {
           return;
         }
 
-        if (data) {
-          setSponsorAd(data);
-        }
+        // Set the sponsor ad directly from the returned data
+        setSponsorAd(data);
       } catch (error) {
         console.error('Error fetching sponsor ad:', error);
       }
@@ -351,16 +351,24 @@ export const QuickToolChat = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Reference to store typing timeout
+  const botMessageRef = useRef<HTMLDivElement>(null); // New ref for bot messages
 
   // Add state to control ad display
   const [pendingMessage, setPendingMessage] = useState<Message | null>(null);
   const [isShowingAd, setIsShowingAd] = useState(false);
   const [pendingUserInput, setPendingUserInput] = useState<string>('');
+  // Add state to track if ads are available
+  const [isAdAvailable, setIsAdAvailable] = useState<boolean>(false);
+  // Add state to track the latest bot message ID
+  const [latestBotMessageId, setLatestBotMessageId] = useState<string | null>(
+    null
+  );
 
   // Function to animate typing effect for a message with realistic timing
   const animateTyping = (messageId: string, content: string) => {
     let index = 0;
     setIsBotTyping(true); // Set bot typing state to true
+    setLatestBotMessageId(messageId); // Set the latest bot message ID
 
     // Always scroll to bottom immediately when bot starts responding
     scrollToBottom();
@@ -440,21 +448,6 @@ export const QuickToolChat = ({
     setIsLoading(false);
   };
 
-  // Check scroll position and set new message indicator
-  const checkScrollPosition = () => {
-    if (!messagesContainerRef.current) return;
-
-    const container = messagesContainerRef.current;
-    const isNearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight <
-      100;
-
-    // If user is not near bottom, show new message indicator
-    if (!isNearBottom) {
-      setHasNewMessage(true);
-    }
-  };
-
   // Handle scroll event
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;
@@ -469,15 +462,24 @@ export const QuickToolChat = ({
     }
   };
 
-  // Auto-scroll for bot responses and check for new messages
+  // Effect to scroll to the latest bot message when it appears or changes
+  useEffect(() => {
+    if (latestBotMessageId) {
+      const botMessageElement = document.getElementById(
+        `message-${latestBotMessageId}`
+      );
+      if (botMessageElement) {
+        botMessageElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    }
+  }, [latestBotMessageId, messages]);
+
+  // Auto-scroll for all new messages and check for new messages
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
-
-    // Auto-scroll for bot responses (assistant messages)
-    if (lastMessage && lastMessage.role === 'assistant') {
-      // Scroll immediately when bot message appears
-      setTimeout(() => scrollToBottom(), 100);
-    }
 
     // Check if we should show the new message indicator for user messages
     const shouldShowNewMessageIndicator = () => {
@@ -551,6 +553,16 @@ export const QuickToolChat = ({
     navigate('/auth');
   };
 
+  // Add useEffect to check for ad availability on component mount
+  useEffect(() => {
+    const checkAdAvailability = async () => {
+      const { available } = await checkForSponsorAds();
+      setIsAdAvailable(available);
+    };
+
+    checkAdAvailability();
+  }, []);
+
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -589,8 +601,16 @@ export const QuickToolChat = ({
     // Increment persistent user message count
     setPersistentUserMessageCount((prev) => prev + 1);
 
+    setIsBotTyping(true);
+
+    // Check for ads availability before deciding whether to show an ad
+    const { available } = await checkForSponsorAds();
+    setIsAdAvailable(available);
+
     // Check if we should show an ad first (70% probability after first message)
-    const shouldShowAd = messages.length >= 1 && Math.random() < 0.7;
+    // Only check if ads are available based on freshly checked state
+    const shouldShowAd =
+      messages.length >= 1 && Math.random() < 0.7 && available;
 
     if (shouldShowAd && !isShowingAd) {
       // Store the user input to process after ad completes
@@ -615,25 +635,29 @@ export const QuickToolChat = ({
     setInput('');
   };
 
-  const processUserMessage = async (userInput: string) => {
+  const processUserMessage = async (
+    userInput: string,
+    existingTypingId?: string
+  ) => {
     setIsLoading(true);
 
     // Track when user sends a message for analytics
     trackChatEvent(toolId, 'message_sent');
 
-    // Immediately add the assistant message with typing state
+    // Use existing typing message or create new one
     const assistantMessage: Message = {
-      id: Date.now().toString() + '-assistant',
+      id: existingTypingId || Date.now().toString() + '-assistant',
       role: 'assistant',
       content: '',
       isTyping: true,
       displayContent: '',
     };
 
-    setMessages((prev) => [...prev, assistantMessage]);
-
-    // Immediately scroll to show the bot response appearing
-    scrollToBottom();
+    // Only add new message if we don't have existing typing message
+    if (!existingTypingId) {
+      setMessages((prev) => [...prev, assistantMessage]);
+      setLatestBotMessageId(assistantMessage.id); // Set the latest bot message ID
+    }
 
     try {
       // Create Anthropic client instance
@@ -652,7 +676,11 @@ export const QuickToolChat = ({
           "\n\nIMPORTANT: Keep your responses helpful and engaging. Focus on providing valuable assistance based on the tool's purpose. You can ONLY generate text responses - do not attempt to generate images, audio, or video content. Always be direct and straight to the point. Avoid unnecessary explanations, introductions, or verbose language. Get to the answer immediately without wasting time.",
         messages: [
           ...messages
-            .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+            .filter(
+              (msg) =>
+                (msg.role === 'user' || msg.role === 'assistant') &&
+                msg.content.trim() !== '' // Filter out empty messages
+            )
             .map((msg) => ({
               role: msg.role as 'user' | 'assistant',
               content: [
@@ -686,8 +714,21 @@ export const QuickToolChat = ({
         )
       );
 
-      // Start the typing animation
-      animateTyping(assistantMessage.id, responseContent);
+      // Only start typing animation if we're not using an existing typing message
+      // This prevents duplicate responses
+      if (!existingTypingId) {
+        animateTyping(assistantMessage.id, responseContent);
+      } else {
+        // If we're using an existing typing message, just update it directly
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessage.id
+              ? { ...msg, isTyping: false, displayContent: responseContent }
+              : msg
+          )
+        );
+        setIsBotTyping(false);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -768,18 +809,23 @@ export const QuickToolChat = ({
   };
 
   const scrollToBottom = () => {
-    // Use scrollIntoView with block: 'end' and add a small delay with extra scroll to ensure messages aren't hidden
-    messagesEndRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'end',
-    });
+    if (!messagesContainerRef.current) return;
 
-    // Add a small additional scroll after a short delay to ensure the message is visible above the textarea
-    setTimeout(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop += 20; // Add extra 20px of scroll to push content above the textarea
-      }
-    }, 150);
+    const container = messagesContainerRef.current;
+    const inputArea = document.querySelector(
+      '[data-input-area]'
+    ) as HTMLElement;
+    const inputHeight = inputArea ? inputArea.offsetHeight : 120; // Fallback height
+
+    // Calculate the target scroll position to ensure content is visible above input
+    const targetScrollTop =
+      container.scrollHeight - container.clientHeight + inputHeight + 40;
+
+    // Use smooth scrolling
+    container.scrollTo({
+      top: Math.max(0, targetScrollTop),
+      behavior: 'smooth',
+    });
 
     setHasNewMessage(false);
   };
@@ -831,6 +877,7 @@ export const QuickToolChat = ({
             return (
               <motion.div
                 key={message.id}
+                id={`message-${message.id}`} // Add ID for scrolling
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -838,9 +885,15 @@ export const QuickToolChat = ({
                   'flex items-start gap-2',
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                 )}
+                ref={
+                  message.role === 'assistant' &&
+                  message.id === latestBotMessageId
+                    ? botMessageRef
+                    : undefined
+                }
               >
                 {message.role !== 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                  <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -874,26 +927,27 @@ export const QuickToolChat = ({
                   <p className="text-base whitespace-pre-wrap leading-relaxed">
                     {message.role === 'user' ? (
                       message.content
-                    ) : message.isTyping && !message.displayContent ? (
-                      // Show typing dots for assistant messages that haven't started typing content yet
+                    ) : !message.displayContent && message.isTyping ? (
+                      // Only show typing dots if typing and no content has started showing
                       <div className="flex space-x-2 items-center h-5">
                         <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse"></div>
                         <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-150"></div>
                         <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-300"></div>
                       </div>
                     ) : (
-                      // Show content with typing cursor if still typing
+                      // Once content is showing, show it along with the typing cursor if still typing
                       <>
                         {message.displayContent || message.content}
-                        {message.isTyping && message.displayContent && (
-                          <span className="animate-pulse ml-0.5">▋</span>
-                        )}
+                        {message.isTyping &&
+                          (message.displayContent || message.content) && (
+                            <span className="animate-pulse ml-0.5">▋</span>
+                          )}
                       </>
                     )}
                   </p>
                 </motion.div>
                 {message.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 flex items-center justify-center text-primary-foreground">
+                  <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 items-center justify-center text-primary-foreground">
                     <span className="text-xs font-medium">You</span>
                   </div>
                 )}
@@ -908,7 +962,7 @@ export const QuickToolChat = ({
               transition={{ duration: 0.2 }}
               className="flex items-start gap-2 justify-start"
             >
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+              <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
                 {imageUrl ? (
                   <img
                     src={imageUrl}
@@ -954,7 +1008,10 @@ export const QuickToolChat = ({
       )}
 
       {/* Input Area with Modern Card Styling */}
-      <div className="p-4 border border-primary/60 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm sticky bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg">
+      <div
+        data-input-area
+        className="p-4 border border-primary/60 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm sticky bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
+      >
         <div className="flex items-start gap-3 w-full">
           <div className="flex flex-col gap-2">
             {isBotTyping ? (
