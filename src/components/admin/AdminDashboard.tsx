@@ -582,7 +582,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
           if (!userFetchError && userData?.email) {
             const baseUrl = getSiteUrl();
-            const toolDetailsUrl = `${baseUrl}/tools/${id}`;
+            const toolDetailsUrl =
+              toolData.tool_type === 'quick'
+                ? `${baseUrl}/quick-tools/${id}`
+                : `${baseUrl}/tools/${id}`;
 
             // Generate the HTML content using our template
             const htmlContent = ToolApprovalEmailTemplate({
