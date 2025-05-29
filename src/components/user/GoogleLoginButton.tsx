@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,15 +11,23 @@ interface GoogleLoginButtonProps {
 
 const GoogleLoginButton = ({ className = '' }: GoogleLoginButtonProps) => {
   const [loading, setLoading] = useState(false);
+  const [returnUrl, setReturnUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedReturnUrl = localStorage.getItem('returnUrl');
+    setReturnUrl(savedReturnUrl);
+  }, []);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
+      const redirectTo = returnUrl
+        ? `${getSiteUrl()}${returnUrl}`
+        : `${getSiteUrl()}/dashboard`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: `${getSiteUrl()}/dashboard`,
-        },
+        options: { redirectTo },
       });
 
       if (error) throw error;
