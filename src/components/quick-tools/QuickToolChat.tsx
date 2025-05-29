@@ -1119,7 +1119,7 @@ export const QuickToolChat = ({
             />
             <motion.div
               whileTap={{ scale: 0.95 }}
-              className="absolute right-2 top-1 -translate-y-1/2"
+              className="absolute right-2 top-1/4 -translate-y-1/2"
             >
               <Button
                 size="icon"
