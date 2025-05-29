@@ -868,7 +868,7 @@ export const QuickToolChat = ({
 
       {/* Messages Area - No card styling */}
       <div
-        className="flex-1 overflow-y-auto p-0 sm:p-4 space-y-4 relative bg-transparent"
+        className="flex-1 overflow-y-auto p-0 sm:p-4 space-y-4 relative bg-transparent pb-[80px] sm:pb-4"
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
@@ -1016,7 +1016,7 @@ export const QuickToolChat = ({
       </div>
 
       {hasNewMessage && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[72px] flex justify-center">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-[120px] sm:bottom-[72px] flex justify-center">
           <div
             className="text-primary rounded-full px-3 py-1.5 text-xs font-medium cursor-pointer animate-bounce inline-flex items-center backdrop-filter backdrop-blur-sm border border-primary/20"
             onClick={scrollToBottom}
@@ -1029,7 +1029,7 @@ export const QuickToolChat = ({
       {/* Input Area with Modern Card Styling */}
       <div
         data-input-area
-        className="p-4 border border-primary/60 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm sticky bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
+        className="p-4 border border-primary/60 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm fixed bottom-2 left-2 right-2 sm:sticky sm:bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
       >
         <div className="flex items-center gap-3 w-full">
           <div className="flex flex-col gap-2">
