@@ -104,7 +104,7 @@ const ChatSponsorAd = ({
 }) => {
   const [sponsorAd, setSponsorAd] = useState<SponsorAd | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(5); // 5 seconds timer
+  const [timeLeft, setTimeLeft] = useState(10); // 10 seconds timer
   const [isAdComplete, setIsAdComplete] = useState(isComplete);
   const { trackEvent } = useAnalytics();
   const adRef = useRef<HTMLDivElement>(null);
@@ -179,108 +179,97 @@ const ChatSponsorAd = ({
       transition={{ duration: 0.3, ease: 'easeOut' }}
       className="flex items-start gap-2 justify-start my-6"
     >
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+      <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center animate-pulse-glow">
         <Sparkles className="h-4 w-4 text-primary" />
       </div>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.2 }}
-        className="max-w-[85%] rounded-2xl rounded-tl-sm p-3.5 bg-muted/50 shadow-sm"
+        className="max-w-[75%] rounded-2xl rounded-tl-sm p-0.5 ml-1 shadow-md overflow-hidden relative animate-pulse-glow"
         onClick={handleAdClick}
         style={{ cursor: 'pointer' }}
+        whileHover={{ scale: 1.01 }}
       >
-        {/* Timer overlay */}
-        {!isAdComplete && (
-          <div className="absolute top-2 right-2">
-            <div className="relative h-8 w-8">
-              <svg className="w-8 h-8" viewBox="0 0 36 36">
-                <circle
-                  className="stroke-secondary/50 fill-none"
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  strokeWidth="3"
-                />
-                <circle
-                  className="stroke-primary fill-none transition-all duration-1000"
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  strokeWidth="3"
-                  strokeDasharray={`${2 * Math.PI * 16}`}
-                  strokeDashoffset={`${2 * Math.PI * 16 * (1 - timeLeft / 5)}`}
-                  transform="rotate(-90 18 18)"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-xs font-medium">
-                {timeLeft}
-              </div>
-            </div>
-          </div>
-        )}
-        <div className="flex items-center gap-3">
-          <div className="relative h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
-            {!isImageLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
-                <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-              </div>
-            )}
+        {/* Moving gradient border */}
+        <div className="absolute inset-0 animate-moving-gradient rounded-2xl rounded-tl-sm opacity-80"></div>
 
-            <img
-              src={sponsorAd.image_url}
-              alt="Sponsored"
-              className={cn(
-                'h-full w-full object-cover transition-opacity',
-                isImageLoaded ? 'opacity-100' : 'opacity-0'
+        {/* Shine effect overlay */}
+        <div className="absolute inset-0 animate-shine rounded-2xl rounded-tl-sm z-10 opacity-40"></div>
+
+        {/* Content container */}
+        <div className="relative bg-background/95 dark:bg-background/95 rounded-2xl rounded-tl-sm px-5 py-3 z-20">
+          <div className="flex items-center gap-3">
+            <div className="relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 shadow-md">
+              {!isImageLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
+                  <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                </div>
               )}
-              onLoad={() => setIsImageLoaded(true)}
-            />
 
-            <div className="absolute top-1 left-1">
-              <Badge
-                variant="secondary"
-                className="flex items-center gap-1 bg-primary/10 text-primary border border-primary/20 text-xs px-1.5 py-0.5"
-              >
-                <Sparkles className="h-2.5 w-2.5 text-primary" /> Ad
-              </Badge>
+              <img
+                src={sponsorAd.image_url}
+                alt="Sponsored"
+                className={cn(
+                  'h-full w-full object-cover transition-all duration-500 transform group-hover:scale-105',
+                  isImageLoaded ? 'opacity-100' : 'opacity-0'
+                )}
+                onLoad={() => setIsImageLoaded(true)}
+              />
+
+              <div className="absolute top-2 left-2">
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-1 bg-primary/20 text-primary border border-primary/30 text-xs px-2 py-0.5 font-medium shadow-sm"
+                >
+                  <Sparkles className="h-2.5 w-2.5 text-primary" /> Ad
+                </Badge>
+              </div>
             </div>
-          </div>
 
-          <div className="flex-grow">
-            <div className="flex justify-between items-start mb-1">
-              <h3 className="font-medium text-sm">{sponsorAd.title}</h3>
-            </div>
+            <div className="flex-grow">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-semibold text-base text-foreground/90">
+                  {sponsorAd.title}
+                </h3>
+              </div>
 
-            <p className="text-muted-foreground text-xs mb-2 line-clamp-2">
-              {sponsorAd.description}
-            </p>
+              <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                {sponsorAd.description}
+              </p>
 
-            <div className="flex items-center justify-between mt-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 px-2 text-xs rounded-full"
-                disabled={!isAdComplete}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isAdComplete) {
-                    window.open(sponsorAd.link, '_blank');
-                    trackEvent('sponsor_ad', 'click_url', {
-                      ad_id: sponsorAd.id,
-                      ad_title: sponsorAd.title,
-                      ad_link: sponsorAd.link,
-                      view_type: 'chat',
-                      click_type: 'button',
-                    });
-                  }
-                }}
-              >
-                {sponsorAd.link_text} <ExternalLink className="ml-1 h-3 w-3" />
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                {isAdComplete ? 'Sponsored' : `Ad ends in ${timeLeft}s`}
-              </span>
+              <div className="flex items-center justify-between mt-2">
+                <Button
+                  size="sm"
+                  variant={isAdComplete ? 'default' : 'outline'}
+                  className={cn(
+                    'h-8 px-3 text-xs rounded-full transition-all duration-300',
+                    isAdComplete
+                      ? 'bg-primary hover:bg-primary/90'
+                      : 'opacity-70'
+                  )}
+                  disabled={!isAdComplete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isAdComplete) {
+                      window.open(sponsorAd.link, '_blank');
+                      trackEvent('sponsor_ad', 'click_url', {
+                        ad_id: sponsorAd.id,
+                        ad_title: sponsorAd.title,
+                        ad_link: sponsorAd.link,
+                        view_type: 'chat',
+                        click_type: 'button',
+                      });
+                    }
+                  }}
+                >
+                  {sponsorAd.link_text}{' '}
+                  <ExternalLink className="ml-1 h-3 w-3" />
+                </Button>
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-muted/50">
+                  {isAdComplete ? 'Sponsored' : `Ad ends in ${timeLeft}s`}
+                </span>
+              </div>
             </div>
           </div>
         </div>
