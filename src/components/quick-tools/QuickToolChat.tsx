@@ -415,8 +415,13 @@ export const QuickToolChat = ({
     setIsBotTyping(true); // Set bot typing state to true
     setLatestBotMessageId(messageId); // Set the latest bot message ID
 
-    // Always scroll to bottom immediately when bot starts responding
+    // Scroll to bottom once at the beginning of typing
     scrollToBottom();
+
+    // Track if we need to scroll on next meaningful content
+    let lastScrollPosition = 0;
+    let lastScrollTime = Date.now();
+    let lastPunctuationIndex = -1;
 
     const typeNextChunk = () => {
       if (index >= content.length) {
@@ -427,6 +432,22 @@ export const QuickToolChat = ({
           )
         );
         setIsBotTyping(false); // Set bot typing state to false when complete
+
+        // Final scroll to ensure the complete message is visible
+        setTimeout(() => {
+          if (messagesContainerRef.current) {
+            const container = messagesContainerRef.current;
+            const messageElement = document.getElementById(
+              `message-${messageId}`
+            );
+            if (messageElement) {
+              messageElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+              });
+            }
+          }
+        }, 100);
         return;
       }
 
@@ -453,6 +474,51 @@ export const QuickToolChat = ({
       // Determine the delay before the next chunk
       let delay = 15 + Math.random() * 30; // Base typing speed
 
+      // Check if we've reached a meaningful point to scroll (end of sentence or paragraph)
+      const isPunctuation = ['.', '!', '?', '\n'].some((p) =>
+        nextChunk.includes(p)
+      );
+
+      // Only scroll at meaningful points (punctuation) and limit frequency
+      const currentTime = Date.now();
+      const timeSinceLastScroll = currentTime - lastScrollTime;
+
+      if (
+        isPunctuation &&
+        timeSinceLastScroll > 500 &&
+        lastPunctuationIndex !== index
+      ) {
+        lastPunctuationIndex = index;
+        lastScrollTime = currentTime;
+
+        // Use a timeout to allow the message to render before scrolling
+        setTimeout(() => {
+          if (messagesContainerRef.current) {
+            const container = messagesContainerRef.current;
+            const currentScrollPosition = container.scrollTop;
+
+            // Only scroll if user hasn't manually scrolled away
+            const userHasScrolled =
+              Math.abs(currentScrollPosition - lastScrollPosition) > 50 &&
+              lastScrollPosition !== 0;
+
+            if (!userHasScrolled) {
+              const messageElement = document.getElementById(
+                `message-${messageId}`
+              );
+              if (messageElement) {
+                messageElement.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'nearest',
+                });
+              }
+            }
+
+            lastScrollPosition = container.scrollTop;
+          }
+        }, 50);
+      }
+
       // Add random pauses at punctuation for more natural rhythm
       if (['.', '!', '?'].includes(nextChunk.charAt(nextChunk.length - 1))) {
         delay = 300 + Math.random() * 400; // Longer pause at end of sentences
@@ -468,6 +534,48 @@ export const QuickToolChat = ({
 
     // Start the typing animation immediately
     typeNextChunk();
+  };
+
+  // Effect to scroll to the latest bot message when it appears or changes
+  useEffect(() => {
+    if (latestBotMessageId) {
+      // Only scroll to message when typing is complete or at meaningful points
+      const botMessageElement = document.getElementById(
+        `message-${latestBotMessageId}`
+      );
+      if (botMessageElement && !isBotTyping) {
+        // Use a small delay to ensure the DOM has updated
+        setTimeout(() => {
+          botMessageElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+          });
+        }, 100);
+      }
+    }
+  }, [latestBotMessageId, messages, isBotTyping]);
+
+  const scrollToBottom = () => {
+    if (!messagesContainerRef.current) return;
+
+    const container = messagesContainerRef.current;
+    const inputArea = document.querySelector(
+      '[data-input-area]'
+    ) as HTMLElement;
+    const inputHeight = inputArea ? inputArea.offsetHeight : 120; // Fallback height
+
+    // Calculate the target scroll position to ensure content is visible above input
+    const targetScrollTop =
+      container.scrollHeight - container.clientHeight + inputHeight + 40;
+
+    // Use smooth scrolling with a small delay to ensure DOM has updated
+    setTimeout(() => {
+      container.scrollTo({
+        top: Math.max(0, targetScrollTop),
+        behavior: 'smooth',
+      });
+      setHasNewMessage(false);
+    }, 50);
   };
 
   // Function to stop the typing animation
@@ -890,27 +998,7 @@ export const QuickToolChat = ({
     }
   };
 
-  const scrollToBottom = () => {
-    if (!messagesContainerRef.current) return;
-
-    const container = messagesContainerRef.current;
-    const inputArea = document.querySelector(
-      '[data-input-area]'
-    ) as HTMLElement;
-    const inputHeight = inputArea ? inputArea.offsetHeight : 120; // Fallback height
-
-    // Calculate the target scroll position to ensure content is visible above input
-    const targetScrollTop =
-      container.scrollHeight - container.clientHeight + inputHeight + 40;
-
-    // Use smooth scrolling
-    container.scrollTo({
-      top: Math.max(0, targetScrollTop),
-      behavior: 'smooth',
-    });
-
-    setHasNewMessage(false);
-  };
+  // Note: The scrollToBottom function has been moved and improved above
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
