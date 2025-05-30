@@ -12,6 +12,8 @@ import {
   LogIn,
   Lock,
   ArrowUp,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
@@ -337,6 +339,9 @@ export const QuickToolChat = ({
   // Add state for message length limit
   const [isMessageTooLong, setIsMessageTooLong] = useState(false);
   const MAX_MESSAGE_LENGTH = 1000; // Set maximum character limit
+  // Add state for expanded input
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
+  const [shouldShowExpandButton, setShouldShowExpandButton] = useState(false);
 
   const { toast } = useToast();
   const { trackChatEvent } = useAIChatAnalytics();
@@ -357,6 +362,52 @@ export const QuickToolChat = ({
   const [latestBotMessageId, setLatestBotMessageId] = useState<string | null>(
     null
   );
+
+  // Function to handle textarea input and auto-resize
+  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setInput(newValue);
+    setIsMessageTooLong(newValue.length > MAX_MESSAGE_LENGTH);
+
+    const textarea = e.target;
+
+    // Check if content exceeds default max height to show expand button
+    textarea.style.height = 'auto'; // Reset height to recalculate
+    const scrollHeight = textarea.scrollHeight;
+    setShouldShowExpandButton(scrollHeight > 120);
+
+    // Only auto-resize if not in expanded mode
+    if (!isInputExpanded) {
+      // Set the height based on content with a maximum of 120px
+      textarea.style.height = `${Math.min(scrollHeight, 120)}px`;
+    } else {
+      // In expanded mode, maintain the 70vh height
+      textarea.style.height = '70vh';
+    }
+  };
+
+  // Function to toggle expanded state
+  const toggleInputExpand = () => {
+    const newExpandedState = !isInputExpanded;
+    setIsInputExpanded(newExpandedState);
+
+    // After toggling, resize the textarea and adjust the card
+    setTimeout(() => {
+      if (inputRef.current) {
+        const textarea = inputRef.current;
+
+        // When expanded, set to 70% of viewport height
+        if (newExpandedState) {
+          // Force the height to 70vh when expanded
+          textarea.style.height = '70vh';
+        } else {
+          // When collapsed, auto-resize with max height of 120px
+          textarea.style.height = 'auto';
+          textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+        }
+      }
+    }, 0);
+  };
 
   // Function to animate typing effect for a message with realistic timing
   const animateTyping = (messageId: string, content: string) => {
@@ -560,11 +611,15 @@ export const QuickToolChat = ({
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading || isMessageTooLong) return;
 
+    // Set loading state immediately to prevent multiple clicks
+    setIsLoading(true);
+
     // Check if user is authenticated and message limit
     const userMessageCount = getUserMessageCount();
     if (!user && userMessageCount >= 2) {
       // Direct redirect to auth page instead of showing dialog
       handleLoginRedirect();
+      setIsLoading(false); // Reset loading state if redirecting
       return;
     }
 
@@ -580,6 +635,7 @@ export const QuickToolChat = ({
         description: 'This tool does not have a valid prompt configured.',
         variant: 'destructive',
       });
+      setIsLoading(false); // Reset loading state if error
       return;
     }
 
@@ -621,12 +677,28 @@ export const QuickToolChat = ({
 
       setMessages((prev) => [...prev, adMessage]);
       setInput('');
+      // Auto-collapse the expanded text area after sending
+      if (isInputExpanded) {
+        setIsInputExpanded(false);
+        if (inputRef.current) {
+          inputRef.current.style.height = 'auto';
+        }
+      }
+      setIsLoading(false); // Reset loading state if showing ad
       return; // Don't process the API call yet
     }
 
     // Process the message normally if no ad should be shown
     await processUserMessage(input);
     setInput('');
+    // Auto-collapse the expanded text area after sending
+    if (isInputExpanded) {
+      setIsInputExpanded(false);
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+      }
+    }
+    // Note: setIsLoading(false) is handled inside processUserMessage
   };
 
   const processUserMessage = async (
@@ -797,6 +869,14 @@ export const QuickToolChat = ({
       // Process the user input that was waiting immediately
       await processUserMessage(pendingUserInput);
       setPendingUserInput('');
+
+      // Auto-collapse the expanded text area after processing pending input
+      if (isInputExpanded) {
+        setIsInputExpanded(false);
+        if (inputRef.current) {
+          inputRef.current.style.height = 'auto';
+        }
+      }
     }
 
     // Handle legacy pending message (for backward compatibility)
@@ -1018,7 +1098,7 @@ export const QuickToolChat = ({
       {/* Input Area with Modern Card Styling */}
       <div
         data-input-area
-        className="p-4 border border-primary/60 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm fixed bottom-7 left-2 right-2 sm:sticky sm:bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
+        className="p-4 border border-primary/90 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm fixed bottom-7 left-2 right-2 sm:sticky sm:bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
       >
         <div className="flex items-center gap-3 w-full">
           <div className="flex flex-col gap-2">
@@ -1064,14 +1144,24 @@ export const QuickToolChat = ({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex-grow relative w-full">
+            <div
+              className={`flex-grow relative w-full transition-all duration-300 ease-in-out ${
+                isInputExpanded ? 'h-[70vh]' : 'h-auto'
+              }`}
+              style={{
+                maxHeight: isInputExpanded ? '70vh' : 'auto',
+              }}
+            >
               <Textarea
                 ref={inputRef}
                 value={input}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  setInput(newValue);
-                  setIsMessageTooLong(newValue.length > MAX_MESSAGE_LENGTH);
+                onChange={handleTextareaInput}
+                style={{
+                  minHeight: '40px',
+                  height: isInputExpanded ? '70vh' : 'auto',
+                  maxHeight: isInputExpanded ? '70vh' : '120px',
+                  transition: 'all 0.3s ease-in-out',
+                  overflow: 'auto',
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder={
@@ -1097,33 +1187,61 @@ export const QuickToolChat = ({
                 rows={1}
               />
             </div>
-            <motion.div whileTap={{ scale: 0.95 }} className="flex-shrink-0">
+
+            {/* Show expand button only when content exceeds max height or when there's content and it's expanded */}
+            {((shouldShowExpandButton && input.trim().length > 0) ||
+              (isInputExpanded && input.trim().length > 0)) && (
               <Button
-                size="icon"
-                onClick={
-                  !user && getUserMessageCount() >= 2
-                    ? handleLoginRedirect
-                    : handleSendMessage
-                }
-                disabled={!input.trim() || isLoading || isMessageTooLong} // Disable when message is too long
-                className={cn(
-                  'h-10 w-10 rounded-full transition-all duration-300 shadow-sm text-primary-foreground flex items-center justify-center',
-                  !user && getUserMessageCount() >= 2
-                    ? 'bg-orange-500 hover:bg-orange-600'
-                    : isMessageTooLong
-                    ? 'bg-red-500 hover:bg-red-600 cursor-not-allowed'
-                    : 'bg-primary hover:bg-primary/90'
-                )}
+                variant="ghost"
+                size="sm"
+                onClick={toggleInputExpand}
+                className="absolute top-2 right-2 h-6 w-6 p-0 rounded-full bg-background/80 hover:bg-background/90 text-muted-foreground z-10"
+                title={isInputExpanded ? 'Collapse' : 'Expand'}
               >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : !user && getUserMessageCount() >= 2 ? (
-                  <LogIn className="h-4 w-4" />
+                {isInputExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
                 ) : (
-                  <ArrowUp className="h-4 w-4" />
+                  <ChevronUp className="h-4 w-4" />
                 )}
               </Button>
-            </motion.div>
+            )}
+
+            {/* Only show send button when user has started typing */}
+            {input.trim().length > 0 && (
+              <motion.div
+                whileTap={{ scale: 0.95 }}
+                className="flex-shrink-0"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Button
+                  size="icon"
+                  onClick={
+                    !user && getUserMessageCount() >= 2
+                      ? handleLoginRedirect
+                      : handleSendMessage
+                  }
+                  disabled={!input.trim() || isLoading || isMessageTooLong} // Disable when message is too long
+                  className={cn(
+                    'h-10 w-10 transition-all duration-300 shadow-sm text-primary-foreground flex items-center justify-center',
+                    !user && getUserMessageCount() >= 2
+                      ? 'bg-orange-500 hover:bg-orange-600'
+                      : isMessageTooLong
+                      ? 'bg-red-500 hover:bg-red-600 cursor-not-allowed'
+                      : 'bg-primary hover:bg-primary/90'
+                  )}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : !user && getUserMessageCount() >= 2 ? (
+                    <LogIn className="h-4 w-4" />
+                  ) : (
+                    <ArrowUp className="h-4 w-4" />
+                  )}
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
         </div>
         <div className="flex items-center justify-center mt-2">
