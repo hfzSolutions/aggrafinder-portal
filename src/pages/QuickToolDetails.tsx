@@ -67,18 +67,25 @@ interface QuickTool {
   id: string;
   name: string;
   description: string;
-  prompt: string;
+  prompt?: string;
   category: string[];
-  is_public: boolean;
   image_url?: string;
   user_id: string;
   created_at: string;
-  updated_at: string;
-  usage_count?: number; // Add usage_count field
+  updated_at?: string;
+  usage_count?: number;
   user_profile?: {
     full_name?: string;
     avatar_url?: string;
   };
+  approval_status?: string;
+  featured?: boolean;
+  is_admin_added?: boolean;
+  pricing?: string;
+  tagline?: string;
+  tags?: string[];
+  url?: string;
+  youtube_url?: string;
 }
 
 const QuickToolDetails = () => {
@@ -289,32 +296,33 @@ const QuickToolDetails = () => {
               <div>
                 {/* Mobile Tool Header */}
                 {isMobile && (
-                  <div className="fixed top-[60px] left-0 right-0 z-50 px-3 py-1 bg-background/95 border border-border/20 backdrop-blur-sm shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 pt-1">
-                          <Badge
-                            variant="outline"
-                            className="bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/30 text-xs px-2 py-0.5 rounded-md flex items-center shrink-0"
-                          >
-                            <Zap className="h-2.5 w-2.5 mr-1" />
-                            Quick Tool: {tool.name}
-                          </Badge>
+                  <div className="fixed top-[60px] left-0 right-0 z-50 px-3 py-1 bg-background border border-border/20 shadow-sm">
+                    <Button
+                      variant="ghost"
+                      className="w-full p-0 h-auto hover:bg-transparent active:bg-muted/20"
+                      onClick={toggleInfo}
+                    >
+                      <div className="flex items-start justify-between gap-3 w-full">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 pt-1">
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/30 text-xs px-2 py-0.5 rounded-md flex items-center shrink-0"
+                            >
+                              <Zap className="h-2.5 w-2.5 mr-1" />
+                              Quick Tool: {tool.name}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="h-7 w-7 rounded-md p-0 shrink-0 flex items-center justify-center">
+                          {showInfo ? (
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 rounded-md p-0 shrink-0 hover:bg-muted/50"
-                        onClick={toggleInfo}
-                      >
-                        {showInfo ? (
-                          <ChevronUp className="h-3.5 w-3.5" />
-                        ) : (
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
-                    </div>
+                    </Button>
                     {showInfo && (
                       <div className="px-3">
                         <h1 className="text-lg font-semibold tracking-tight leading-tight truncate mt-3">

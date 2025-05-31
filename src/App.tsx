@@ -1,5 +1,4 @@
-import { Toaster } from '@/components/ui/toaster';
-import { Toaster as Sonner } from '@/components/ui/sonner';
+import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -24,7 +23,6 @@ import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import TermsOfService from '@/pages/TermsOfService';
 import CookiesPolicy from '@/pages/CookiesPolicy';
 import Support from '@/pages/Support';
-import Chat from '@/pages/Chat';
 import { ToolsCompareProvider } from './hooks/useToolsCompare';
 import { SharedChatProvider } from './contexts/SharedChatContext';
 import SharedToolChatModal from './components/tools/SharedToolChatModal';
@@ -50,8 +48,6 @@ const App = () => (
           rel="stylesheet"
         />
       </Helmet>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
         <ToolsCompareProvider>
           <SharedChatProvider>
@@ -67,7 +63,6 @@ const App = () => (
               <Route path="/tools/compare/:ids" element={<CompareTools />} />
 
               <Route path="/resources" element={<Resources />} />
-              <Route path="/chat" element={<Chat />} />
 
               <Route path="/outcomes" element={<Outcomes />} />
               <Route path="/auth" element={<Auth />} />
@@ -81,6 +76,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <Toaster richColors position="bottom-right" />
           </SharedChatProvider>
         </ToolsCompareProvider>
       </BrowserRouter>

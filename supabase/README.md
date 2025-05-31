@@ -1,6 +1,6 @@
 # Supabase Configuration
 
-This directory contains configuration and migration files for the Supabase backend used by the Aggrafinder Portal application.
+This directory contains configuration and migration files for the Supabase backend used by the DeepList AI application.
 
 ## Project Structure
 

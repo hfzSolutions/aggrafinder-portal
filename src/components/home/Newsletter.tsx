@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
-import { useScrollAnimation } from '@/utils/animations';
+import { toast } from 'sonner';
+// import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useNewsletterSubscription } from '@/hooks/useNewsletterSubscription';
 import { trackEvent } from '@/utils/analytics';
 import {
@@ -16,21 +16,16 @@ import {
 import { SectionHeader } from '@/components/ui/section-header';
 
 const Newsletter = () => {
-  const [ref, isVisible] = useScrollAnimation(0.1);
+  // const [ref, isVisible] = useScrollAnimation(0.1);
   const [email, setEmail] = useState('');
   const [isHovered, setIsHovered] = useState(false);
-  const { toast } = useToast();
   const { subscribe, isLoading } = useNewsletterSubscription();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email.trim() || !email.includes('@')) {
-      toast({
-        title: 'Invalid email',
-        description: 'Please enter a valid email address.',
-        variant: 'destructive',
-      });
+      toast.error('Please enter a valid email address.');
       return;
     }
 
@@ -39,23 +34,16 @@ const Newsletter = () => {
 
     if (success) {
       setEmail('');
-      toast({
-        title: 'Success!',
-        description: "You've been subscribed to our newsletter.",
-      });
+      toast.success("You've been subscribed to our newsletter.");
     } else {
-      toast({
-        title: 'Error',
-        description: error || 'Failed to subscribe. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error(error || 'Failed to subscribe. Please try again.');
     }
   };
 
   return (
     <section
       // @ts-ignore
-      ref={ref}
+      // ref={ref}
       className="w-full py-12 bg-gradient-to-br from-secondary/20 to-background relative overflow-hidden border-t border-b"
     >
       {/* Background decoration elements */}
@@ -88,18 +76,18 @@ const Newsletter = () => {
                 text: 'Stay Informed',
                 icon: <Sparkles className="h-4 w-4" />,
               }}
-              isVisible={isVisible}
+              // isVisible={isVisible}
               titleClassName="text-3xl md:text-4xl lg:text-5xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
               descriptionClassName="max-w-[600px] text-lg"
             />
           </div>
 
           <div
-            className={`transition-all duration-700 delay-400 ${
-              isVisible
-                ? 'opacity-100 translate-x-0'
-                : 'opacity-0 translate-x-12'
-            }`}
+          // className={`transition-all duration-700 delay-400 ${
+          //   isVisible
+          //     ? 'opacity-100 translate-x-0'
+          //     : 'opacity-0 translate-x-12'
+          // }`}
           >
             {/* Newsletter form with floating animation */}
             <div className="relative w-full max-w-md mb-8 transition-all duration-500 hover:scale-105">

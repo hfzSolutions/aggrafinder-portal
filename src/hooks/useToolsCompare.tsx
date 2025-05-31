@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { AITool } from '@/types/tools';
 
 interface ToolsCompareContextType {
@@ -24,7 +24,6 @@ export const ToolsCompareProvider = ({
 }) => {
   const MAX_COMPARE_TOOLS = 3;
   const [selectedTools, setSelectedTools] = useState<AITool[]>([]);
-  const { toast } = useToast();
   const navigate = useNavigate();
   const canCompare = selectedTools.length >= 2;
 
@@ -43,12 +42,9 @@ export const ToolsCompareProvider = ({
       // });
     } else {
       if (selectedTools.length >= MAX_COMPARE_TOOLS) {
-        toast({
-          title: 'Maximum tools reached',
-          description: `You can compare up to ${MAX_COMPARE_TOOLS} tools at once.`,
-          variant: 'destructive',
-          duration: 3000,
-        });
+        toast.error(
+          `You can compare up to ${MAX_COMPARE_TOOLS} tools at once.`
+        );
         return;
       }
 
@@ -84,12 +80,7 @@ export const ToolsCompareProvider = ({
 
   const compareTools = () => {
     if (selectedTools.length < 2) {
-      toast({
-        title: 'Select at least 2 tools',
-        description: 'You need to select at least 2 tools to compare.',
-        variant: 'destructive',
-        duration: 3000,
-      });
+      toast.error('You need to select at least 2 tools to compare.');
       return;
     }
 

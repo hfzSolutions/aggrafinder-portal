@@ -15,69 +15,39 @@ This application uses environment variables for configuration. Follow these step
 ### Required Environment Variables
 
 - `VITE_OPENROUTER_API_KEY`: Your OpenRouter API key for the chat functionality
+- `VITE_OPENROUTER_MODEL_NAME`: The model name to use with OpenRouter (e.g., "anthropic/claude-3-sonnet" or other supported models)
 
 The application uses a centralized API key stored in environment variables instead of requiring users to input their own keys.
 
-## How can I edit this code?
+### Other Environment Variables
 
-There are several ways of editing your application.
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `VITE_SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
+- `VITE_STORAGE_URL`: Your storage URL
+- `VITE_SITE_URL`: Your site URL (used instead of window.location.origin)
+- `VITE_ADMIN_EMAIL`: Admin email address
 
-**Use Lovable**
+## Getting Started
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/bef2138c-10fa-4727-8c64-95e9272e45b3) and start prompting.
+1. Install dependencies:
 
-Changes made via Lovable will be committed automatically to this repo.
+   ```bash
+   npm install
+   ```
 
-**Use your preferred IDE**
+2. Set up your environment variables as described above.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3. Start the development server:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+   ```bash
+   npm run dev
+   ```
 
-Follow these steps:
+## Contributing
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Please ensure you have all environment variables properly configured before submitting any changes.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## License
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/bef2138c-10fa-4727-8c64-95e9272e45b3) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+This project is private and confidential. All rights reserved.
