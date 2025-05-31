@@ -13,46 +13,46 @@ export function MarkdownRenderer({
   className,
 }: MarkdownRendererProps) {
   return (
-    <div className={cn('markdown-renderer', className)}>
+    <div className={cn('markdown-renderer prose max-w-none dark:prose-invert', className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           // Override default components for better styling
           h1: ({ node, ...props }) => (
-            <h1 className="text-2xl font-bold " {...props} />
+            <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />
           ),
           h2: ({ node, ...props }) => (
-            <h2 className="text-xl font-bold " {...props} />
+            <h2 className="text-xl font-bold mt-5 mb-3" {...props} />
           ),
           h3: ({ node, ...props }) => (
-            <h3 className="text-lg font-bold" {...props} />
+            <h3 className="text-lg font-bold mt-4 mb-2" {...props} />
           ),
           h4: ({ node, ...props }) => (
-            <h4 className="text-base font-bold" {...props} />
+            <h4 className="text-base font-bold mt-3 mb-2" {...props} />
           ),
           h5: ({ node, ...props }) => (
-            <h5 className="text-sm font-bold" {...props} />
+            <h5 className="text-sm font-bold mt-3 mb-1" {...props} />
           ),
           h6: ({ node, ...props }) => (
-            <h6 className="text-xs font-bold" {...props} />
+            <h6 className="text-xs font-bold mt-3 mb-1" {...props} />
           ),
-          p: ({ node, ...props }) => <p className="" {...props} />,
+          p: ({ node, ...props }) => <p className="my-3" {...props} />,
           a: ({ node, ...props }) => (
             <a className="text-primary hover:underline" {...props} />
           ),
           ul: ({ node, ...props }) => (
-            <ul className="list-disc pl-5" {...props} />
+            <ul className="list-disc pl-5 my-4 space-y-2" {...props} />
           ),
           ol: ({ node, ...props }) => (
             <ol
-              className="list-decimal pl-5 [&>li]:flex [&>li]:flex-row [&>li]:gap-2"
+              className="list-decimal pl-5 my-4 space-y-2 [&>li]:flex [&>li]:flex-row [&>li]:gap-2"
               {...props}
             />
           ),
-          li: ({ node, ...props }) => <li className="" {...props} />,
+          li: ({ node, ...props }) => <li className="mb-1" {...props} />,
           blockquote: ({ node, ...props }) => (
             <blockquote
-              className="border-l-4 border-muted pl-3 italic "
+              className="border-l-4 border-muted pl-3 italic my-4 py-1"
               {...props}
             />
           ),
@@ -68,7 +68,7 @@ export function MarkdownRenderer({
               );
             }
             return (
-              <pre className="bg-muted p-3 rounded-md overflow-x-auto ">
+              <pre className="bg-muted p-3 rounded-md overflow-x-auto my-4">
                 <code className="text-sm font-mono" {...props}>
                   {children}
                 </code>
@@ -76,7 +76,7 @@ export function MarkdownRenderer({
             );
           },
           table: ({ node, ...props }) => (
-            <div className="overflow-x-auto ">
+            <div className="overflow-x-auto my-6">
               <table className="min-w-full divide-y divide-border" {...props} />
             </div>
           ),
@@ -89,18 +89,18 @@ export function MarkdownRenderer({
           tr: ({ node, ...props }) => <tr className="" {...props} />,
           th: ({ node, ...props }) => (
             <th
-              className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
+              className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider p-2"
               {...props}
             />
           ),
           td: ({ node, ...props }) => (
-            <td className="px-3 text-sm" {...props} />
+            <td className="px-3 py-2 text-sm" {...props} />
           ),
           hr: ({ node, ...props }) => (
-            <hr className="border-t border-border" {...props} />
+            <hr className="border-t border-border my-6" {...props} />
           ),
           img: ({ node, ...props }) => (
-            <img className="max-w-full h-auto rounded-md " {...props} />
+            <img className="max-w-full h-auto rounded-md my-4" {...props} />
           ),
         }}
       >
