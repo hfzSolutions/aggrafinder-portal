@@ -1,0 +1,102 @@
+/* Markdown Renderer Styles */
+
+.markdown-renderer {
+  /* Base text styling */
+  font-size: 1rem;
+  line-height: 1.5;
+  color: inherit;
+}
+
+/* Reduce spacing between elements */
+.markdown-renderer > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-renderer > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Paragraphs */
+.markdown-renderer p {
+  margin: 0.5rem 0;
+}
+
+/* Headings */
+.markdown-renderer h1,
+.markdown-renderer h2,
+.markdown-renderer h3,
+.markdown-renderer h4,
+.markdown-renderer h5,
+.markdown-renderer h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Tables */
+.markdown-renderer table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.75rem 0;
+}
+
+.markdown-renderer table th,
+.markdown-renderer table td {
+  border: 1px solid hsl(var(--border));
+}
+
+/* Code blocks */
+.markdown-renderer pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+}
+
+/* Inline code */
+.markdown-renderer :not(pre) > code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+/* Blockquotes */
+.markdown-renderer blockquote {
+  border-left: 4px solid hsl(var(--border));
+  padding-left: 0.75rem;
+  font-style: italic;
+  margin: 0.75rem 0;
+}
+
+/* Lists */
+.markdown-renderer ul,
+.markdown-renderer ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.markdown-renderer li {
+  margin: 0.25rem 0;
+}
+
+.markdown-renderer li > ul,
+.markdown-renderer li > ol {
+  margin: 0.25rem 0;
+}
+
+/* Horizontal rule */
+.markdown-renderer hr {
+  border: 0;
+  border-top: 1px solid hsl(var(--border));
+  margin: 0.75rem 0;
+}
+
+/* Images */
+.markdown-renderer img {
+  max-width: 100%;
+  height: auto;
+  margin: 0.75rem 0;
+}

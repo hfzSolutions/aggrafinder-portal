@@ -17,12 +17,14 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { containsMarkdown, processText } from '@/lib/markdown';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useQuickToolUsage } from '@/hooks/useQuickToolUsage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -831,6 +833,9 @@ export const QuickToolChat = ({
         throw new Error('Configuration error');
       }
 
+      // Prepare optimized conversation history
+      const optimizedMessages = prepareConversationHistory(messages, userInput);
+
       // Call OpenRouter API
       const response = await fetch(
         'https://openrouter.ai/api/v1/chat/completions',
@@ -847,32 +852,27 @@ export const QuickToolChat = ({
             messages: [
               {
                 role: 'system',
-                content: `You are an AI assistant helping users with ${toolName}. Keep responses direct and easy to read:
-                  1. Use plain text and bullet points (• ) for lists
-                  2. No markdown, tables, or complex formatting
-                  3. Start each major point with a clear label (e.g. "Free Tier:", "Key Features:", etc.)
-                  4. Get straight to the point without introductions
-                  5. Use line breaks to separate sections
+                content: `You are an AI assistant helping users with ${toolName}. Follow these guidelines to provide direct, specific answers:
+                  1. Break down complex problems step by step
+                  2. Be concise - no introductions or unnecessary explanations
+                  3. Focus only on what the user specifically asked for
+                  4. Use line breaks to separate sections
                   ${toolPrompt}
-                  \n\nIMPORTANT: Focus on being helpful and direct. Format multiple items as bullet points with a • symbol.`,
+                  
+                  IMPORTANT: 
+                  - Answer directly what was asked, nothing more
+                  - If unsure about a specific detail, say so rather than guessing
+                  - Consider multiple approaches when relevant, then recommend the best one`,
               },
-              ...messages
-                .filter(
-                  (msg) =>
-                    (msg.role === 'user' || msg.role === 'assistant') &&
-                    msg.content.trim() !== ''
-                )
-                .map((msg) => ({
-                  role: msg.role as 'user' | 'assistant',
-                  content: msg.content,
-                })),
+              ...optimizedMessages,
               {
                 role: 'user',
                 content: userInput,
               },
             ],
-            temperature: 0.7,
-            max_tokens: 4000,
+            temperature: 0.5,
+            max_tokens: 2000,
+            top_p: 0.9,
           }),
         }
       );
@@ -1135,11 +1135,17 @@ export const QuickToolChat = ({
                         <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-300"></div>
                       </div>
                     ) : (
-                      // Once content is showing, format it and show typing cursor if still typing
+                      // Once content is showing, intelligently render it with markdown support if needed
                       <>
-                        {(message.displayContent || message.content).replace(
-                          /^[-*]\s/gm,
-                          '• '
+                        {containsMarkdown(
+                          message.displayContent || message.content
+                        ) ? (
+                          <MarkdownRenderer
+                            content={message.displayContent || message.content}
+                            className="inline-block"
+                          />
+                        ) : (
+                          processText(message.displayContent || message.content)
                         )}
                         {message.isTyping &&
                           (message.displayContent || message.content) && (
@@ -1396,3 +1402,56 @@ export const QuickToolChat = ({
 };
 
 export default QuickToolChat;
+
+// Constants for conversation management
+const MAX_CONTEXT_MESSAGES = 10; // Maximum number of messages to include in context
+const SUMMARY_REFRESH_COUNT = 5; // Number of new messages before refreshing summary
+
+// Add this function to prepare messages for the API request
+const prepareConversationHistory = (
+  messages: Message[],
+  newUserInput: string
+) => {
+  // Filter out ad messages and empty messages
+  const validMessages = messages.filter(
+    (msg) =>
+      (msg.role === 'user' || msg.role === 'assistant') &&
+      msg.content.trim() !== ''
+  );
+
+  // If we have fewer messages than our maximum, just return them all
+  if (validMessages.length <= MAX_CONTEXT_MESSAGES) {
+    return validMessages.map((msg) => ({
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content,
+    }));
+  }
+
+  // Otherwise, we need to create a summary and include only recent messages
+  // Get the most recent messages up to our limit (minus 1 to leave room for the summary)
+  const recentMessages = validMessages.slice(-(MAX_CONTEXT_MESSAGES - 1));
+
+  // Create a summary message from older messages
+  const olderMessages = validMessages.slice(
+    0,
+    validMessages.length - recentMessages.length
+  );
+  const summaryContent = `Previous conversation summary: ${olderMessages
+    .map(
+      (msg) =>
+        `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content.substring(
+          0,
+          100
+        )}${msg.content.length > 100 ? '...' : ''}`
+    )
+    .join(' | ')}`;
+
+  // Return the summary message followed by recent messages
+  return [
+    { role: 'system' as 'system', content: summaryContent },
+    ...recentMessages.map((msg) => ({
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content,
+    })),
+  ];
+};
