@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 type SupportMessage = {
@@ -38,7 +38,6 @@ type SupportMessage = {
 };
 
 export function SupportMessages() {
-  const { toast } = useToast();
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState<SupportMessage | null>(
@@ -60,11 +59,7 @@ export function SupportMessages() {
       setMessages((data as SupportMessage[]) || []);
     } catch (error) {
       console.error('Error fetching support messages:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load support messages',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load support messages');
     } finally {
       setLoading(false);
     }
@@ -89,10 +84,7 @@ export function SupportMessages() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Status updated',
-        description: `Message status changed to ${status}`,
-      });
+      toast.success(`Message status changed to ${status}`);
 
       // Update the local state
       setMessages(
@@ -107,11 +99,7 @@ export function SupportMessages() {
       );
     } catch (error) {
       console.error('Error updating message status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update message status',
-        variant: 'destructive',
-      });
+      toast.error('Failed to update message status');
     }
   };
 

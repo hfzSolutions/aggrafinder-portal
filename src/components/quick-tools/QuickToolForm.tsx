@@ -48,7 +48,6 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar } from '@/components/ui/avatar';
-import { Anthropic } from '@anthropic-ai/sdk';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -134,6 +133,57 @@ export const QuickToolForm = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const { trackChatEvent } = useAIChatAnalytics();
+
+  // OpenRouter API call helper function
+  const callOpenRouter = async (
+    messages: any[],
+    systemPrompt?: string,
+    maxTokens = 1000
+  ) => {
+    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+      throw new Error(
+        'OpenRouter API key not found. Please set VITE_OPENROUTER_API_KEY in your environment variables.'
+      );
+    }
+
+    const requestBody = {
+      model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+      messages: [
+        ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+        ...messages,
+      ],
+      max_tokens: maxTokens,
+      temperature: 0.7,
+    };
+
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin, // Required by OpenRouter
+          'X-Title': 'DeepList AI',
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `OpenRouter API error: ${response.status} - ${
+          errorData.error?.message || 'Unknown error'
+        }`
+      );
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || '';
+  };
 
   // Fetch categories from the database
   useEffect(() => {
@@ -234,12 +284,6 @@ export const QuickToolForm = ({
 
     setIsGeneratingSuggestion(true);
     try {
-      // Create Anthropic client instance
-      const anthropic = new Anthropic({
-        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        dangerouslyAllowBrowser: true,
-      });
-
       // Prepare the categories for the prompt
       const selectedCategoriesText = formData.selectedCategories.join(', ');
 
@@ -248,34 +292,25 @@ export const QuickToolForm = ({
         ? `The user has provided this additional context or requirement: "${formData.userSuggestion}". Use this information to tailor your suggestions.`
         : '';
 
-      // Call Anthropic API to generate tool suggestions
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 800,
-        temperature: 0.7,
-        system: `You are an AI assistant specializing in creating helpful AI tools that generate TEXT RESPONSES ONLY. Generate 3 straightforward and easy-to-understand AI tool ideas that would be valuable to users specifically in these categories: ${selectedCategoriesText}. ${userSuggestionText} For each tool, provide a concise name with space, brief description (max 50 words), short system prompt (max 100 words) that focuses ONLY on text generation (no audio, image, or video generation capabilities), and relevant categories. Make the tools diverse and practical within the specified categories. Be extremely concise and direct. Format your response as a JSON array with objects containing 'name', 'description', 'prompt', and 'categories' fields.`,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Generate 3 straightforward and practical AI tool ideas for these categories: ${selectedCategoriesText}${
-                  formData.userSuggestion
-                    ? ` with this specific focus: "${formData.userSuggestion}"`
-                    : ''
-                }. Be concise.`,
-              },
-            ],
-          },
-        ],
-      });
+      const systemPrompt = `You are an AI assistant specializing in creating helpful AI tools that generate TEXT RESPONSES ONLY. Generate 3 straightforward and easy-to-understand AI tool ideas that would be valuable to users specifically in these categories: ${selectedCategoriesText}. ${userSuggestionText} For each tool, provide a concise name with space, brief description (max 50 words), short system prompt (max 100 words) that focuses ONLY on text generation (no audio, image, or video generation capabilities), and relevant categories. Make the tools diverse and practical within the specified categories. Be extremely concise and direct. Format your response as a JSON array with objects containing 'name', 'description', 'prompt', and 'categories' fields.`;
+
+      const userMessage = `Generate 3 straightforward and practical AI tool ideas for these categories: ${selectedCategoriesText}${
+        formData.userSuggestion
+          ? ` with this specific focus: "${formData.userSuggestion}"`
+          : ''
+      }. Be concise.`;
+
+      // Call OpenRouter API to generate tool suggestions
+      const response = await callOpenRouter(
+        [{ role: 'user', content: userMessage }],
+        systemPrompt,
+        800
+      );
 
       // Parse the response to get the suggestions
       try {
         // Extract JSON array from the response
-        const content = response.content[0].text.trim();
-        const jsonMatch = content.match(/\[\s*\{.*\}\s*\]/s);
+        const jsonMatch = response.match(/\[\s*\{.*\}\s*\]/s);
 
         if (jsonMatch) {
           const parsedSuggestions = JSON.parse(jsonMatch[0]);
@@ -503,43 +538,30 @@ export const QuickToolForm = ({
     trackChatEvent('test_quick_tool', 'message_sent');
 
     try {
-      // Create Anthropic client instance
-      const anthropic = new Anthropic({
-        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        dangerouslyAllowBrowser: true,
-      });
+      // Prepare conversation history for OpenRouter
+      const conversationMessages = [
+        ...messages
+          .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+          .map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+        {
+          role: 'user',
+          content: testInput,
+        },
+      ];
 
-      // Call Anthropic API directly
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 500, // Reduced token limit for shorter responses
-        temperature: 0.7,
-        system:
-          formData.prompt +
-          "\n\nIMPORTANT: Keep your responses helpful and engaging. Focus on providing valuable assistance based on the tool's purpose. You can ONLY generate text responses - do not attempt to generate images, audio, or video content. Always be direct and straight to the point. Avoid unnecessary explanations, introductions, or verbose language. Get to the answer immediately without wasting time.",
-        messages: [
-          ...messages
-            .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
-            .map((msg) => ({
-              role: msg.role as 'user' | 'assistant',
-              content: [
-                {
-                  type: 'text',
-                  text: msg.content,
-                },
-              ],
-            })),
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: testInput,
-              },
-            ],
-          },
-        ],
-      });
+      const systemPrompt =
+        formData.prompt +
+        "\n\nIMPORTANT: Keep your responses helpful and engaging. Focus on providing valuable assistance based on the tool's purpose. You can ONLY generate text responses - do not attempt to generate images, audio, or video content. Always be direct and straight to the point. Avoid unnecessary explanations, introductions, or verbose language. Get to the answer immediately without wasting time.";
+
+      // Call OpenRouter API directly
+      const response = await callOpenRouter(
+        conversationMessages,
+        systemPrompt,
+        500
+      );
 
       // Truncate long responses to keep them concise
       const truncateResponse = (text: string, maxLength = 500) => {
@@ -557,7 +579,7 @@ export const QuickToolForm = ({
       };
 
       // Get the truncated response
-      const truncatedContent = truncateResponse(response.content[0].text);
+      const truncatedContent = truncateResponse(response);
 
       // Create the assistant message with typing animation
       const assistantMessage: Message = {
@@ -576,7 +598,13 @@ export const QuickToolForm = ({
       animateTyping(assistantMessage.id, assistantMessage.content);
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to get a response. Please try again.');
+      if (error.message.includes('API key')) {
+        toast.error(
+          'OpenRouter API key not configured. Please check your environment variables.'
+        );
+      } else {
+        toast.error('Failed to get a response. Please try again.');
+      }
       setTypingIndicator(false);
     } finally {
       setIsTesting(false);
@@ -691,18 +719,6 @@ export const QuickToolForm = ({
       </Dialog>
 
       {/* Main Content */}
-      {/* <div className="mb-4 bg-primary/5 p-4 rounded-lg border border-primary/10">
-        <h2 className="text-lg font-medium flex items-center gap-2 mb-2">
-          <Wand2 className="h-5 w-5 text-primary" />
-          {editMode ? 'Edit Your AI Tool' : 'Create Your Own AI Tool'}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Create a custom AI tool that generates text responses to help with
-          specific tasks. Fill in the details below, then test your tool before
-          saving.
-        </p>
-      </div> */}
-
       <form id="quickToolForm" onSubmit={handleSubmit}>
         <Tabs
           value={activeTab}

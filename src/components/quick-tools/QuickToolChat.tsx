@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Send,
   Loader2,
@@ -15,12 +16,10 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useQuickToolUsage } from '@/hooks/useQuickToolUsage';
-import Anthropic from '@anthropic-ai/sdk';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
@@ -343,7 +342,6 @@ export const QuickToolChat = ({
   const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [shouldShowExpandButton, setShouldShowExpandButton] = useState(false);
 
-  const { toast } = useToast();
   const { trackChatEvent } = useAIChatAnalytics();
   const { incrementUsageCount } = useQuickToolUsage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -719,94 +717,86 @@ export const QuickToolChat = ({
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading || isMessageTooLong) return;
 
-    // Set loading state immediately to prevent multiple clicks
-    setIsLoading(true);
+    // Store the input value and clear it immediately
+    const userInputText = input.trim();
+    setInput(''); // Clear input immediately
 
-    // Check if user is authenticated and message limit
-    const userMessageCount = getUserMessageCount();
-    if (!user && userMessageCount >= 2) {
-      // Direct redirect to auth page instead of showing dialog
-      handleLoginRedirect();
-      setIsLoading(false); // Reset loading state if redirecting
-      return;
+    // Reset textarea height to default
+    if (inputRef.current) {
+      inputRef.current.style.height = '40px';
     }
 
-    // Set isFirstVisit to false when user sends their first message
-    if (isFirstVisit) {
-      setIsFirstVisit(false);
-    }
-
-    // Validate prompt first
-    if (!toolPrompt.trim()) {
-      toast({
-        title: 'Error',
-        description: 'This tool does not have a valid prompt configured.',
-        variant: 'destructive',
-      });
-      setIsLoading(false); // Reset loading state if error
-      return;
-    }
-
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString() + '-user',
-      role: 'user',
-      content: input,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-
-    // Increment persistent user message count
-    setPersistentUserMessageCount((prev) => prev + 1);
-
-    setIsBotTyping(true);
-
-    // Check for ads availability before deciding whether to show an ad
-    const { available } = await checkForSponsorAds();
-    setIsAdAvailable(available);
-
-    // Check if we should show an ad first (70% probability after first message)
-    // Only check if ads are available based on freshly checked state
-    const shouldShowAd =
-      messages.length >= 1 && Math.random() < 0.7 && available;
-
-    if (shouldShowAd && !isShowingAd) {
-      // Store the user input to process after ad completes
-      setPendingUserInput(input);
-      setIsShowingAd(true);
-
-      // Add ad message to the conversation
-      const adMessage: Message = {
-        id: Date.now().toString() + '-ad',
-        role: 'ad',
-        content: '',
-        isAdComplete: false,
-      };
-
-      setMessages((prev) => [...prev, adMessage]);
-      setInput('');
-      // Auto-collapse the expanded text area after sending
-      if (isInputExpanded) {
-        setIsInputExpanded(false);
-        if (inputRef.current) {
-          inputRef.current.style.height = 'auto';
-        }
-      }
-      setIsLoading(false); // Reset loading state if showing ad
-      return; // Don't process the API call yet
-    }
-
-    // Process the message normally if no ad should be shown
-    await processUserMessage(input);
-    setInput('');
     // Auto-collapse the expanded text area after sending
     if (isInputExpanded) {
       setIsInputExpanded(false);
-      if (inputRef.current) {
-        inputRef.current.style.height = 'auto';
-      }
     }
-    // Note: setIsLoading(false) is handled inside processUserMessage
+
+    try {
+      // Set loading state immediately to prevent multiple clicks
+      setIsLoading(true);
+
+      // Check if user is authenticated and message limit
+      const userMessageCount = getUserMessageCount();
+      if (!user && userMessageCount >= 2) {
+        handleLoginRedirect();
+        return;
+      }
+
+      // Set isFirstVisit to false when user sends their first message
+      if (isFirstVisit) {
+        setIsFirstVisit(false);
+      }
+
+      // Validate prompt first
+      if (!toolPrompt.trim()) {
+        toast.error('This tool does not have a valid prompt configured.');
+        return;
+      }
+
+      // Add user message
+      const userMessage: Message = {
+        id: Date.now().toString() + '-user',
+        role: 'user',
+        content: userInputText,
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+
+      // Increment persistent user message count
+      setPersistentUserMessageCount((prev) => prev + 1);
+
+      // Check for ads availability before deciding whether to show an ad
+      const { available } = await checkForSponsorAds();
+      setIsAdAvailable(available);
+
+      // Check if we should show an ad first (70% probability after first message)
+      const shouldShowAd =
+        messages.length >= 1 && Math.random() < 0.7 && available;
+
+      if (shouldShowAd && !isShowingAd) {
+        setPendingUserInput(userInputText);
+        setIsShowingAd(true);
+
+        const adMessage: Message = {
+          id: Date.now().toString() + '-ad',
+          role: 'ad',
+          content: '',
+          isAdComplete: false,
+        };
+
+        setMessages((prev) => [...prev, adMessage]);
+        return;
+      }
+
+      await processUserMessage(userInputText);
+    } catch (error) {
+      console.error('Error in handleSendMessage:', error);
+      toast.error(
+        'An error occurred while sending the message. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const processUserMessage = async (
@@ -814,6 +804,7 @@ export const QuickToolChat = ({
     existingTypingId?: string
   ) => {
     setIsLoading(true);
+    setIsBotTyping(true);
 
     // Track when user sends a message for analytics
     trackChatEvent(toolId, 'message_sent');
@@ -830,54 +821,84 @@ export const QuickToolChat = ({
     // Only add new message if we don't have existing typing message
     if (!existingTypingId) {
       setMessages((prev) => [...prev, assistantMessage]);
-      setLatestBotMessageId(assistantMessage.id); // Set the latest bot message ID
+      setLatestBotMessageId(assistantMessage.id);
     }
 
     try {
-      // Create Anthropic client instance
-      const anthropic = new Anthropic({
-        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        dangerouslyAllowBrowser: true,
-      });
+      if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
+        // Log detailed error for developers
+        console.error('OpenRouter API key is missing');
+        throw new Error('Configuration error');
+      }
 
-      // Call Anthropic API directly
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 800,
-        temperature: 0.7,
-        system:
-          toolPrompt +
-          "\n\nIMPORTANT: Keep your responses helpful and engaging. Focus on providing valuable assistance based on the tool's purpose. You can ONLY generate text responses - do not attempt to generate images, audio, or video content. Always be direct and straight to the point. Avoid unnecessary explanations, introductions, or verbose language. Get to the answer immediately without wasting time.",
-        messages: [
-          ...messages
-            .filter(
-              (msg) =>
-                (msg.role === 'user' || msg.role === 'assistant') &&
-                msg.content.trim() !== '' // Filter out empty messages
-            )
-            .map((msg) => ({
-              role: msg.role as 'user' | 'assistant',
-              content: [
-                {
-                  type: 'text',
-                  text: msg.content,
-                },
-              ],
-            })),
-          {
-            role: 'user',
-            content: [
+      // Call OpenRouter API
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'DeepList AI',
+          },
+          body: JSON.stringify({
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            messages: [
               {
-                type: 'text',
-                text: userInput,
+                role: 'system',
+                content: `You are an AI assistant helping users with ${toolName}. Keep responses direct and easy to read:
+                  1. Use plain text and bullet points (• ) for lists
+                  2. No markdown, tables, or complex formatting
+                  3. Start each major point with a clear label (e.g. "Free Tier:", "Key Features:", etc.)
+                  4. Get straight to the point without introductions
+                  5. Use line breaks to separate sections
+                  ${toolPrompt}
+                  \n\nIMPORTANT: Focus on being helpful and direct. Format multiple items as bullet points with a • symbol.`,
+              },
+              ...messages
+                .filter(
+                  (msg) =>
+                    (msg.role === 'user' || msg.role === 'assistant') &&
+                    msg.content.trim() !== ''
+                )
+                .map((msg) => ({
+                  role: msg.role as 'user' | 'assistant',
+                  content: msg.content,
+                })),
+              {
+                role: 'user',
+                content: userInput,
               },
             ],
-          },
-        ],
-      });
+            temperature: 0.7,
+            max_tokens: 4000,
+          }),
+        }
+      );
 
-      // Get the response content
-      const responseContent = response.content[0].text;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+
+        // Log detailed error for developers
+        console.error('OpenRouter API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
+
+        throw new Error('API request failed');
+      }
+
+      const data = await response.json();
+
+      if (!data.choices?.[0]?.message?.content) {
+        // Log detailed error for developers
+        console.error('Empty or invalid response from OpenRouter:', data);
+        throw new Error('Invalid response');
+      }
+
+      const responseContent = data.choices[0].message.content;
 
       // Update the existing assistant message with the response content
       setMessages((prev) =>
@@ -889,11 +910,9 @@ export const QuickToolChat = ({
       );
 
       // Only start typing animation if we're not using an existing typing message
-      // This prevents duplicate responses
       if (!existingTypingId) {
         animateTyping(assistantMessage.id, responseContent);
       } else {
-        // If we're using an existing typing message, just update it directly
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantMessage.id
@@ -904,16 +923,30 @@ export const QuickToolChat = ({
         setIsBotTyping(false);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to get a response. Please try again.',
-        variant: 'destructive',
-      });
+      // Log the detailed error for developers
+      console.error('Error in chat process:', error);
+
+      // Show a simple, user-friendly error message
+      toast.error(
+        "Sorry, I'm having trouble responding right now. Please try again in a moment.",
+        {
+          duration: 4000,
+        }
+      );
+
       // Remove the assistant message if there was an error
       setMessages((prev) =>
         prev.filter((msg) => msg.id !== assistantMessage.id)
       );
+
+      // Reset all states
+      setIsBotTyping(false);
+      setIsShowingAd(false);
+      setPendingMessage(null);
+      setPendingUserInput('');
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -935,10 +968,10 @@ export const QuickToolChat = ({
   };
 
   const handleClearChat = () => {
-    const initialMessages = [
+    const initialMessages: Message[] = [
       {
         id: '1',
-        role: 'assistant',
+        role: 'assistant' as const,
         content: `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
       },
     ];
@@ -947,14 +980,11 @@ export const QuickToolChat = ({
     setPendingMessage(null);
     setIsShowingAd(false);
     setPendingUserInput('');
-    setIsFirstVisit(true); // Reset isFirstVisit when chat is cleared
-    setIsResetDialogOpen(false); // Close the dialog after reset
-    // Don't reset persistent user message count to prevent cheating
-    // Only reset if user is authenticated
+    setIsFirstVisit(true);
+    setIsResetDialogOpen(false);
     if (user) {
       setPersistentUserMessageCount(0);
     }
-    // Clear saved chat history
     localStorage.removeItem(`chat-history-${toolId}`);
   };
 
@@ -1094,12 +1124,7 @@ export const QuickToolChat = ({
                       : 'bg-muted/80 rounded-tl-sm'
                   )}
                 >
-                  <p
-                    className={cn(
-                      'text-base whitespace-pre-wrap leading-relaxed break-words',
-                      message.content
-                    )}
-                  >
+                  <p className="text-base whitespace-pre-wrap leading-relaxed break-words">
                     {message.role === 'user' ? (
                       message.content
                     ) : !message.displayContent && message.isTyping ? (
@@ -1110,9 +1135,12 @@ export const QuickToolChat = ({
                         <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-300"></div>
                       </div>
                     ) : (
-                      // Once content is showing, show it along with the typing cursor if still typing
+                      // Once content is showing, format it and show typing cursor if still typing
                       <>
-                        {message.displayContent || message.content}
+                        {(message.displayContent || message.content).replace(
+                          /^[-*]\s/gm,
+                          '• '
+                        )}
                         {message.isTyping &&
                           (message.displayContent || message.content) && (
                             <span className="animate-pulse ml-0.5">▋</span>
@@ -1120,7 +1148,6 @@ export const QuickToolChat = ({
                       </>
                     )}
                   </p>
-                  {/* Removed the visual scroll indicator gradient div */}
                 </motion.div>
                 {message.role === 'user' && (
                   <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 items-center justify-center text-primary-foreground">

@@ -11,7 +11,7 @@ import {
   Info,
   ExternalLink,
 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { AITool } from '@/types/tools';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
 import {
@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Anthropic } from '@anthropic-ai/sdk';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Tooltip,
@@ -144,63 +143,60 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
     setLoadingSuggestions(true);
 
     try {
-      // Create Anthropic client instance
-      const anthropic = new Anthropic({
-        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        dangerouslyAllowBrowser: true,
-      });
+      if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
+        throw new Error('OpenRouter API key is missing');
+      }
 
       // Prepare the conversation history for context
       const conversationHistory = messages.map((msg) => msg.content).join('\n');
 
-      // Call Anthropic API to generate contextual suggestions
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 150,
-        temperature: 0.7,
-        system: `You are an AI assistant helping users learn about ${tool.name}, an AI tool. Based on the conversation history, generate 3-4 follow-up questions the user might want to ask next. Make these questions diverse, natural, and relevant to the conversation context. Each question should be concise (under 10 words if possible). Return ONLY the questions as a JSON array of strings with no additional text.`,
-        messages: [
-          {
-            role: 'user',
-            content: [
+      // Call OpenRouter API to generate contextual suggestions
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'DeepList AI',
+          },
+          body: JSON.stringify({
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            messages: [
               {
-                type: 'text',
-                text: `Here's the conversation so far about ${tool.name}:\n${conversationHistory}\n\nGenerate 3-4 natural follow-up questions as JSON array.`,
+                role: 'system',
+                content: `You are an AI assistant helping users learn about ${tool.name}, an AI tool. Based on the conversation history, generate 3-4 follow-up questions the user might want to ask next. Make these questions diverse, natural, and relevant to the conversation context. Each question should be concise (under 10 words if possible). Return ONLY the questions as a JSON array of strings with no additional text.`,
+              },
+              {
+                role: 'user',
+                content: `Here's the conversation so far about ${tool.name}:\n${conversationHistory}\n\nGenerate 3-4 natural follow-up questions as JSON array.`,
               },
             ],
-          },
-        ],
-      });
-
-      // Parse the response to get the suggestions
-      try {
-        // Extract JSON array from the response
-        const content = response.content[0].text.trim();
-        const jsonMatch = content.match(/\[.*\]/s);
-
-        if (jsonMatch) {
-          const parsedSuggestions = JSON.parse(jsonMatch[0]);
-          if (
-            Array.isArray(parsedSuggestions) &&
-            parsedSuggestions.length > 0
-          ) {
-            setSuggestions(parsedSuggestions.slice(0, 4)); // Limit to 4 suggestions
-            return;
-          }
+            temperature: 0.7,
+            max_tokens: 150,
+          }),
         }
+      );
 
-        // Fallback if parsing fails
-        throw new Error('Failed to parse suggestions');
-      } catch (parseError) {
-        console.error('Error parsing suggestions:', parseError);
-        // Fallback to default suggestions if parsing fails
-        setSuggestions([
-          `What can I do with ${tool.name}?`,
-          `How much does ${tool.name} cost?`,
-          `What are the main features of ${tool.name}?`,
-          `How does ${tool.name} compare to alternatives?`,
-        ]);
+      if (!response.ok) {
+        throw new Error('Failed to get response from OpenRouter');
       }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content.trim() || '';
+      const jsonMatch = content.match(/\[.*\]/s);
+
+      if (jsonMatch) {
+        const parsedSuggestions = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(parsedSuggestions) && parsedSuggestions.length > 0) {
+          setSuggestions(parsedSuggestions.slice(0, 4)); // Limit to 4 suggestions
+          return;
+        }
+      }
+
+      // Fallback if parsing fails
+      throw new Error('Failed to parse suggestions');
     } catch (error) {
       console.error('Error generating suggestions:', error);
       // Fallback to default suggestions if API call fails
@@ -211,7 +207,6 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
         `How does ${tool.name} compare to alternatives?`,
       ]);
     } finally {
-      // Always reset loading state
       setLoadingSuggestions(false);
     }
   }, [messages, tool.name, isLoading]);
@@ -223,7 +218,6 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
     }
   }, [isOpen, messages, suggestions.length, generateSuggestions]);
 
-  const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -281,51 +275,64 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
         tool.pricing
       }\nWebsite URL: ${tool.url}`;
 
-      // Create Anthropic client instance
-      const anthropic = new Anthropic({
-        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        dangerouslyAllowBrowser: true,
-      });
+      if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
+        throw new Error('OpenRouter API key is missing');
+      }
 
-      // Call Anthropic API directly
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 1000,
-        temperature: 0.7,
-        system: `You are an AI assistant helping users with information about AI tools. You are currently providing information about ${tool.name}. Here is information about the tool: ${toolContext}. Keep your responses concise and focused on this specific tool.`,
-        messages: [
-          ...messages.map((msg) => ({
-            role: msg.role as 'user' | 'assistant',
-            content: [
-              {
-                type: 'text',
-                text: msg.content,
-              },
-            ],
-          })),
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: input,
-              },
-            ],
+      // Call OpenRouter API
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'DeepList AI',
           },
-        ],
-      });
+          body: JSON.stringify({
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            messages: [
+              {
+                role: 'system',
+                content: `You are an AI assistant helping users learn about ${tool.name}. Here is information about the tool: ${toolContext}
 
-      // Create the assistant message with typing animation
+Keep responses direct and easy to read:
+1. Use plain text and bullet points (•) for lists
+2. No markdown, tables, or complex formatting 
+3. Start each major point with a clear label (e.g. "Free Tier:", "Key Features:", etc.)
+4. Get straight to the point without introductions
+5. Use line breaks to separate sections
+
+Keep your responses concise and focused on this specific tool.`,
+              },
+              ...messages.map((msg) => ({
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
+              })),
+            ],
+            temperature: 0.7,
+            max_tokens: 1000,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from OpenRouter');
+      }
+
+      const data = await response.json();
+      const responseContent = data.choices[0]?.message?.content || '';
+
+      // Create new assistant message
       const assistantMessage: Message = {
-        id: Date.now().toString(),
+        id: Date.now().toString() + '-assistant',
         role: 'assistant',
-        content: response.content[0].text,
+        content: responseContent,
         isTyping: true,
         displayContent: '',
       };
 
-      // Hide typing indicator and add the message with empty content initially
-      setTypingIndicator(false);
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Start the typing animation using the reusable function
@@ -337,11 +344,7 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
       }, 500); // Small delay to ensure typing animation has started
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to get a response. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Failed to get a response. Please try again.');
     } finally {
       setIsLoading(false);
       setTypingIndicator(false);
@@ -365,7 +368,7 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
     }, 10);
 
     // Track suggestion usage
-    trackChatEvent(tool.id, 'suggestion_used');
+    trackChatEvent(tool.id, 'message_sent');
   };
 
   return (

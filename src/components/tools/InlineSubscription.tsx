@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
-import { Mail } from 'lucide-react';
+import { toast } from 'sonner';
 import { useNewsletterSubscription } from '@/hooks/useNewsletterSubscription';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils';
+import { Mail } from 'lucide-react';
 
 interface InlineSubscriptionProps {
   viewType?: 'grid' | 'list';
@@ -17,7 +17,6 @@ const InlineSubscription = ({
   compact = false,
 }: InlineSubscriptionProps) => {
   const [email, setEmail] = useState('');
-  const { toast } = useToast();
   const { subscribe, isLoading } = useNewsletterSubscription();
 
   const { trackEvent } = useAnalytics();
@@ -30,11 +29,7 @@ const InlineSubscription = ({
     });
 
     if (!email.trim() || !email.includes('@')) {
-      toast({
-        title: 'Invalid email',
-        description: 'Please enter a valid email address.',
-        variant: 'destructive',
-      });
+      toast.error('Please enter a valid email address.');
       return;
     }
 
@@ -42,16 +37,9 @@ const InlineSubscription = ({
 
     if (success) {
       setEmail('');
-      toast({
-        title: 'Success!',
-        description: "You've been subscribed to our newsletter.",
-      });
+      toast.success("You've been subscribed to our newsletter.");
     } else {
-      toast({
-        title: 'Error',
-        description: error || 'Failed to subscribe. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error(error || 'Failed to subscribe. Please try again.');
     }
   };
 

@@ -6,11 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 const Support = () => {
-  const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -38,11 +37,9 @@ const Support = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Message sent',
-        description:
-          "We've received your message and will get back to you soon.",
-      });
+      toast.success(
+        "We've received your message and will get back to you soon."
+      );
 
       // Reset form
       setName('');
@@ -51,12 +48,9 @@ const Support = () => {
       setMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description:
-          'There was a problem sending your message. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error(
+        'There was a problem sending your message. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }

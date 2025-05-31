@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AI Chat feature allows users to directly interact with an AI assistant from any tool card in the AggraFinder portal. This feature is designed to increase user retention by providing immediate assistance and information about specific AI tools without requiring users to navigate away from the current view.
+The AI Chat feature allows users to directly interact with an AI assistant from any tool card in the DeepList AI. This feature is designed to increase user retention by providing immediate assistance and information about specific AI tools without requiring users to navigate away from the current view.
 
 ## Features
 

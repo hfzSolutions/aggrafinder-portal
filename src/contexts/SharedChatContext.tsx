@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AITool } from '@/types/tools';
-import { Anthropic } from '@anthropic-ai/sdk';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
 
 type Message = {
@@ -45,9 +44,11 @@ export const useSharedChat = () => {
   return context;
 };
 
-export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
+export function SharedChatProvider({
   children,
-}) => {
+}: {
+  children: React.ReactNode;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +59,6 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
-  const { toast } = useToast();
   const { trackChatEvent } = useAIChatAnalytics();
 
   // Function to animate typing effect for a message
@@ -126,14 +126,11 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     try {
-      // Create Anthropic client instance
-      const anthropic = new Anthropic({
-        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        dangerouslyAllowBrowser: true,
-      });
+      if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
+        throw new Error('OpenRouter API key is missing');
+      }
 
       // Prepare the conversation history for context
-      // Filter messages related to the current tool
       const toolMessages = messages.filter(
         (msg) => !msg.toolId || msg.toolId === currentTool.id
       );
@@ -141,33 +138,50 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
         .map((msg) => msg.content)
         .join('\n');
 
-      // Call Anthropic API to generate contextual suggestions
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 150,
-        temperature: 0.7,
-        system: isComparisonMode
-          ? `You are an AI assistant helping users compare multiple AI tools. Based on the conversation history, generate 3-4 follow-up questions focused on comparing the tools. Questions should help users understand differences, strengths, weaknesses, and best use cases for each tool. Each question should be concise (under 10 words if possible). Return ONLY the questions as a JSON array of strings with no additional text.`
-          : `You are an AI assistant helping users learn about ${currentTool.name}, an AI tool. Based on the conversation history, generate 3-4 follow-up questions the user might want to ask next. Make these questions diverse, natural, and relevant to the conversation context. Each question should be concise (under 10 words if possible). Return ONLY the questions as a JSON array of strings with no additional text.`,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: isComparisonMode
-                  ? `Here's the conversation so far about comparing tools:\n${conversationHistory}\n\nGenerate 3-4 natural follow-up comparison questions as JSON array.`
-                  : `Here's the conversation so far about ${currentTool.name}:\n${conversationHistory}\n\nGenerate 3-4 natural follow-up questions as JSON array.`,
-              },
-            ],
+      // Call OpenRouter API to generate contextual suggestions
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'DeepList AI',
           },
-        ],
-      });
+          body: JSON.stringify({
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            messages: [
+              {
+                role: 'system',
+                content: isComparisonMode
+                  ? 'You are an AI assistant helping users compare different AI tools. Generate 4 natural follow-up questions as a JSON array of strings. Do not use markdown or meta-commentary.'
+                  : `You are an AI assistant helping users with ${currentTool.name}. Generate 4 natural follow-up questions as a JSON array of strings. Do not use markdown or meta-commentary.`,
+              },
+              ...messages.map((msg) => ({
+                role: msg.role as 'user' | 'assistant',
+                content: cleanAIResponse(msg.content),
+              })),
+            ],
+            temperature: 0.7,
+            max_tokens: 1000,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from OpenRouter');
+      }
+
+      const data = await response.json();
+      const responseContent = cleanAIResponse(
+        data.choices[0]?.message?.content || ''
+      );
 
       // Parse the response to get the suggestions
       try {
         // Extract JSON array from the response
-        const content = response.content[0].text.trim();
+        const content = responseContent.trim();
         const jsonMatch = content.match(/\[.*\]/s);
 
         if (jsonMatch) {
@@ -329,8 +343,29 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
     setInput('');
   };
 
+  const cleanAIResponse = (response: string): string => {
+    // Remove markdown headers
+    let cleaned = response.replace(/^#{1,6}\s+.+$/gm, '');
+
+    // Remove thinking/planning meta-commentary
+    cleaned = cleaned.replace(/(<think>|<\/think>)/g, '');
+    cleaned = cleaned.replace(/^(\[.*?\]|\{.*?\}|\(.*?\))$/gm, '');
+
+    // Remove emojis at the start of lines
+    cleaned = cleaned.replace(/^[^\w\s]*([🤔💭✍️🔍]+\s*)+/gm, '');
+
+    // Trim and remove extra newlines
+    cleaned = cleaned.trim().replace(/\n{3,}/g, '\n\n');
+
+    return cleaned;
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading || !currentTool) return;
+
+    // Determine if we're in comparison mode by checking for multiple tools
+    const isComparisonMode =
+      comparisonTools !== null && comparisonTools.length > 1;
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -347,84 +382,58 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
     setTypingIndicator(true);
 
     // Track message sent event
-    trackChatEvent(currentTool.id, 'send_message');
+    trackChatEvent(currentTool.id, 'message_sent');
 
     try {
-      // Create Anthropic client instance
-      const anthropic = new Anthropic({
-        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        dangerouslyAllowBrowser: true,
-      });
-
-      // Prepare the conversation history for context
-      const conversationHistory = messages
-        .filter((msg) => !msg.toolId || msg.toolId === currentTool.id)
-        .map((msg) => ({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-        }));
-
-      // Add the new user message
-      conversationHistory.push({
-        role: 'user',
-        content: input.trim(),
-      });
-
-      // Check if this is a comparison chat with multiple tools
-      const isComparisonMode = messages.some((msg) =>
-        msg.id?.includes('welcome-comparison')
+      // Call OpenRouter API
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'DeepList AI',
+          },
+          body: JSON.stringify({
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            messages: [
+              {
+                role: 'system',
+                content: isComparisonMode
+                  ? `You are an AI assistant helping users compare multiple AI tools. Keep responses concise and factual. Focus on key differences and practical insights. Do not use markdown formatting or meta-commentary.`
+                  : `You are an AI assistant helping users learn about ${currentTool.name}. Keep responses concise and direct. Do not use markdown formatting or meta-commentary.`,
+              },
+              ...messages.map((msg) => ({
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
+              })),
+            ],
+            temperature: 0.7,
+            max_tokens: 1000,
+          }),
+        }
       );
 
-      // Call Anthropic API
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 1000,
-        temperature: 0.7,
-        system: isComparisonMode
-          ? `You are an AI assistant helping users compare multiple AI tools. 
-          
-          You're currently in a comparison chat where the user is comparing different tools. Your goal is to provide helpful, comparative analysis between the tools, highlighting their differences, strengths, weaknesses, and best use cases.
-          
-          When comparing tools, consider:
-          - Feature differences and similarities
-          - Pricing and value proposition
-          - Target audience and use cases
-          - Unique selling points of each tool
-          - Limitations of each tool
-          
-          Present balanced comparisons that help the user make an informed decision based on their specific needs. When appropriate, you can recommend which tool might be better for specific use cases.
-          
-          Keep your responses conversational, helpful, and structured for easy comparison.`
-          : `You are an AI assistant helping users learn about ${
-              currentTool.name
-            }, an AI tool. 
-            
-            Here's what you know about ${currentTool.name}:
-            - Description: ${currentTool.description}
-            - Category: ${currentTool.category.join(', ')}
-            - Pricing: ${currentTool.pricing}
-            - Website: ${currentTool.url}
-            
-            Your goal is to provide helpful, accurate information about this tool. If you don't know something specific about the tool that wasn't provided in the context, you can acknowledge that limitation and offer to help with what you do know.
-            
-            Keep your responses conversational, helpful, and concise (generally under 150 words unless more detail is specifically requested).`,
-        messages: conversationHistory,
-      });
+      if (!response.ok) {
+        throw new Error('Failed to get response from OpenRouter');
+      }
 
-      // Get the assistant's response
-      const assistantResponse = response.content[0].text;
+      const data = await response.json();
+      const assistantResponse = cleanAIResponse(
+        data.choices[0]?.message?.content || ''
+      );
 
       // Create a new message with the response
       const newAssistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: assistantResponse,
-        isTyping: true, // Start with typing animation
-        displayContent: '', // Will be filled during animation
+        isTyping: true,
+        displayContent: '',
         toolId: currentTool.id,
         toolName: currentTool.name,
-        // Include tool card data in specific scenarios
-        // Only include the tool card in the first response or when specifically discussing features
         toolCard:
           messages.length <= 2 ||
           input.toLowerCase().includes('feature') ||
@@ -434,36 +443,15 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
             : undefined,
       };
 
-      // Add the assistant's message to the chat
       setMessages((prev) => [...prev, newAssistantMessage]);
-
-      // Start typing animation for the new message
       animateTyping(newAssistantMessage.id, assistantResponse);
 
-      // Generate new suggestions based on the updated conversation
       setTimeout(() => {
         generateSuggestions();
       }, 1000);
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to get a response. Please try again in a moment.',
-        variant: 'destructive',
-      });
-
-      // Add an error message to the chat
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content:
-            'I apologize, but I encountered an error processing your request. Please try again in a moment.',
-          toolId: currentTool?.id,
-          toolName: currentTool?.name,
-        },
-      ]);
+      toast('Failed to get a response. Please try again.');
     } finally {
       setIsLoading(false);
       setTypingIndicator(false);
@@ -473,13 +461,12 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleSuggestionClick = (suggestion: string) => {
     if (isLoading || !currentTool) return;
     setInput(suggestion);
-    // Use setTimeout to ensure the input is updated before sending
     setTimeout(() => {
       sendMessage();
     }, 10);
 
     // Track suggestion usage
-    trackChatEvent(currentTool.id, 'suggestion_used');
+    trackChatEvent(currentTool.id, 'message_sent');
   };
 
   // Generate initial suggestions when chat opens with a tool
@@ -516,4 +503,4 @@ export const SharedChatProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
     </SharedChatContext.Provider>
   );
-};
+}

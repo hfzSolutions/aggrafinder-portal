@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides instructions on how to set up Google Analytics 4 (GA4) for the AggraFinder Portal application.
+This document provides instructions on how to set up Google Analytics 4 (GA4) for the DeepList AI application.
 
 ## Prerequisites
 

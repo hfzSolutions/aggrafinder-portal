@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, X, MessageSquare, Loader2 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { AITool } from '@/types/tools';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
 import { getSiteUrl } from '@/utils/siteUrl';
@@ -18,17 +18,15 @@ interface ToolCardChatProps {
   onClose: () => void;
 }
 
-const ToolCardChat = ({ tool, onClose }: ToolCardChatProps) => {
+export const ToolCardChat = ({ tool, onClose }: ToolCardChatProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
       role: 'assistant',
-      content: `👋 Hi! I can tell you more about ${tool.name}. What would you like to know?`,
+      content: `Hi! I'm ready to help you with ${tool.name}. What would you like me to do?`,
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,17 +55,11 @@ const ToolCardChat = ({ tool, onClose }: ToolCardChatProps) => {
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessage = { role: 'user', content: input.trim() };
     setInput('');
-    setIsLoading(true);
+    setMessages([...messages, userMessage]);
 
-    // Track when user sends a message
+    setIsLoading(true);
     trackChatEvent(tool.id, 'message_sent');
 
     try {
@@ -116,11 +108,7 @@ const ToolCardChat = ({ tool, onClose }: ToolCardChatProps) => {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to get a response. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Failed to get a response. Please try again.');
     } finally {
       setIsLoading(false);
     }
