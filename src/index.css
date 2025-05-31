@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import markdown styles */
+@import './styles/markdown.css';
+
 /* Custom animations */
 @keyframes subtle-pulse {
   0%,
