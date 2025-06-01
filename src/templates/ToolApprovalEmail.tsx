@@ -140,11 +140,17 @@ export const ToolApprovalEmailTemplate = ({
         <p class="help-text">
           A badge is available in your dashboard. You can add it to your site to show your tool is listed on DeepList AI.
         </p>
+      </div>
+      
+      <div class="info-box">
+        <p style="margin-bottom: 10px;"><strong>Submit a Quick Tool:</strong></p>
+        <p class="help-text">
+          Got another AI tool to share? Consider submitting it as a "Quick Tool" - they're easier to create, get approved faster, and help users discover focused solutions.
+        </p>
       </div>`
           : ''
       }
 
-        
         <p>
           If the button above doesn't work, copy and paste the following link
           into your browser:
