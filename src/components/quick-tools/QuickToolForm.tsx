@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { FileUpload } from '@/components/ui/file-upload';
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import {
   Plus,
   Save,
@@ -292,36 +293,94 @@ export const QuickToolForm = ({
         ? `The user has provided this additional context or requirement: "${formData.userSuggestion}". Use this information to tailor your suggestions.`
         : '';
 
-      const systemPrompt = `You are an AI assistant specializing in creating helpful AI tools that generate TEXT RESPONSES ONLY. Generate 3 straightforward and easy-to-understand AI tool ideas that would be valuable to users specifically in these categories: ${selectedCategoriesText}. ${userSuggestionText} For each tool, provide a concise name with space, brief description (max 50 words), short system prompt (max 100 words) that focuses ONLY on text generation (no audio, image, or video generation capabilities), and relevant categories. Make the tools diverse and practical within the specified categories. Be extremely concise and direct. Format your response as a JSON array with objects containing 'name', 'description', 'prompt', and 'categories' fields.`;
+      const systemPrompt = `You are an AI assistant specializing in creating helpful AI tools that generate TEXT RESPONSES ONLY. Generate 3 detailed, practical, and highly targeted AI tool ideas that would be valuable to users specifically in these categories: ${selectedCategoriesText}. ${userSuggestionText}
 
-      const userMessage = `Generate 3 straightforward and practical AI tool ideas for these categories: ${selectedCategoriesText}${
+For each tool, provide:
+1. A concise, descriptive name (max 5 words)
+2. A detailed description (50-70 words) that clearly explains the tool's purpose, target audience, and key benefits
+3. A comprehensive system prompt (100-150 words) that:
+   - Focuses ONLY on text generation (no audio, image, or video generation capabilities)
+   - Includes specific instructions for the AI to follow
+   - Defines the tone, style, and format of responses
+   - Incorporates domain-specific knowledge and terminology relevant to the tool's purpose
+   - Includes constraints and guardrails to ensure high-quality outputs
+4. Relevant categories that match the tool's purpose
+
+Make the tools diverse, practical, and highly specialized within the specified categories. 
+
+IMPORTANT: Format your response as a valid JSON array with objects containing 'name', 'description', 'prompt', and 'categories' fields. Ensure the JSON is properly formatted with no syntax errors. Example format:
+[
+  {
+    "name": "Tool Name",
+    "description": "Tool description...",
+    "prompt": "System prompt...",
+    "categories": ["Category1", "Category2"]
+  },
+  {...}
+]
+
+Do not include any text outside of this JSON array.`;
+
+      const userMessage = `Generate 3 detailed, practical, and highly targeted AI tool ideas for these categories: ${selectedCategoriesText}${
         formData.userSuggestion
           ? ` with this specific focus: "${formData.userSuggestion}"`
           : ''
-      }. Be concise.`;
+      }. Make them specialized and valuable for users in these categories. Return your response as a valid JSON array only.`;
 
       // Call OpenRouter API to generate tool suggestions
       const response = await callOpenRouter(
         [{ role: 'user', content: userMessage }],
         systemPrompt,
-        800
+        1200
       );
 
       // Parse the response to get the suggestions
       try {
-        // Extract JSON array from the response
-        const jsonMatch = response.match(/\[\s*\{.*\}\s*\]/s);
+        // First try to parse the entire response as JSON
+        let parsedSuggestions;
+        try {
+          parsedSuggestions = JSON.parse(response);
+        } catch {
+          // If that fails, try to extract JSON array from the response
+          const jsonMatch = response.match(/\[\s*\{.*\}\s*\]/s);
+          if (jsonMatch) {
+            parsedSuggestions = JSON.parse(jsonMatch[0]);
+          } else {
+            // Try to find any JSON object in the response
+            const objectMatch = response.match(/\{[^\{\}]*"name"[^\{\}]*\}/g);
+            if (objectMatch && objectMatch.length > 0) {
+              // Wrap the found objects in an array
+              const jsonArrayStr = '[' + objectMatch.join(',') + ']';
+              parsedSuggestions = JSON.parse(jsonArrayStr);
+            } else {
+              throw new Error('No valid JSON found in response');
+            }
+          }
+        }
 
-        if (jsonMatch) {
-          const parsedSuggestions = JSON.parse(jsonMatch[0]);
-          if (
-            Array.isArray(parsedSuggestions) &&
-            parsedSuggestions.length > 0
-          ) {
-            setSuggestedTools(parsedSuggestions);
+        // Validate the parsed suggestions
+        if (Array.isArray(parsedSuggestions)) {
+          // Ensure each suggestion has the required fields
+          const validSuggestions = parsedSuggestions
+            .filter(
+              (tool) =>
+                tool &&
+                typeof tool.name === 'string' &&
+                typeof tool.description === 'string' &&
+                typeof tool.prompt === 'string'
+            )
+            .map((tool) => ({
+              name: tool.name,
+              description: tool.description,
+              prompt: tool.prompt,
+              categories: Array.isArray(tool.categories) ? tool.categories : [],
+            }));
+
+          if (validSuggestions.length > 0) {
+            setSuggestedTools(validSuggestions);
             // Show a toast to indicate suggestions are ready
             toast.success(
-              'AI suggestions generated! Scroll down to view them.'
+              'Enhanced AI suggestions generated! Scroll down to view detailed tool ideas.'
             );
             return;
           }
@@ -331,6 +390,18 @@ export const QuickToolForm = ({
         throw new Error('Failed to parse suggestions');
       } catch (parseError) {
         console.error('Error parsing suggestions:', parseError);
+        console.log('AI Response:', response);
+
+        // Try to extract tools from text as a fallback
+        const extractedTools = extractToolsFromText(response);
+        if (extractedTools.length > 0) {
+          setSuggestedTools(extractedTools);
+          toast.success(
+            'AI suggestions extracted! Scroll down to view tool ideas.'
+          );
+          return;
+        }
+
         toast.error('Failed to generate suggestions. Please try again.');
       }
     } catch (error) {
@@ -538,54 +609,74 @@ export const QuickToolForm = ({
     trackChatEvent('test_quick_tool', 'message_sent');
 
     try {
-      // Prepare conversation history for OpenRouter
-      const conversationMessages = [
-        ...messages
-          .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
-          .map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-        {
-          role: 'user',
-          content: testInput,
-        },
-      ];
-
-      const systemPrompt =
-        formData.prompt +
-        "\n\nIMPORTANT: Keep your responses helpful and engaging. Focus on providing valuable assistance based on the tool's purpose. You can ONLY generate text responses - do not attempt to generate images, audio, or video content. Always be direct and straight to the point. Avoid unnecessary explanations, introductions, or verbose language. Get to the answer immediately without wasting time.";
+      // Prepare optimized conversation history
+      const optimizedMessages = prepareConversationHistory(messages, testInput);
 
       // Call OpenRouter API directly
-      const response = await callOpenRouter(
-        conversationMessages,
-        systemPrompt,
-        500
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'DeepList AI',
+          },
+          body: JSON.stringify({
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            messages: [
+              {
+                role: 'system',
+                content: `You are an AI assistant helping users with ${formData.name}. Follow these guidelines to provide direct, specific answers:
+                  1. Break down complex problems step by step
+                  2. Be concise - no introductions or unnecessary explanations
+                  3. Focus only on what the user specifically asked for
+                  4. Use line breaks to separate sections
+                  ${formData.prompt}
+                  
+                  IMPORTANT: 
+                  - Answer directly what was asked, nothing more
+                  - If unsure about a specific detail, say so rather than guessing
+                  - Consider multiple approaches when relevant, then recommend the best one`,
+              },
+              ...optimizedMessages,
+              {
+                role: 'user',
+                content: testInput,
+              },
+            ],
+            temperature: 0.5,
+            max_tokens: 500,
+            top_p: 0.9,
+          }),
+        }
       );
 
-      // Truncate long responses to keep them concise
-      const truncateResponse = (text: string, maxLength = 500) => {
-        if (text.length <= maxLength) return text;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('OpenRouter API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
+        throw new Error('API request failed');
+      }
 
-        // Find a good breaking point (end of sentence) near the maxLength
-        const breakPoint = text.substring(0, maxLength).lastIndexOf('.');
-        if (breakPoint > maxLength * 0.7) {
-          // If we found a sentence break in the latter part
-          return text.substring(0, breakPoint + 1);
-        }
+      const data = await response.json();
 
-        // Fallback to word boundary if no good sentence break
-        return text.substring(0, maxLength) + '...';
-      };
+      if (!data.choices?.[0]?.message?.content) {
+        console.error('Empty or invalid response from OpenRouter:', data);
+        throw new Error('Invalid response');
+      }
 
-      // Get the truncated response
-      const truncatedContent = truncateResponse(response);
+      const responseContent = data.choices[0].message.content;
 
       // Create the assistant message with typing animation
       const assistantMessage: Message = {
         id: Date.now().toString() + '-assistant',
         role: 'assistant',
-        content: truncatedContent,
+        content: responseContent,
         isTyping: true,
         displayContent: '',
       };
@@ -598,7 +689,7 @@ export const QuickToolForm = ({
       animateTyping(assistantMessage.id, assistantMessage.content);
     } catch (error) {
       console.error('Error sending message:', error);
-      if (error.message.includes('API key')) {
+      if (error.message?.includes('API key')) {
         toast.error(
           'OpenRouter API key not configured. Please check your environment variables.'
         );
@@ -611,6 +702,59 @@ export const QuickToolForm = ({
       setTestInput('');
       inputRef.current?.focus();
     }
+  };
+
+  // Add this function to prepare messages for the API request
+  const prepareConversationHistory = (
+    messages: Message[],
+    newUserInput: string
+  ) => {
+    // Filter out empty messages
+    const validMessages = messages.filter(
+      (msg) =>
+        (msg.role === 'user' || msg.role === 'assistant') &&
+        msg.content.trim() !== ''
+    );
+
+    // Constants for conversation management
+    const MAX_CONTEXT_MESSAGES = 10; // Maximum number of messages to include in context
+
+    // If we have fewer messages than our maximum, just return them all
+    if (validMessages.length <= MAX_CONTEXT_MESSAGES) {
+      return validMessages.map((msg) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      }));
+    }
+
+    // Otherwise, we need to create a summary and include only recent messages
+    // Get the most recent messages up to our limit (minus 1 to leave room for the summary)
+    const recentMessages = validMessages.slice(-(MAX_CONTEXT_MESSAGES - 1));
+
+    // Create a summary message from older messages
+    const olderMessages = validMessages.slice(
+      0,
+      validMessages.length - recentMessages.length
+    );
+    const summaryContent = `Previous conversation summary: ${olderMessages
+      .map(
+        (msg) =>
+          `${
+            msg.role === 'user' ? 'User' : 'Assistant'
+          }: ${msg.content.substring(0, 100)}${
+            msg.content.length > 100 ? '...' : ''
+          }`
+      )
+      .join(' | ')}`;
+
+    // Return the summary message followed by recent messages
+    return [
+      { role: 'system' as 'system', content: summaryContent },
+      ...recentMessages.map((msg) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      })),
+    ];
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -866,7 +1010,7 @@ export const QuickToolForm = ({
                           ) : (
                             <>
                               <Sparkles className="mr-2 h-5 w-5 text-primary-foreground" />
-                              Get AI Tool Suggestions
+                              Get Enhanced AI Tool Suggestions
                             </>
                           )}
                         </Button>
@@ -888,8 +1032,8 @@ export const QuickToolForm = ({
                       </div>
 
                       <p className="text-sm mb-4">
-                        Choose one of these AI-generated tool ideas as a
-                        starting point:
+                        Choose one of these enhanced AI-generated tool ideas as
+                        a starting point for your specialized tool:
                       </p>
 
                       <div className="space-y-3">
@@ -914,17 +1058,18 @@ export const QuickToolForm = ({
                               {tool.description}
                             </p>
                             <div className="flex flex-wrap gap-1">
-                              {tool.categories
-                                .slice(0, 3)
-                                .map((category, catIndex) => (
-                                  <Badge
-                                    key={catIndex}
-                                    variant="secondary"
-                                    className="text-xs px-2 py-0.5"
-                                  >
-                                    {category}
-                                  </Badge>
-                                ))}
+                              {tool.categories &&
+                                tool.categories
+                                  .slice(0, 3)
+                                  .map((category, catIndex) => (
+                                    <Badge
+                                      key={catIndex}
+                                      variant="secondary"
+                                      className="text-xs px-2 py-0.5"
+                                    >
+                                      {category}
+                                    </Badge>
+                                  ))}
                             </div>
                           </div>
                         ))}
@@ -1131,7 +1276,7 @@ export const QuickToolForm = ({
                   )}
                 </div>
 
-                <ScrollArea className="flex-1 p-5 overflow-y-auto max-h-[calc(85vh-130px)] border rounded-md bg-card/50 shadow-inner">
+                <ScrollArea className="flex-1 p-5 overflow-y-auto min-h-[400px] border rounded-md bg-card/50 shadow-inner">
                   {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
                       <Bot className="h-12 w-12 mb-4 text-muted-foreground/50" />
@@ -1148,7 +1293,7 @@ export const QuickToolForm = ({
                     messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex items-start gap-3 ${
+                        className={`flex items-start gap-3 mb-4 ${
                           message.role === 'user'
                             ? 'justify-end'
                             : 'justify-start'
@@ -1166,14 +1311,22 @@ export const QuickToolForm = ({
                               : 'bg-muted/50 text-foreground'
                           }`}
                         >
-                          <p className="whitespace-pre-wrap">
-                            {message.role === 'user'
-                              ? message.content
-                              : message.displayContent || message.content}
-                            {message.isTyping && (
-                              <span className="animate-pulse">▋</span>
-                            )}
-                          </p>
+                          {message.role === 'user' ? (
+                            <p className="whitespace-pre-wrap">
+                              {message.content}
+                            </p>
+                          ) : (
+                            <div className="markdown-content">
+                              <MarkdownRenderer
+                                content={
+                                  message.displayContent || message.content
+                                }
+                              />
+                              {message.isTyping && (
+                                <span className="animate-pulse">▋</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {message.role === 'user' && (
                           <Avatar className="h-8 w-8 bg-muted flex items-center justify-center">
@@ -1184,7 +1337,7 @@ export const QuickToolForm = ({
                     ))
                   )}
                   {typingIndicator && (
-                    <div className="flex items-start gap-3 justify-start">
+                    <div className="flex items-start gap-3 justify-start mb-4">
                       <Avatar className="h-8 w-8 bg-primary/10 text-primary flex items-center justify-center">
                         <Bot className="h-5 w-5" />
                       </Avatar>
@@ -1277,4 +1430,58 @@ export const QuickToolForm = ({
       </div>
     </div>
   );
+};
+
+// Helper function to extract tool data from text response when JSON parsing fails
+const extractToolsFromText = (text: string) => {
+  const tools = [];
+
+  // Look for tool patterns in the text
+  const toolSections = text.split(
+    /\n\s*(?=\d+\.\s*[A-Z]|Tool\s+\d+:|Name:|\*\*Tool\s+\d+\*\*)/i
+  );
+
+  for (const section of toolSections) {
+    if (!section.trim()) continue;
+
+    // Extract name
+    const nameMatch = section.match(
+      /(?:Name:|Tool\s+\d+:|\d+\.\s*|\*\*Tool\s+\d+\*\*:?\s*)([^\n]+)/i
+    );
+    if (!nameMatch) continue;
+    const name = nameMatch[1].trim();
+
+    // Extract description
+    const descMatch = section.match(
+      /(?:Description:|\*\*Description:\*\*|\n\s*)((?:[^\n]+\n?)+?)(?=\s*(?:Prompt:|\*\*Prompt:\*\*|Categories:|\*\*Categories:\*\*|$))/i
+    );
+    const description = descMatch ? descMatch[1].trim() : '';
+
+    // Extract prompt
+    const promptMatch = section.match(
+      /(?:Prompt:|\*\*Prompt:\*\*|\n\s*)((?:[^\n]+\n?)+?)(?=\s*(?:Categories:|\*\*Categories:\*\*|$))/i
+    );
+    const prompt = promptMatch ? promptMatch[1].trim() : '';
+
+    // Extract categories
+    const categoriesMatch = section.match(
+      /(?:Categories:|\*\*Categories:\*\*|\n\s*)([^\n]+)/i
+    );
+    const categoriesText = categoriesMatch ? categoriesMatch[1].trim() : '';
+    const categories = categoriesText
+      .split(/[,;]\s*/)
+      .map((cat) => cat.trim())
+      .filter((cat) => cat && !cat.includes(':'));
+
+    if (name && description && prompt) {
+      tools.push({
+        name,
+        description,
+        prompt,
+        categories: categories.length > 0 ? categories : [],
+      });
+    }
+  }
+
+  return tools;
 };
