@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { useSharedChat } from '@/contexts/SharedChatContext';
 import { Badge } from '@/components/ui/badge';
 import { ComparisonToolCards } from '@/components/tools/ComparisonToolCards';
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 
 const SharedToolChatModal = () => {
   const {
@@ -250,14 +251,21 @@ const SharedToolChatModal = () => {
                       )
                     )}
 
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {message.role === 'user'
-                        ? message.content
-                        : message.displayContent || message.content}
-                      {message.isTyping && (
-                        <span className="animate-pulse ml-0.5">▋</span>
-                      )}
-                    </p>
+                    {message.role === 'user' ? (
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {message.content}
+                      </p>
+                    ) : (
+                      <div className="text-sm leading-relaxed">
+                        <MarkdownRenderer
+                          content={message.displayContent || message.content}
+                          className="markdown-chat"
+                        />
+                        {message.isTyping && (
+                          <span className="animate-pulse ml-0.5">▋</span>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                   {message.role === 'user' && (
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 flex items-center justify-center text-primary-foreground">
@@ -298,7 +306,7 @@ const SharedToolChatModal = () => {
               transition={{ delay: 0.3, duration: 0.5 }}
               className="flex flex-wrap justify-center gap-2 mt-8 mb-2"
             >
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 {loadingSuggestions ? (
                   <motion.div
                     key="loading-suggestions"

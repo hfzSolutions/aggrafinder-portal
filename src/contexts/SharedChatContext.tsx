@@ -163,7 +163,7 @@ export function SharedChatProvider({
                 content: cleanAIResponse(msg.content),
               })),
             ],
-            temperature: 0.7,
+            temperature: 0.4, // Lower temperature for more focused, deterministic responses
             max_tokens: 1000,
           }),
         }
@@ -264,7 +264,7 @@ export function SharedChatProvider({
       const welcomeMessage: Message = {
         id: `welcome-comparison-${Date.now()}`,
         role: 'assistant',
-        content: `👋 Hi! I'm here to help you compare ${toolNames}. I can analyze their features, pricing, use cases, and help you determine which one might be best for your specific needs.`,
+        content: `Ready to compare ${toolNames}. Ask about features, pricing, use cases, or specific differences.`,
         isTyping: true,
         displayContent: '',
         toolId: tool.id,
@@ -304,7 +304,7 @@ export function SharedChatProvider({
         const welcomeMessage: Message = {
           id: `welcome-${tool.id}-${Date.now()}`,
           role: 'assistant',
-          content: `👋 Hi! I can tell you more about ${tool.name}. What would you like to know?`,
+          content: `Ask me about ${tool.name}'s features, pricing, or how to use it.`,
           isTyping: true,
           displayContent: '',
           toolId: tool.id,
@@ -354,6 +354,26 @@ export function SharedChatProvider({
     // Remove emojis at the start of lines
     cleaned = cleaned.replace(/^[^\w\s]*([🤔💭✍️🔍]+\s*)+/gm, '');
 
+    // Remove common AI assistant introductory phrases
+    cleaned = cleaned.replace(
+      /^(Sure|Of course|I'd be happy to|Here's|Let me|Certainly|Absolutely|I'll|I can)\s+(help|tell|explain|provide|assist|share|give)\s+(you|information|details|more|about|with).*?[.!]\s*/i,
+      ''
+    );
+    cleaned = cleaned.replace(
+      /^(Here are|Let's take a look at|Let me explain|I'll explain|Let me tell you about).*?[.!]\s*/i,
+      ''
+    );
+    cleaned = cleaned.replace(
+      /^(Based on|According to|From what I know|As far as I know).*?[,.]\s*/i,
+      ''
+    );
+
+    // Remove phrases like "I hope this helps" at the end
+    cleaned = cleaned.replace(
+      /\s*(I hope|Hope|Let me know|Feel free|Don't hesitate)\s+(this helps|if you have|if you need|to reach out|to ask|if you'd like).*?[.!]?$/i,
+      ''
+    );
+
     // Trim and remove extra newlines
     cleaned = cleaned.trim().replace(/\n{3,}/g, '\n\n');
 
@@ -402,15 +422,49 @@ export function SharedChatProvider({
               {
                 role: 'system',
                 content: isComparisonMode
-                  ? `You are an AI assistant helping users compare multiple AI tools. Keep responses concise and factual. Focus on key differences and practical insights. Do not use markdown formatting or meta-commentary.`
-                  : `You are an AI assistant helping users learn about ${currentTool.name}. Keep responses concise and direct. Do not use markdown formatting or meta-commentary.`,
+                  ? `You are an AI assistant helping users compare multiple AI tools. You MUST follow these strict guidelines:
+                  1. Be extremely concise and direct - no fluff or unnecessary text
+                  2. Provide factual, accurate information only
+                  3. Focus on key differences between tools
+                  4. Use bullet points for feature comparisons
+                  5. Structure your response with clear sections
+                  6. Directly address the specific question asked
+                  7. If you don't know something specific, say so clearly
+                  8. Avoid vague generalizations
+                  9. Provide pricing information when asked
+                  10. Compare use cases when relevant
+                  
+                  IMPORTANT: Your response should be brief, informative, and directly answer what was asked.`
+                  : `You are an AI assistant helping users learn about ${currentTool.name}. You MUST follow these strict guidelines:
+                  1. Answer ONLY what was specifically asked - nothing more
+                  2. Be extremely concise - no introductions, conclusions, or unnecessary explanations
+                  3. Use bullet points for features and capabilities
+                  4. Structure information with clear headings when providing multiple pieces of information
+                  5. For pricing questions, list pricing tiers clearly
+                  6. For feature questions, be specific about what the tool can and cannot do
+                  7. For comparison questions, focus on concrete differences
+                  8. For "how to" questions, provide step-by-step instructions
+                  9. If you don't know something specific, say so clearly rather than guessing
+                  10. Avoid marketing language and focus on factual information
+                  
+                  IMPORTANT: 
+                  - Your response should be brief, informative, and directly answer what was asked
+                  - Avoid any text that doesn't directly contribute to answering the question
+                  - Never start with phrases like "${currentTool.name} is..." or "Sure, I can tell you about..."
+                  - Get straight to the answer immediately`,
               },
+              // Include all previous messages plus the current user message
               ...messages.map((msg) => ({
                 role: msg.role as 'user' | 'assistant',
                 content: msg.content,
               })),
+              // Add the current user message to ensure it's included in the API call
+              {
+                role: 'user',
+                content: userMessage.content,
+              },
             ],
-            temperature: 0.7,
+            temperature: 0.4, // Lower temperature for more focused, deterministic responses
             max_tokens: 1000,
           }),
         }
@@ -460,13 +514,128 @@ export function SharedChatProvider({
 
   const handleSuggestionClick = (suggestion: string) => {
     if (isLoading || !currentTool) return;
-    setInput(suggestion);
-    setTimeout(() => {
-      sendMessage();
-    }, 10);
+
+    // Instead of setting input and then sending, directly create a message with the suggestion
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: suggestion,
+      toolId: currentTool.id,
+      toolName: currentTool.name,
+    };
+
+    // Add user message to chat
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+    setTypingIndicator(true);
 
     // Track suggestion usage
     trackChatEvent(currentTool.id, 'message_sent');
+
+    // Call OpenRouter API directly
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'DeepList AI',
+      },
+      body: JSON.stringify({
+        model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+        messages: [
+          {
+            role: 'system',
+            content:
+              comparisonTools !== null && comparisonTools.length > 1
+                ? `You are an AI assistant helping users compare multiple AI tools. You MUST follow these strict guidelines:
+                1. Be extremely concise and direct - no fluff or unnecessary text
+                2. Provide factual, accurate information only
+                3. Focus on key differences between tools
+                4. Use bullet points for feature comparisons
+                5. Structure your response with clear sections
+                6. Directly address the specific question asked
+                7. If you don't know something specific, say so clearly
+                8. Avoid vague generalizations
+                9. Provide pricing information when asked
+                10. Compare use cases when relevant
+                
+                IMPORTANT: Your response should be brief, informative, and directly answer what was asked.`
+                : `You are an AI assistant helping users learn about ${currentTool.name}. You MUST follow these strict guidelines:
+                1. Answer ONLY what was specifically asked - nothing more
+                2. Be extremely concise - no introductions, conclusions, or unnecessary explanations
+                3. Use bullet points for features and capabilities
+                4. Structure information with clear headings when providing multiple pieces of information
+                5. For pricing questions, list pricing tiers clearly
+                6. For feature questions, be specific about what the tool can and cannot do
+                7. For comparison questions, focus on concrete differences
+                8. For "how to" questions, provide step-by-step instructions
+                9. If you don't know something specific, say so clearly rather than guessing
+                10. Avoid marketing language and focus on factual information
+                
+                IMPORTANT: 
+                - Your response should be brief, informative, and directly answer what was asked
+                - Avoid any text that doesn't directly contribute to answering the question
+                - Never start with phrases like "${currentTool.name} is..." or "Sure, I can tell you about..."
+                - Get straight to the answer immediately`,
+          },
+          ...messages.map((msg) => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          })),
+          {
+            role: 'user',
+            content: suggestion,
+          },
+        ],
+        temperature: 0.4,
+        max_tokens: 1000,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to get response from OpenRouter');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const assistantResponse = cleanAIResponse(
+          data.choices[0]?.message?.content || ''
+        );
+
+        // Create a new message with the response
+        const newAssistantMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: assistantResponse,
+          isTyping: true,
+          displayContent: '',
+          toolId: currentTool.id,
+          toolName: currentTool.name,
+          toolCard:
+            messages.length <= 2 ||
+            suggestion.toLowerCase().includes('feature') ||
+            suggestion.toLowerCase().includes('what can') ||
+            suggestion.toLowerCase().includes('how to use')
+              ? currentTool
+              : undefined,
+        };
+
+        setMessages((prev) => [...prev, newAssistantMessage]);
+        animateTyping(newAssistantMessage.id, assistantResponse);
+
+        setTimeout(() => {
+          generateSuggestions();
+        }, 1000);
+      })
+      .catch((error) => {
+        console.error('Error sending message:', error);
+        toast('Failed to get a response. Please try again.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+        setTypingIndicator(false);
+      });
   };
 
   // Generate initial suggestions when chat opens with a tool
