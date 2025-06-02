@@ -56,7 +56,7 @@ const App = () => (
             <SharedToolChatModal />
 
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Tools />} />
               <Route path="/tools" element={<Tools />} />
               <Route path="/tools/:id" element={<ToolDetails />} />
               <Route path="/quick-tools/:id" element={<QuickToolDetails />} />

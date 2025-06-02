@@ -40,6 +40,8 @@ import { useToolAnalytics } from '@/hooks/useToolAnalytics';
 import { toast } from 'sonner';
 import { SponsorAdCard } from '@/components/tools/SponsorAdCard';
 import QuickToolsSection from '@/components/tools/QuickToolsSection';
+import HeroCard from '@/components/tools/HeroCard';
+import CategoryCarousel from '@/components/tools/CategoryCarousel';
 
 const Tools = () => {
   const location = useLocation();
@@ -283,10 +285,10 @@ const Tools = () => {
   return (
     <>
       <Helmet>
-        <title>AI Tools Collection | DeepList AI</title>
+        <title>DeepListAI | Find the Best AI Tools for Your Needs</title>
         <meta
           name="description"
-          content="Browse our comprehensive collection of AI tools across various categories. Find the perfect tool for your specific needs."
+          content="Discover the most powerful and innovative AI tools to enhance your productivity, creativity, and workflow. Find the perfect AI solution for your specific needs."
         />
       </Helmet>
 
@@ -528,7 +530,7 @@ const Tools = () => {
                             setToolType('all');
                             setView('grid'); // Changed from 'list' to 'grid' to maintain grid as default
                             // Reset URL to clean state
-                            navigate('/tools', { replace: true });
+                            navigate('/', { replace: true });
                             toast.success('All filters cleared');
                           }}
                         >
@@ -643,7 +645,7 @@ const Tools = () => {
                       className="text-muted-foreground"
                       onClick={() => {
                         setSearchTerm('');
-                        navigate('/tools');
+                        navigate('/');
                       }}
                     >
                       <ArrowLeft className="h-4 w-4 mr-1" />
@@ -669,6 +671,9 @@ const Tools = () => {
                     </Button>
                   </div>
                 )}
+
+                {<HeroCard isMobile={isMobile} />}
+
                 {isLoading && (
                   <div
                     className={
@@ -712,6 +717,7 @@ const Tools = () => {
                       ))}
                   </div>
                 )}
+
                 {!isLoading &&
                   ((toolType === 'all' &&
                     quickTools.length === 0 &&
@@ -746,6 +752,19 @@ const Tools = () => {
                       </div>
                     </div>
                   )}
+
+                {/* Category quick selection carousel */}
+                {!isLoading && (
+                  <div className="mt-4 mb-6 px-1">
+                    <CategoryCarousel
+                      categories={categories}
+                      activeCategory={activeCategory}
+                      onCategoryChange={handleCategoryChange}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+
                 {/* Show Quick Tools section if viewing all tools or specifically quick tools */}
                 {(toolType === 'all' || toolType === 'quick') && !isLoading && (
                   <div className="mt-8">
@@ -755,7 +774,7 @@ const Tools = () => {
                       }
                       searchTerm={searchTerm}
                       showHeader={true}
-                      isHomePage={false}
+                      isHomePage={true}
                       showAllTools={toolType === 'quick'}
                       tools={quickTools}
                       view={view}
@@ -867,7 +886,6 @@ const Tools = () => {
                       </div>
                     </>
                   )}
-
                 {/* Load More Button for External Tools - Only shown when viewing external tools or all tools and there are more external tools */}
                 {!isLoading &&
                   externalTools.length > 0 &&

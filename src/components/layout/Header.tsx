@@ -95,7 +95,7 @@ const Header = () => {
         {/* Desktop menu */}
         <nav className="hidden md:flex items-center space-x-1">
           <NavLink to="/">Home</NavLink>
-          <NavLink to="/tools">AI Tools</NavLink>
+          {/* <NavLink to="/tools">AI Tools</NavLink> */}
           {/* <NavLink to="/chat">AI Chat</NavLink> */}
           {/* <NavLink to="/outcomes">AI Showcase</NavLink> */}
           {!isLoading && user && <NavLink to="/dashboard">Dashboard</NavLink>}
@@ -158,13 +158,13 @@ const Header = () => {
           >
             Home
           </Link>
-          <Link
+          {/* <Link
             to="/tools"
             className="px-4 py-3 hover:bg-secondary/50 rounded-md"
             onClick={() => trackEvent('navigation', 'click_mobile', '/tools')}
           >
             AI Tools
-          </Link>
+          </Link> */}
           {/* <Link
             to="/chat"
             className="px-4 py-3 hover:bg-secondary/50 rounded-md"
