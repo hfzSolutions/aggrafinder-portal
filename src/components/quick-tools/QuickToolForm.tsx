@@ -689,6 +689,7 @@ Do not include any text outside of this JSON array.`;
       setTypingIndicator(false);
       setMessages((prev) => [...prev, assistantMessage]);
 
+      // Start the typing animation
       animateTyping(assistantMessage.id, assistantMessage.content);
     } catch (error) {
       console.error('Error sending message:', error);
