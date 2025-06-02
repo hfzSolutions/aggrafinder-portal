@@ -117,7 +117,7 @@ const CompareTools = () => {
               className="mb-6 group transition-all duration-300 hover:translate-x-[-5px]"
               asChild
             >
-              <Link to="/tools">
+              <Link to="/">
                 <ArrowLeft className="h-4 w-4 mr-2 transition-transform group-hover:scale-110" />
                 Back to tools
               </Link>
