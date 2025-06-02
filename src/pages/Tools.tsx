@@ -16,6 +16,7 @@ import {
   Grid,
   List,
   Heart,
+  ArrowDown,
   Clock,
   ArrowUpDown,
   Star,
@@ -229,6 +230,12 @@ const Tools = () => {
   useEffect(() => {
     if (isMobile) {
       setView('list');
+    } else {
+      // When transitioning from mobile to desktop, restore the saved preference
+      const storedView = localStorage.getItem('preferred_view') as
+        | 'grid'
+        | 'list';
+      setView(storedView || 'grid');
     }
   }, [isMobile]);
 
@@ -671,9 +678,7 @@ const Tools = () => {
                     </Button>
                   </div>
                 )}
-
                 {<HeroCard isMobile={isMobile} />}
-
                 {isLoading && (
                   <div
                     className={
@@ -717,7 +722,6 @@ const Tools = () => {
                       ))}
                   </div>
                 )}
-
                 {!isLoading &&
                   ((toolType === 'all' &&
                     quickTools.length === 0 &&
@@ -752,7 +756,6 @@ const Tools = () => {
                       </div>
                     </div>
                   )}
-
                 {/* Category quick selection carousel */}
                 {!isLoading && (
                   <div className="mt-4 mb-6 px-1">
@@ -764,17 +767,15 @@ const Tools = () => {
                     />
                   </div>
                 )}
-
                 {/* Show Quick Tools section if viewing all tools or specifically quick tools */}
                 {(toolType === 'all' || toolType === 'quick') && !isLoading && (
-                  <div className="mt-8">
+                  <div className="mt-8 mb-8">
                     <QuickToolsSection
                       category={
                         activeCategory !== 'All' ? activeCategory : undefined
                       }
                       searchTerm={searchTerm}
                       showHeader={true}
-                      isHomePage={true}
                       showAllTools={toolType === 'quick'}
                       tools={quickTools}
                       view={view}
@@ -783,6 +784,8 @@ const Tools = () => {
                     />
                   </div>
                 )}
+
+                <hr />
                 {/* Only show external tools section if viewing all tools or specifically external tools */}
                 {(toolType === 'all' || toolType === 'external') &&
                   !isLoading &&
@@ -806,15 +809,14 @@ const Tools = () => {
                               around the web
                             </p>
                           </div>
-                          <div className="flex items-center gap-2 mt-3 md:mt-0">
+                          <div className="flex items-center gap-2 mt-3 md:mt-0 ml-auto">
                             <Button
-                              size="sm"
                               variant="outline"
                               asChild
-                              className="h-8 text-xs px-3 border-primary/30 text-primary hover:bg-primary/10"
+                              className="text-xs px-3 border-primary/30 text-primary hover:bg-primary/10"
                             >
                               <Link to="/dashboard">
-                                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                                <Plus className="h-3.5 w-3.5" />
                                 Add External Tool
                               </Link>
                             </Button>
@@ -891,25 +893,27 @@ const Tools = () => {
                   externalTools.length > 0 &&
                   hasMoreExternalTools &&
                   (toolType === 'external' || toolType === 'all') && (
-                    <div className="flex justify-center mt-4 md:mt-8">
+                    <div className="flex justify-center mt-6 md:mt-10">
                       <Button
-                        variant="outline"
-                        size={isMobile ? 'sm' : 'lg'}
+                        variant="default"
                         onClick={() => {
                           if (!externalToolsLoading && hasMoreExternalTools) {
                             loadNextExternalToolsPage();
                           }
                         }}
                         disabled={externalToolsLoading}
-                        className="w-full max-w-md py-1.5 md:py-2"
+                        className="w-full max-w-md py-2 md:py-3 font-medium flex items-center justify-center gap-2 rounded-xl"
                       >
                         {externalToolsLoading ? (
                           <>
-                            <Loader2 className="mr-1.5 md:mr-2 h-3.5 md:h-4 w-3.5 md:w-4 animate-spin" />
-                            Loading more external tools...
+                            <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                            <span>Loading more external tools...</span>
                           </>
                         ) : (
-                          'Load more external tools'
+                          <>
+                            <span>Load More External Tools</span>
+                            <ArrowDown className="h-4 w-4 md:h-5 md:w-5 animate-bounce" />
+                          </>
                         )}
                       </Button>
                     </div>
