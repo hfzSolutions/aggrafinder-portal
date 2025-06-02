@@ -131,7 +131,7 @@ const ToolDetails = () => {
     if (location.key !== 'default') {
       navigate(-1);
     } else {
-      navigate('/tools');
+      navigate('/');
     }
   };
 
