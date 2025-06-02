@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { cn } from '@/lib/utils';
 
 interface MarkdownRendererProps {
@@ -16,6 +17,7 @@ export function MarkdownRenderer({
     <div className={cn('markdown-renderer', className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        // rehypePlugins={[rehypeRaw]}
         components={{
           // Override default components for better styling
           h1: ({ node, ...props }) => (
@@ -57,7 +59,7 @@ export function MarkdownRenderer({
             if (inline) {
               return (
                 <code
-                  className="bg-muted px-1 py-0.5 rounded text-sm font-mono"
+                  className="bg-muted px-1 py-0.5 rounded text-sm font-mono break-words"
                   {...props}
                 >
                   {children}
@@ -65,11 +67,16 @@ export function MarkdownRenderer({
               );
             }
             return (
-              <pre className="bg-muted p-3 rounded-md overflow-x-auto ">
-                <code className="text-sm font-mono" {...props}>
-                  {children}
-                </code>
-              </pre>
+              <div className="max-w-full overflow-x-auto">
+                <pre className="bg-muted rounded-md">
+                  <code
+                    className="text-sm font-mono whitespace-pre-wrap break-words"
+                    {...props}
+                  >
+                    {children}
+                  </code>
+                </pre>
+              </div>
             );
           },
           table: ({ node, ...props }) => (
