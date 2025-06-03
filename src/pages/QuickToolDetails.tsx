@@ -675,23 +675,23 @@ const QuickToolDetails = () => {
                                   handleRelatedToolClick(relatedTool.id)
                                 }
                               >
-                                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary flex-shrink-0">
-                                  {relatedTool.image_url ? (
-                                    <img
-                                      src={relatedTool.image_url}
-                                      alt={relatedTool.name}
-                                      className="w-6 h-6 object-cover rounded"
-                                      onError={(e) => {
-                                        e.currentTarget.onerror = null;
-                                        e.currentTarget.style.display = 'none';
-                                        e.currentTarget.parentElement.innerHTML =
-                                          '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
-                                      }}
-                                    />
-                                  ) : (
+                                {relatedTool.image_url ? (
+                                  <img
+                                    src={relatedTool.image_url}
+                                    alt={relatedTool.name}
+                                    className="w-8 h-8 object-cover rounded-md flex-shrink-0"
+                                    onError={(e) => {
+                                      e.currentTarget.onerror = null;
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement.innerHTML =
+                                        '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary flex-shrink-0">
                                     <Bot className="h-4 w-4" />
-                                  )}
-                                </div>
+                                  </div>
+                                )}
                                 <div className="flex-1 min-w-0">
                                   <h4 className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                                     {relatedTool.name}
