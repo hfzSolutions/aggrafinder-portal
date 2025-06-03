@@ -102,6 +102,7 @@ export const QuickToolForm = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingIndicator, setTypingIndicator] = useState(false);
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
+  const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: editMode && toolToEdit ? toolToEdit.name : '',
@@ -113,6 +114,7 @@ export const QuickToolForm = ({
     imageFile: null as File | null,
     imageUrl: editMode && toolToEdit ? toolToEdit.image_url : '',
     userSuggestion: '', // New field for user input suggestions
+    logoIdea: '', // New field for user's icon idea
   });
 
   const [suggestedTools, setSuggestedTools] = useState<
@@ -274,6 +276,146 @@ export const QuickToolForm = ({
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Function to generate AI logo using the image generation API
+  const generateAILogo = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Tool name is required to generate a logo');
+      return;
+    }
+
+    setIsGeneratingLogo(true);
+    try {
+      const apiKey = import.meta.env.VITE_IMAGEROUTER_API_KEY;
+
+      if (!apiKey) {
+        throw new Error(
+          'Image generation API key not found. Please set VITE_IMAGEROUTER_API_KEY in your environment variables.'
+        );
+      }
+
+      // Create a prompt based on the tool name, description, and user's idea
+      const prompt = `Create full icon for an AI tool called "${
+        formData.name
+      }". ${
+        formData.description
+          ? `The icon should represent a tool that ${formData.description}`
+          : ''
+      }. ${
+        formData.logoIdea
+          ? `User's specific idea for the icon: ${formData.logoIdea}.`
+          : ''
+      } The icon should be simple, clean, no under text, and easy to understand.`;
+
+      const response = await fetch(
+        'https://ir-api.myqa.cc/v1/openai/images/generations',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            prompt,
+            model: import.meta.env.VITE_IMAGEROUTER_MODEL_NAME,
+            quality: 'auto',
+            // response_format: 'url', // not yet supported
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `Image generation API error: ${response.status} - ${
+            errorData.error?.message || 'Unknown error'
+          }`
+        );
+      }
+
+      const data = await response.json();
+
+      // Handle both response formats (URL and base64)
+      let imageUrl;
+      if (data.data && data.data[0]) {
+        if (data.data[0].url) {
+          // URL format
+          imageUrl = data.data[0].url;
+        } else if (data.data[0].b64_json) {
+          // Base64 format - Convert to File object instead of storing as base64
+          const base64Data = data.data[0].b64_json;
+          const byteCharacters = atob(base64Data);
+          const byteArrays = [];
+
+          for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
+            }
+
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+          }
+
+          const blob = new Blob(byteArrays, { type: 'image/png' });
+          const file = new File(
+            [blob],
+            `${formData.name.replace(/\s+/g, '-').toLowerCase()}-logo.png`,
+            { type: 'image/png' }
+          );
+
+          // Update the form data with the generated image as a File
+          setFormData((prev) => ({
+            ...prev,
+            imageFile: file,
+            imageUrl: URL.createObjectURL(file),
+          }));
+
+          toast.success('Logo generated successfully!');
+          setIsGeneratingLogo(false);
+          return; // Exit early since we've already updated the form data
+        }
+      }
+
+      if (!imageUrl) {
+        throw new Error('No image was generated');
+      }
+
+      // Update the form data with the generated image URL
+      setFormData((prev) => ({
+        ...prev,
+        imageFile: null,
+        imageUrl: imageUrl,
+      }));
+
+      toast.success('Logo generated successfully!');
+    } catch (error) {
+      console.error('Error generating logo:', error);
+      // Check for daily limit error (429)
+      if (
+        error.message &&
+        error.message.includes('429') &&
+        error.message.includes('Daily limit')
+      ) {
+        toast.error(
+          'Daily limit of free logo generation requests reached. Please try again tomorrow or use a custom image.'
+        );
+      } else {
+        toast.error(`Failed to generate logo: ${error.message}`);
+      }
+    } finally {
+      setIsGeneratingLogo(false);
+    }
+  };
+
+  // Helper function to extract tool data from text response when JSON parsing fails
+  const extractToolsFromText = (text: string) => {
+    const tools = [];
+
+    return tools;
   };
 
   // Function to generate AI suggestions for quick tools based on selected categories
@@ -624,35 +766,10 @@ Do not include any text outside of this JSON array.`;
             'X-Title': 'DeepList AI',
           },
           body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-            messages: [
-              {
-                role: 'system',
-                content: `You are an AI assistant helping users with ${formData.name}. Follow these guidelines to provide direct, specific answers:
-                
-                  1. Be concise – no introductions or unnecessary explanations
-                  2. Focus only on what the user specifically asked for
-                  3. If your answer includes a list or numbering (e.g. comparisons, pros/cons, features, steps), format it as a **table** instead of using bullets or numbers for better readability
-                  4. Do **not** explain things in list format – use normal paragraphs or tables
-                  5. Avoid unnecessary spacing or breaking lines
-                  ⚠️ Exception: If the topic is **casual or conversational** in nature (e.g., fun ideas, informal tone, entertainment), you may skip the table and write in a simple paragraph format instead. Use your judgment to keep the tone aligned with the topic's formality.
-
-                  ${formData.prompt}
-                  
-                  IMPORTANT: 
-                  - Answer directly what was asked, nothing more
-                  - If unsure about a specific detail, say so rather than guessing
-                  - Consider multiple approaches when relevant, then recommend the best one`,
-              },
-              ...optimizedMessages,
-              {
-                role: 'user',
-                content: testInput,
-              },
-            ],
-            temperature: 0.5,
-            max_tokens: 500,
-            top_p: 0.9,
+            prompt,
+            model: 'test/test',
+            quality: 'auto',
+            response_format: 'url', // Explicitly request URL format instead of base64
           }),
         }
       );
@@ -1136,26 +1253,67 @@ Do not include any text outside of this JSON array.`;
                         >
                           Tool Logo (Optional)
                         </Label>
-                        <FileUpload
-                          onFileChange={(file) => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              imageFile: file,
-                              imageUrl: file
-                                ? URL.createObjectURL(file)
-                                : prev.imageUrl,
-                            }));
-                          }}
-                          value={
-                            typeof formData.imageUrl === 'string'
-                              ? formData.imageUrl
-                              : undefined
-                          }
-                          accept="image/*"
-                          maxSize={5}
-                        />
+                        <div className="space-y-3">
+                          <FileUpload
+                            onFileChange={(file) => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                imageFile: file,
+                                imageUrl: file
+                                  ? URL.createObjectURL(file)
+                                  : prev.imageUrl,
+                              }));
+                            }}
+                            value={
+                              typeof formData.imageUrl === 'string'
+                                ? formData.imageUrl
+                                : undefined
+                            }
+                            accept="image/*"
+                            maxSize={5}
+                          />
+
+                          <div className="mb-3">
+                            <Label
+                              htmlFor="logoIdea"
+                              className="text-sm font-medium block mb-1.5"
+                            >
+                              Your Icon Idea (Optional)
+                            </Label>
+                            <Input
+                              id="logoIdea"
+                              name="logoIdea"
+                              placeholder="Describe your idea for the icon (e.g., 'A blue robot with a magnifying glass')"
+                              value={formData.logoIdea || ''}
+                              onChange={handleInputChange}
+                              className="w-full"
+                            />
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center justify-center"
+                            onClick={generateAILogo}
+                            disabled={isGeneratingLogo || !formData.name.trim()}
+                          >
+                            {isGeneratingLogo ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating AI Logo...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate Logo with AI
+                              </>
+                            )}
+                          </Button>
+                        </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Upload a logo or icon (recommended size: 512x512px)
+                          Upload a logo or icon (recommended size: 512x512px) or
+                          generate one with AI
                         </p>
                       </div>
                     </div>
@@ -1433,58 +1591,4 @@ Do not include any text outside of this JSON array.`;
       </div>
     </div>
   );
-};
-
-// Helper function to extract tool data from text response when JSON parsing fails
-const extractToolsFromText = (text: string) => {
-  const tools = [];
-
-  // Look for tool patterns in the text
-  const toolSections = text.split(
-    /\n\s*(?=\d+\.\s*[A-Z]|Tool\s+\d+:|Name:|\*\*Tool\s+\d+\*\*)/i
-  );
-
-  for (const section of toolSections) {
-    if (!section.trim()) continue;
-
-    // Extract name
-    const nameMatch = section.match(
-      /(?:Name:|Tool\s+\d+:|\d+\.\s*|\*\*Tool\s+\d+\*\*:?\s*)([^\n]+)/i
-    );
-    if (!nameMatch) continue;
-    const name = nameMatch[1].trim();
-
-    // Extract description
-    const descMatch = section.match(
-      /(?:Description:|\*\*Description:\*\*|\n\s*)((?:[^\n]+\n?)+?)(?=\s*(?:Prompt:|\*\*Prompt:\*\*|Categories:|\*\*Categories:\*\*|$))/i
-    );
-    const description = descMatch ? descMatch[1].trim() : '';
-
-    // Extract prompt
-    const promptMatch = section.match(
-      /(?:Prompt:|\*\*Prompt:\*\*|\n\s*)((?:[^\n]+\n?)+?)(?=\s*(?:Categories:|\*\*Categories:\*\*|$))/i
-    );
-    const prompt = promptMatch ? promptMatch[1].trim() : '';
-
-    // Extract categories
-    const categoriesMatch = section.match(
-      /(?:Categories:|\*\*Categories:\*\*|\n\s*)([^\n]+)/i
-    );
-    const categoriesText = categoriesMatch ? categoriesMatch[1].trim() : '';
-    const categories = categoriesText
-      .split(/[,;]\s*/)
-      .map((cat) => cat.trim())
-      .filter((cat) => cat && !cat.includes(':'));
-
-    if (name && description && prompt) {
-      tools.push({
-        name,
-        description,
-        prompt,
-        categories: categories.length > 0 ? categories : [],
-      });
-    }
-  }
-
-  return tools;
 };
