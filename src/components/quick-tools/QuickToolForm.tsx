@@ -766,10 +766,35 @@ Do not include any text outside of this JSON array.`;
             'X-Title': 'DeepList AI',
           },
           body: JSON.stringify({
-            prompt,
-            model: 'test/test',
-            quality: 'auto',
-            response_format: 'url', // Explicitly request URL format instead of base64
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            messages: [
+              {
+                role: 'system',
+                content: `You are an AI assistant helping users with ${formData.name}. Follow these guidelines to provide direct, specific answers:
+            
+                  1. Be concise – no introductions or unnecessary explanations
+                  2. Focus only on what the user specifically asked for
+                  3. If your answer includes a list or numbering (e.g. comparisons, pros/cons, features, steps), format it as a **table** instead of using bullets or numbers for better readability
+                  4. Do **not** explain things in list format – use normal paragraphs or tables
+                  5. Avoid unnecessary spacing or breaking lines
+                  ⚠️ Exception: If the topic is **casual or conversational** in nature (e.g., fun ideas, informal tone, entertainment), you may skip the table and write in a simple paragraph format instead. Use your judgment to keep the tone aligned with the topic's formality.
+
+                  ${formData.prompt}
+            
+                  IMPORTANT: 
+                  - Answer directly what was asked, nothing more
+                  - If unsure about a specific detail, say so rather than guessing
+                  - Consider multiple approaches when relevant, then recommend the best one`,
+              },
+              ...optimizedMessages,
+              {
+                role: 'user',
+                content: testInput,
+              },
+            ],
+            temperature: 0.5,
+            max_tokens: 2000,
+            top_p: 0.9,
           }),
         }
       );
