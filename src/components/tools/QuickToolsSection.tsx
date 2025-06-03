@@ -208,17 +208,17 @@ const QuickToolsSection = ({
                   onClick={() => handleQuickToolClick(tool.id)}
                 >
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mr-2.5 text-primary">
-                      {tool.imageUrl ? (
-                        <img
-                          src={tool.imageUrl}
-                          alt={tool.name}
-                          className="h-5 w-5 object-contain"
-                        />
-                      ) : (
+                    {tool.imageUrl ? (
+                      <img
+                        src={tool.imageUrl}
+                        alt={tool.name}
+                        className="h-8 w-8 object-contain rounded-md mr-2.5"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mr-2.5 text-primary">
                         <Bot className="h-4 w-4" />
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium truncate group-hover:text-primary transition-colors duration-200">
@@ -255,17 +255,17 @@ const QuickToolsSection = ({
                 >
                   <div className="p-4 flex flex-col h-full">
                     <div className="flex items-center mb-3">
-                      <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mr-3 text-primary flex-shrink-0">
-                        {tool.imageUrl ? (
-                          <img
-                            src={tool.imageUrl}
-                            alt={tool.name}
-                            className="h-6 w-6 object-contain"
-                          />
-                        ) : (
+                      {tool.imageUrl ? (
+                        <img
+                          src={tool.imageUrl}
+                          alt={tool.name}
+                          className="w-10 h-10 object-contain rounded-md mr-3 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mr-3 text-primary flex-shrink-0">
                           <Bot className="h-5 w-5" />
-                        )}
-                      </div>
+                        </div>
+                      )}
                       <h3 className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors duration-200">
                         {tool.name}
                       </h3>
