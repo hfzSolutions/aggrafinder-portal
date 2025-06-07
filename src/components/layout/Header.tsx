@@ -97,7 +97,6 @@ const Header = () => {
           <NavLink to="/">Home</NavLink>
           {/* <NavLink to="/tools">AI Tools</NavLink> */}
           {/* <NavLink to="/chat">AI Chat</NavLink> */}
-          {/* <NavLink to="/outcomes">AI Showcase</NavLink> */}
           {!isLoading && user && <NavLink to="/dashboard">Dashboard</NavLink>}
           <div className="ml-4 flex items-center gap-2">
             <Button
@@ -171,12 +170,6 @@ const Header = () => {
             onClick={() => trackEvent('navigation', 'click_mobile', '/chat')}
           >
             AI Chat
-          </Link>
-          <Link
-            to="/outcomes"
-            className="px-4 py-3 hover:bg-secondary/50 rounded-md"
-          >
-            AI Showcase
           </Link> */}
           {!isLoading && user && (
             <Link

@@ -63,6 +63,7 @@ interface QuickToolChatProps {
   toolPrompt: string;
   className?: string;
   imageUrl?: string; // Add imageUrl prop
+  initialMessage?: string; // Add initialMessage prop
 }
 
 // Create a function to check for sponsor ads that can be reused
@@ -287,6 +288,7 @@ export const QuickToolChat = ({
   toolPrompt,
   className,
   imageUrl, // Add imageUrl to destructuring
+  initialMessage, // Add initialMessage to destructuring
 }: QuickToolChatProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -302,7 +304,9 @@ export const QuickToolChat = ({
             {
               id: '1',
               role: 'assistant',
-              content: `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
+              content:
+                initialMessage ||
+                `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
             },
           ],
           userMessageCount: parsed.userMessageCount || 0,
@@ -316,7 +320,9 @@ export const QuickToolChat = ({
         {
           id: '1',
           role: 'assistant',
-          content: `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
+          content:
+            initialMessage ||
+            `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
         },
       ],
       userMessageCount: 0,
@@ -976,7 +982,9 @@ export const QuickToolChat = ({
       {
         id: '1',
         role: 'assistant' as const,
-        content: `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
+        content:
+          initialMessage ||
+          `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
       },
     ];
     setMessages(initialMessages);

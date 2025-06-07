@@ -83,6 +83,7 @@ interface QuickTool {
   is_admin_added?: boolean;
   pricing?: string;
   tagline?: string;
+  initial_message?: string;
   tags?: string[];
   url?: string;
   youtube_url?: string;
@@ -325,10 +326,21 @@ const QuickToolDetails = () => {
                     </Button>
                     {showInfo && (
                       <div className="px-3">
-                        <h1 className="text-lg font-semibold tracking-tight leading-tight truncate mt-3">
-                          {tool.name}
-                        </h1>
-                        <p className="text-sm text-muted-foreground mb-3">
+                        <div className="flex items-center gap-3 mt-3">
+                          {tool.image_url && (
+                            <div className="w-10 h-10 rounded-md overflow-hidden border border-border/20 shrink-0">
+                              <img
+                                src={tool.image_url}
+                                alt={tool.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <h1 className="text-lg font-semibold tracking-tight leading-tight truncate">
+                            {tool.name}
+                          </h1>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3 mt-2">
                           {tool.description}
                         </p>
 
@@ -732,6 +744,7 @@ const QuickToolDetails = () => {
                       toolName={tool.name}
                       toolPrompt={tool.prompt}
                       imageUrl={tool.image_url}
+                      initialMessage={tool.initial_message}
                     />
                   </div>
                 </div>

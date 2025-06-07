@@ -44,8 +44,7 @@ return (
 1. **Homepage** - Replace current Helmet with SEO component and add homepage structured data
 2. **Tools Listing Page** - Add collection page structured data
 3. **Tool Details Pages** - Add software application structured data
-4. **Outcomes Pages** - Add appropriate structured data
-5. **All other pages** - Implement basic SEO component
+4. **All other pages** - Implement basic SEO component
 
 ## Meta Tags Optimization
 
@@ -80,7 +79,6 @@ Structured data helps search engines understand your content better and can resu
 1. **Homepage**: WebSite schema
 2. **Tools Listing**: CollectionPage schema
 3. **Tool Details**: SoftwareApplication schema
-4. **Outcomes**: CreativeWork schema
 
 ### Example for Homepage
 

@@ -13,7 +13,7 @@ import Resources from '@/pages/Resources';
 import UTMTracker from './components/analytics/UTMTracker';
 import AddToHomeScreen from './components/mobile/AddToHomeScreen';
 
-import Outcomes from '@/pages/Outcomes';
+// Removed Outcomes import
 import NotFound from '@/pages/NotFound';
 import Auth from '@/pages/Auth';
 import UpdatePassword from '@/pages/UpdatePassword';
@@ -64,7 +64,7 @@ const App = () => (
 
               <Route path="/resources" element={<Resources />} />
 
-              <Route path="/outcomes" element={<Outcomes />} />
+              {/* Removed Outcomes route */}
               <Route path="/auth" element={<Auth />} />
               <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/dashboard" element={<Dashboard />} />
