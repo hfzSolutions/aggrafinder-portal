@@ -57,10 +57,10 @@ const Admin = () => {
   return (
     <>
       <Helmet>
-        <title>Admin Dashboard | AggraFinder</title>
+        <title>Admin Dashboard | Deeplist AI</title>
         <meta
           name="description"
-          content="Manage your AI tools, outcomes, categories, and tool requests."
+          content="Manage your AI tools, categories, and tool requests."
         />
       </Helmet>
 

@@ -75,22 +75,7 @@ const Footer = () => {
                   AI Tools
                 </Link>
               </li>
-              {/* <li>
-                <Link
-                  to="/outcomes"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  AI Showcase
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/resources"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Resources
-                </Link>
-              </li> */}
+              {/* Resources link can be uncommented when the page is ready */}
             </ul>
           </div>
 
@@ -198,32 +183,25 @@ const Footer = () => {
             <p className="text-sm text-muted-foreground">
               © {currentYear} DeepList AI. All rights reserved.
             </p>
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <a
-                href="https://open-launch.com/projects/deeplist-ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open-Launch Top 3 Daily Winner"
+            <div className="flex space-x-6">
+              <Link
+                to="/privacy-policy"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <img
-                  src="https://open-launch.com/images/badges/top3-light.svg"
-                  alt="Open-Launch Top 3 Daily Winner"
-                  style={{ width: '195px', height: 'auto' }}
-                />
-              </a>
-              <a
-                href="https://www.producthunt.com/posts/deeplist-ai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-deeplist&#0045;ai"
-                target="_blank"
-                rel="noopener noreferrer"
+                Privacy
+              </Link>
+              <Link
+                to="/terms-of-service"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <img
-                  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=963846&theme=light&t=1746945244932"
-                  alt="DeepList&#0032;AI - A&#0032;simple&#0032;way&#0032;to&#0032;discover&#0032;how&#0032;AI&#0032;can&#0032;help&#0032;you | Product Hunt"
-                  style={{ width: '250px', height: '54px' }}
-                  width="250"
-                  height="54"
-                />
-              </a>
+                Terms
+              </Link>
+              <Link
+                to="/cookies-policy"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cookies
+              </Link>
             </div>
           </div>
         </div>

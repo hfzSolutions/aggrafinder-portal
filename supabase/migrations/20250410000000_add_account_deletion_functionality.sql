@@ -9,9 +9,6 @@ BEGIN
   -- Delete user's data from all tables
   -- This will cascade to delete profiles via FK constraint
   
-  -- Delete user outcomes
-  DELETE FROM public.ai_outcomes WHERE user_id = OLD.id;
-  
   -- Delete user tool reviews
   DELETE FROM public.tool_reviews WHERE user_id = OLD.id;
   

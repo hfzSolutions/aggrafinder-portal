@@ -2,13 +2,11 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AITool } from '@/types/tools';
-import { AIOucome } from '@/types/outcomes';
 import { compressImage } from '@/utils/imageCompression';
 import ToolSubmissionNotificationEmailTemplate from '@/templates/ToolSubmissionNotificationEmail';
 
 interface UseSupabaseAdminReturn {
-  // Outcomes management
-  deleteOutcome: (id: string) => Promise<{ success: boolean; error?: string }>;
+  // Removed Outcomes management
 
   // Categories management
   createCategory: (
@@ -92,31 +90,7 @@ interface UseSupabaseAdminReturn {
 export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
   const [loading, setLoading] = useState(false);
 
-  // Outcomes management functions
-  const deleteOutcome = async (
-    id: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setLoading(true);
-
-      const { error } = await supabase
-        .from('ai_outcomes')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      return { success: true };
-    } catch (error: any) {
-      console.error('Error deleting outcome:', error);
-      return {
-        success: false,
-        error: error.message || 'Failed to delete outcome',
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed deleteOutcome function
 
   // Categories management functions
   const updateCategory = async (
@@ -778,9 +752,6 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
   };
 
   return {
-    // Outcomes management
-    deleteOutcome,
-
     // Categories management
     createCategory,
     updateCategory,

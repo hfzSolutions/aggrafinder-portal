@@ -5,7 +5,7 @@ import { AITool } from '@/types/tools';
 // Extended AITool interface with quick tool properties
 interface ExtendedAITool extends AITool {
   tool_type?: 'external' | 'quick';
-  isPublic?: boolean;
+  is_public?: boolean;
   usageCount?: number;
   prompt?: string;
 }
@@ -55,6 +55,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import { QuickToolFormSimplified } from '../quick-tools/QuickToolFormSimplified';
 
 interface MyToolsManagerProps {
   userId: string;
@@ -65,7 +66,6 @@ interface MyToolsManagerProps {
 export const MyToolsManager = ({
   userId,
   toolType = 'external',
-  showActionButton = true,
 }: MyToolsManagerProps) => {
   const [userTools, setUserTools] = useState<ExtendedAITool[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,9 +148,11 @@ export const MyToolsManager = ({
           | 'rejected',
         // Add quick tool specific properties
         tool_type: tool.tool_type as 'external' | 'quick',
-        isPublic: tool.is_public || false,
+        is_public: tool.is_public || false,
         usageCount: tool.usage_count || 0,
         prompt: tool.prompt || '',
+        initial_message: tool.initial_message || '',
+        suggested_replies: tool.suggested_replies || false,
       }));
 
       setUserTools(tools);
@@ -263,33 +265,6 @@ export const MyToolsManager = ({
 
   return (
     <div className="space-y-4">
-      {/* Action button that shows at the top when showActionButton is true */}
-      {showActionButton && (
-        <div className="flex justify-end mb-4">
-          {toolType === 'quick' ? (
-            <Button
-              onClick={() => setOpenQuickToolDialog(true)}
-              variant="default"
-              className="shadow-sm"
-              size="sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Quick Tool
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setOpenSubmitDialog(true)}
-              variant="default"
-              className="shadow-sm"
-              size="sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Submit New Tool
-            </Button>
-          )}
-        </div>
-      )}
-
       {userTools.length === 0 && !loading ? (
         <div className="text-center p-8 border border-dashed rounded-lg bg-muted/50">
           <div className="inline-flex bg-primary/10 p-3 rounded-full mb-3">
@@ -363,10 +338,10 @@ export const MyToolsManager = ({
                       <div className="flex flex-col gap-1 items-end">
                         <div>{getStatusBadge(tool.approvalStatus)}</div>
                         <Badge
-                          variant={tool.isPublic ? 'default' : 'outline'}
+                          variant={tool.is_public ? 'default' : 'outline'}
                           className="text-xs"
                         >
-                          {tool.isPublic ? 'Public' : 'Private'}
+                          {tool.is_public ? 'Public' : 'Private'}
                         </Badge>
                         {toolType === 'quick' ? (
                           <div className="text-xs text-muted-foreground">
@@ -560,33 +535,22 @@ export const MyToolsManager = ({
 
       {/* Quick Tool Dialog */}
       <Dialog open={openQuickToolDialog} onOpenChange={setOpenQuickToolDialog}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingQuickTool ? 'Edit Quick Tool' : 'Create Quick Tool'}
             </DialogTitle>
             <DialogDescription>
               {editingQuickTool
-                ? 'Update your text-only AI tool'
+                ? 'Update your quick AI tool'
                 : 'Create a quick AI tool that you can use in your workflows'}
             </DialogDescription>
           </DialogHeader>
-          <QuickToolForm
+          <QuickToolFormSimplified
             userId={userId}
             onSuccess={handleQuickToolSuccess}
             editMode={!!editingQuickTool}
-            toolToEdit={
-              editingQuickTool
-                ? {
-                    id: editingQuickTool.id,
-                    name: editingQuickTool.name,
-                    description: editingQuickTool.description,
-                    prompt: editingQuickTool.prompt || '',
-                    category: editingQuickTool.category,
-                    is_public: editingQuickTool.isPublic,
-                  }
-                : undefined
-            }
+            toolToEdit={editingQuickTool || undefined}
           />
         </DialogContent>
       </Dialog>

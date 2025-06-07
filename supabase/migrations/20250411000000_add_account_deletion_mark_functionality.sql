@@ -59,9 +59,6 @@ BEGIN
     WHERE scheduled_deletion_at <= now() AND NOT is_processed
   LOOP
     -- Manually delete user data using the handle_user_deletion logic
-    -- Delete user outcomes
-    DELETE FROM public.ai_outcomes WHERE user_id = user_record.id;
-    
     -- Delete user tool reviews
     DELETE FROM public.tool_reviews WHERE user_id = user_record.id;
     

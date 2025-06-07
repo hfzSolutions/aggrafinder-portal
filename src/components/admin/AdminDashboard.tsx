@@ -3,7 +3,7 @@ import { useSupabaseAdmin } from '@/hooks/useSupabaseAdmin';
 import { getSiteUrl } from '@/utils/siteUrl';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
-import { AIOucome } from '@/types/outcomes';
+// Removed AIOucome import
 import { toast } from 'sonner';
 import { ToolSubmissionForm } from './ToolSubmissionForm';
 import { BulkToolUpload } from './BulkToolUpload';
@@ -87,9 +87,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
   const [pendingTools, setPendingTools] = useState<AITool[]>([]);
   const [pendingToolsLoading, setPendingToolsLoading] = useState(true);
 
-  // State for outcomes management
-  const [outcomes, setOutcomes] = useState<AIOucome[]>([]);
-  const [outcomesLoading, setOutcomesLoading] = useState(true);
+  // Removed outcomes state variables
 
   // State for categories management
   const [categories, setCategories] = useState<Category[]>([]);
@@ -324,44 +322,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     return () => observer.disconnect();
   }, [hasMore, toolsLoading]);
 
-  // Fetch outcomes
-  useEffect(() => {
-    const fetchOutcomes = async () => {
-      try {
-        setOutcomesLoading(true);
-        const { data, error } = await supabase
-          .from('ai_outcomes')
-          .select('*, ai_tools(name)')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        const transformedData: AIOucome[] = data.map((item) => ({
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          imageUrl: item.image_url ? `${storageBaseUrl}/${item.image_url}` : '',
-          toolId: item.tool_id,
-          toolName: item.ai_tools?.name || 'Unknown Tool',
-          createdAt: item.created_at,
-          submitterName: item.submitter_name,
-          submitterEmail: item.submitter_email,
-          userId: item.user_id,
-        }));
-
-        setOutcomes(transformedData);
-      } catch (error) {
-        console.error('Error fetching outcomes:', error);
-        toast.error('Failed to load outcomes');
-      } finally {
-        setOutcomesLoading(false);
-      }
-    };
-
-    if (isAdmin) {
-      fetchOutcomes();
-    }
-  }, [isAdmin]);
+  // Removed fetchOutcomes useEffect
 
   // Fetch categories
   useEffect(() => {
@@ -389,24 +350,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
     }
   }, [isAdmin]);
 
-  // Handle outcome delete
-  const handleDeleteOutcome = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this outcome?')) return;
-
-    try {
-      const { success, error } = await deleteOutcome(id);
-
-      if (!success) throw new Error(error);
-
-      // Remove from local state
-      setOutcomes((prev) => prev.filter((outcome) => outcome.id !== id));
-
-      toast.success('Outcome deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting outcome:', error);
-      toast.error(error.message || 'Failed to delete outcome');
-    }
-  };
+  // Removed handleDeleteOutcome function
 
   // Handle category creation
   const handleCreateCategory = async () => {
@@ -719,7 +663,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
         <CardHeader>
           <CardTitle>Admin Dashboard</CardTitle>
           <CardDescription>
-            Manage your AI tools, outcomes, categories, and tool requests.
+            Manage your AI tools, categories, and tool requests.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -731,7 +675,6 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               <TabsTrigger value="tools">Tools</TabsTrigger>
               <TabsTrigger value="pending">Pending Approval</TabsTrigger>
               <TabsTrigger value="claims">Ownership Claims</TabsTrigger>
-              <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="support">Support Messages</TabsTrigger>
               <TabsTrigger value="todays_picks">Today's Picks</TabsTrigger>
@@ -1107,10 +1050,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               ) : pendingTools.length === 0 ? (
                 <Card className="p-8 text-center">
                   <div className="flex flex-col items-center gap-2">
-                    <Check className="h-12 w-12 text-gray-400" />
+                    <InboxIcon className="h-12 w-12 text-gray-400" />
                     <h3 className="font-semibold">No Pending Tools</h3>
                     <p className="text-sm text-gray-500">
-                      All submitted tools have been reviewed.
+                      There are no tools waiting for approval at this time.
                     </p>
                   </div>
                 </Card>
@@ -1121,24 +1064,63 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base">{tool.name}</CardTitle>
                         <CardDescription className="line-clamp-2">
-                          {tool.description}
+                          {tool.tagline || tool.description}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pb-2">
-                        <div className="mb-4 relative w-full aspect-video rounded-lg overflow-hidden">
+                        <div className="mb-4 h-32 bg-secondary/30 rounded-md overflow-hidden">
                           {tool.imageUrl ? (
                             <img
                               src={tool.imageUrl}
                               alt={tool.name}
-                              className="object-cover w-full h-full"
-                              onError={(e) =>
-                                e.currentTarget.parentElement?.classList.add(
-                                  'image-error'
-                                )
-                              }
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // If image fails to load, show placeholder
+                                e.currentTarget.src = '/images/placeholder.svg';
+                              }}
                             />
                           ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20">
+                            <div
+                              className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${
+                                tool.name
+                                  .split('')
+                                  .reduce(
+                                    (acc, char) => acc + char.charCodeAt(0),
+                                    0
+                                  ) %
+                                  5 ===
+                                0
+                                  ? 'from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20'
+                                  : tool.name
+                                      .split('')
+                                      .reduce(
+                                        (acc, char) => acc + char.charCodeAt(0),
+                                        0
+                                      ) %
+                                      5 ===
+                                    1
+                                  ? 'from-green-100 to-teal-100 dark:from-green-900/20 dark:to-teal-900/20'
+                                  : tool.name
+                                      .split('')
+                                      .reduce(
+                                        (acc, char) => acc + char.charCodeAt(0),
+                                        0
+                                      ) %
+                                      5 ===
+                                    2
+                                  ? 'from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20'
+                                  : tool.name
+                                      .split('')
+                                      .reduce(
+                                        (acc, char) => acc + char.charCodeAt(0),
+                                        0
+                                      ) %
+                                      5 ===
+                                    3
+                                  ? 'from-rose-100 to-pink-100 dark:from-rose-900/20 dark:to-pink-900/20'
+                                  : 'from-indigo-100 to-cyan-100 dark:from-indigo-900/20 dark:to-cyan-900/20'
+                              }`}
+                            >
                               <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
                               <span className="text-xs text-primary/60 font-medium">
                                 Preview not available
@@ -1189,9 +1171,8 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                       </CardContent>
                       <CardFooter className="flex justify-end space-x-2 pt-0">
                         <Button
-                          variant="outline"
+                          variant="default"
                           size="sm"
-                          className="text-green-600 hover:text-green-700"
                           onClick={() => handleApproveTool(tool.id)}
                         >
                           <Check className="h-4 w-4 mr-1" />
@@ -1220,72 +1201,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               <ToolOwnershipClaims />
             </TabsContent>
 
-            {/* Outcomes Tab */}
-            <TabsContent value="outcomes" className="space-y-4">
-              <h3 className="text-lg font-medium">Manage User Outcomes</h3>
-
-              {outcomesLoading ? (
-                <div className="flex items-center justify-center p-4">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  <span className="ml-2">Loading outcomes...</span>
-                </div>
-              ) : outcomes.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <FileText className="h-12 w-12 text-gray-400" />
-                    <h3 className="font-semibold">No Outcomes Yet</h3>
-                    <p className="text-sm text-gray-500">
-                      User outcomes will appear here once they are submitted.
-                    </p>
-                  </div>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {outcomes.map((outcome) => (
-                    <Card key={outcome.id}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">
-                          {outcome.title}
-                        </CardTitle>
-                        <CardDescription className="line-clamp-2">
-                          {outcome.description}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <div className="text-sm space-y-1">
-                          <div>
-                            <span className="font-medium">Tool:</span>{' '}
-                            {outcome.toolName}
-                          </div>
-                          <div>
-                            <span className="font-medium">Submitter:</span>{' '}
-                            {outcome.submitterName}
-                          </div>
-                          <div>
-                            <span className="font-medium">Email:</span>{' '}
-                            {outcome.submitterEmail || 'N/A'}
-                          </div>
-                          <div>
-                            <span className="font-medium">Date:</span>{' '}
-                            {new Date(outcome.createdAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="flex justify-end pt-0">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteOutcome(outcome.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+            {/* Removed Outcomes Tab */}
 
             {/* Today's Tool Picks Tab */}
             <TabsContent value="todays_picks" className="space-y-4">
@@ -1298,18 +1214,11 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
             {/* Sponsors Tab */}
             <TabsContent value="sponsor_banners" className="space-y-4">
               <h3 className="text-lg font-medium">Manage Sponsors</h3>
-              <Tabs defaultValue="banners" className="mt-4">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="banners">Banners</TabsTrigger>
-                  <TabsTrigger value="ads">Ads</TabsTrigger>
-                </TabsList>
-                <TabsContent value="banners" className="mt-4">
-                  <SponsorBannerManager />
-                </TabsContent>
-                <TabsContent value="ads" className="mt-4">
-                  <SponsorAdManager />
-                </TabsContent>
-              </Tabs>
+              <SponsorBannerManager />
+              <div className="mt-8">
+                <h3 className="text-lg font-medium mb-4">Sponsor Ads</h3>
+                <SponsorAdManager />
+              </div>
             </TabsContent>
 
             {/* Categories Tab */}
@@ -1343,10 +1252,10 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
               ) : categories.length === 0 ? (
                 <Card className="p-8 text-center">
                   <div className="flex flex-col items-center gap-2">
-                    <FolderPlus className="h-12 w-12 text-gray-400" />
-                    <h3 className="font-semibold">No Categories Yet</h3>
+                    <FileText className="h-12 w-12 text-gray-400" />
+                    <h3 className="font-semibold">No Categories</h3>
                     <p className="text-sm text-gray-500">
-                      Add categories to organize your AI tools.
+                      Add your first category using the form above.
                     </p>
                   </div>
                 </Card>
@@ -1354,9 +1263,9 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {categories.map((category) => (
                     <Card key={category.id}>
-                      <CardHeader className="pb-2">
+                      <CardContent className="pt-6">
                         {editingCategory?.id === category.id ? (
-                          <div className="flex space-x-2">
+                          <div className="flex items-center gap-2">
                             <Input
                               value={editCategoryName}
                               onChange={(e) =>
@@ -1368,25 +1277,33 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                               size="sm"
                               onClick={async () => {
                                 if (!editCategoryName.trim()) {
-                                  toast.error('Please enter a category name');
+                                  toast.error(
+                                    'Please enter a valid category name'
+                                  );
                                   return;
                                 }
+
                                 try {
                                   const { success, error } =
                                     await updateCategory(
                                       category.id,
                                       editCategoryName
                                     );
+
                                   if (!success) throw new Error(error);
+
+                                  // Update local state
                                   setCategories((prev) =>
-                                    prev.map((cat) =>
-                                      cat.id === category.id
-                                        ? { ...cat, name: editCategoryName }
-                                        : cat
+                                    prev.map((c) =>
+                                      c.id === category.id
+                                        ? { ...c, name: editCategoryName }
+                                        : c
                                     )
                                   );
+
                                   setEditingCategory(null);
                                   setEditCategoryName('');
+
                                   toast.success(
                                     'Category updated successfully'
                                   );
@@ -1401,7 +1318,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                                 }
                               }}
                             >
-                              <Check className="h-4 w-4" />
+                              Save
                             </Button>
                             <Button
                               variant="outline"
@@ -1411,36 +1328,36 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
                                 setEditCategoryName('');
                               }}
                             >
-                              <X className="h-4 w-4" />
+                              Cancel
                             </Button>
                           </div>
                         ) : (
-                          <CardTitle className="text-base">
-                            {category.name}
-                          </CardTitle>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{category.name}</span>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingCategory(category);
+                                  setEditCategoryName(category.name);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteCategory(category.id)
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         )}
-                      </CardHeader>
-                      <CardFooter className="flex justify-end space-x-2 pt-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingCategory(category);
-                            setEditCategoryName(category.name);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteCategory(category.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </CardFooter>
+                      </CardContent>
                     </Card>
                   ))}
                 </div>
@@ -1449,6 +1366,7 @@ export function AdminDashboard({ userId }: AdminDashboardProps) {
 
             {/* Support Messages Tab */}
             <TabsContent value="support" className="space-y-4">
+              <h3 className="text-lg font-medium">Support Messages</h3>
               <SupportMessages />
             </TabsContent>
           </Tabs>

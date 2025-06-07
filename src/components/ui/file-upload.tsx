@@ -1,28 +1,36 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './button';
 import { Input } from './input';
 import { Loader2, Upload, X } from 'lucide-react';
 
 interface FileUploadProps {
-  onFileChange: (file: File | null) => void;
+  onFileChange?: (file: File | null) => void;
+  onFileSelect?: (file: File | null) => void; // Alias for onFileChange used in QuickToolFormSimplified
   value?: File | string | null;
   previewUrl?: string | null;
   accept?: string;
   maxSize?: number; // in MB
   className?: string;
   id?: string;
+  iconOnly?: boolean; // New prop for icon-only mode
+  children?: React.ReactNode; // Add support for children
 }
 
 export function FileUpload({
   onFileChange,
+  onFileSelect,
   value,
   previewUrl,
   accept = 'image/*',
   maxSize = 5, // Default 5MB
   className = '',
   id,
+  iconOnly = false, // Default to false
+  children,
 }: FileUploadProps) {
+  // Use onFileSelect as a fallback for onFileChange
+  const handleFileChangeCallback = onFileChange || onFileSelect || (() => {});
+
   const [preview, setPreview] = useState<string | null>(
     typeof value === 'string' ? value : previewUrl || null
   );
@@ -44,7 +52,7 @@ export function FileUpload({
     setError(null);
 
     if (!file) {
-      onFileChange(null);
+      handleFileChangeCallback(null);
       setPreview(null);
       return;
     }
@@ -62,18 +70,41 @@ export function FileUpload({
     };
     reader.readAsDataURL(file);
 
-    onFileChange(file);
-    console.log('File selected:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+    handleFileChangeCallback(file);
+    console.log(
+      'File selected:',
+      file.name,
+      'Size:',
+      (file.size / 1024 / 1024).toFixed(2) + 'MB'
+    );
   };
 
   const handleRemove = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    onFileChange(null);
+    handleFileChangeCallback(null);
     setPreview(null);
     setError(null);
   };
+
+  // If children are provided, render a custom upload trigger
+  if (children) {
+    return (
+      <div className={className}>
+        <Input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept={accept}
+          className="hidden"
+          id={id}
+        />
+        <div onClick={() => fileInputRef.current?.click()}>{children}</div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -91,16 +122,17 @@ export function FileUpload({
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading}
+          className={iconOnly ? 'p-2 h-auto' : ''}
         >
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Uploading...
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {!iconOnly && <span className="ml-2">Uploading...</span>}
             </>
           ) : (
             <>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Image
+              <Upload className="h-4 w-4" />
+              {!iconOnly && <span className="ml-2">Upload Image</span>}
             </>
           )}
         </Button>

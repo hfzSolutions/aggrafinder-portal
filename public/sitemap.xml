@@ -6,23 +6,7 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  
-  <!-- Main Pages -->
-  <url>
-    <loc>https://deeplistai.com/tools</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://deeplistai.com/outcomes</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://deeplistai.com/resources</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
+
   
   <!-- Legal Pages -->
   <url>
@@ -48,6 +32,6 @@
     <priority>0.5</priority>
   </url>
   
-  <!-- Note: Individual tool and outcome pages should be dynamically generated -->
-  <!-- This is a static example. In production, generate this file dynamically to include all tool and outcome pages -->
+  <!-- Note: Individual tool should be dynamically generated -->
+  <!-- This is a static example. In production, generate this file dynamically to include all tool pages -->
 </urlset>
