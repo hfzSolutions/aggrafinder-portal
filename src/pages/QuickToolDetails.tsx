@@ -135,7 +135,7 @@ const QuickToolDetails = () => {
             data.image_url
           }`;
         }
-
+        console.log('data', data);
         setTool(data as QuickTool);
 
         // Fetch comments count
@@ -167,7 +167,8 @@ const QuickToolDetails = () => {
     if (location.key !== 'default') {
       navigate(-1);
     } else {
-      navigate('/?type=quick');
+      // navigate('/?type=quick');
+      navigate('/');
     }
   };
 
@@ -212,7 +213,7 @@ const QuickToolDetails = () => {
           .eq('tool_type', 'quick')
           .neq('id', tool.id) // Exclude current tool
           // .filter('category', 'cs', `{${tool.category.join(',')}}`) // Filter by categories that overlap
-          .limit(3); // Limit to 6 related tools
+          .limit(3); // Limit to 3 related tools
 
         if (error) throw error;
 
@@ -509,165 +510,167 @@ const QuickToolDetails = () => {
                             {tool.description}
                           </p>
 
-                          <div className="space-y-4">
-                            {/* Creator Info - Always visible */}
-                            <div className="flex items-start gap-3 pt-3 border-t border-border/10">
-                              <div className="p-2 rounded-lg bg-primary/10">
-                                <User className="h-4 w-4 text-primary" />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <h3 className="text-xs font-semibold">
-                                    Creator
-                                  </h3>
-                                  <TooltipProvider delayDuration={300}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className="inline-flex items-center justify-center">
-                                          <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" />
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent
-                                        side="top"
-                                        className="max-w-xs bg-popover/95 backdrop-blur-sm"
-                                      >
-                                        <p>
-                                          Tool creators only provide the prompt
-                                          and do not have access to your
-                                          conversations.
-                                        </p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-
-                                <p className="text-sm text-muted-foreground">
-                                  {tool.user_profile?.full_name ||
-                                    'Anonymous User'}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Comments Button - Always visible */}
-                            <div className="flex items-start gap-3 pt-3 border-t border-border/10">
-                              <div className="p-2 rounded-lg bg-primary/10">
-                                <MessageSquare className="h-4 w-4 text-primary" />
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="text-xs font-semibold">
-                                  Comments
-                                </h3>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-xs text-muted-foreground hover:text-foreground p-0 h-auto"
-                                  onClick={() => setCommentsDialogOpen(true)}
-                                >
-                                  {commentsCount}{' '}
-                                  {commentsCount === 1 ? 'comment' : 'comments'}{' '}
-                                  - View all
-                                </Button>
-                              </div>
-                            </div>
-
-                            {/* Collapsible sections */}
-                            <Accordion
-                              type="single"
-                              collapsible
-                              className="w-full border-t border-border/10 pt-3"
+                          {/* Collapsible sections */}
+                          <Accordion
+                            type="single"
+                            collapsible
+                            className="w-full border-t border-border/10 pt-3"
+                          >
+                            <AccordionItem
+                              value="more-details"
+                              className="border-none"
                             >
-                              <AccordionItem
-                                value="more-details"
-                                className="border-none"
-                              >
-                                <AccordionTrigger className="py-0 text-xs font-semibold text-muted-foreground hover:text-foreground hover:no-underline">
-                                  More details
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                  <div className="space-y-4 pt-2">
-                                    {/* Date Info */}
-                                    <div className="flex items-start gap-3 pt-3 border-t border-border/10">
-                                      <div className="p-2 rounded-lg bg-primary/10">
-                                        <Calendar className="h-4 w-4 text-primary" />
-                                      </div>
-                                      <div>
-                                        <h3 className="text-xs font-semibold">
-                                          Created
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                          {formatDate(tool.created_at)}
-                                        </p>
-                                      </div>
+                              <AccordionTrigger className="py-0 text-xs font-semibold text-muted-foreground hover:text-foreground hover:no-underline">
+                                More details
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                <div className="space-y-4 pt-2">
+                                  {/* Creator Info - Always visible */}
+                                  <div className="flex items-start gap-3 pt-3 border-t border-border/10">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                      <User className="h-4 w-4 text-primary" />
                                     </div>
-
-                                    {/* Usage Count */}
-                                    <div className="flex items-start gap-3 pt-3 border-t border-border/10">
-                                      <div className="p-2 rounded-lg bg-primary/10">
-                                        <Zap className="h-4 w-4 text-primary" />
-                                      </div>
-                                      <div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-1.5">
                                         <h3 className="text-xs font-semibold">
-                                          Usage Count
+                                          Creator
                                         </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                          {tool.usage_count?.toLocaleString() ||
-                                            '0'}{' '}
-                                          uses
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {/* Prompt Button */}
-                                    <div className="flex items-start gap-3 pt-3 border-t border-border/10">
-                                      <div className="p-2 rounded-lg bg-primary/10">
-                                        <Code className="h-4 w-4 text-primary" />
-                                      </div>
-                                      <div className="flex-1">
-                                        <h3 className="text-xs font-semibold">
-                                          Prompt
-                                        </h3>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-xs text-muted-foreground hover:text-foreground p-0 h-auto"
-                                          onClick={() =>
-                                            setPromptDialogOpen(true)
-                                          }
-                                        >
-                                          View prompt details
-                                        </Button>
-                                      </div>
-                                    </div>
-
-                                    {/* Categories */}
-                                    <div className="flex items-start gap-3 pt-3 border-t border-border/10">
-                                      <div className="p-2 rounded-lg bg-primary/10">
-                                        <Tag className="h-4 w-4 text-primary" />
-                                      </div>
-                                      <div className="flex-1">
-                                        <h3 className="text-xs font-semibold">
-                                          Categories
-                                        </h3>
-                                        <div className="flex flex-wrap gap-2 mt-1.5">
-                                          {tool.category.map((cat, idx) => (
-                                            <Link
-                                              key={idx}
-                                              to={`/tools?category=${encodeURIComponent(
-                                                cat
-                                              )}&type=quick`}
-                                              className="inline-flex items-center text-xs px-3 py-1.5 rounded-full bg-secondary/50 hover:bg-secondary text-secondary-foreground transition-colors hover:scale-105 duration-300"
+                                        <TooltipProvider delayDuration={300}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="inline-flex items-center justify-center">
+                                                <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" />
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                              side="top"
+                                              className="max-w-xs bg-popover/95 backdrop-blur-sm"
                                             >
-                                              {cat}
-                                            </Link>
-                                          ))}
-                                        </div>
+                                              <p>
+                                                Tool creators only provide the
+                                                prompt and do not have access to
+                                                your conversations.
+                                              </p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </div>
+
+                                      <p className="text-sm text-muted-foreground">
+                                        {tool.user_profile?.full_name ||
+                                          'Anonymous User'}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Comments Button - Always visible */}
+                                  <div className="flex items-start gap-3 pt-3 border-t border-border/10">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                      <MessageSquare className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <h3 className="text-xs font-semibold">
+                                        Comments
+                                      </h3>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs text-muted-foreground hover:text-foreground p-0 h-auto"
+                                        onClick={() =>
+                                          setCommentsDialogOpen(true)
+                                        }
+                                      >
+                                        {commentsCount}{' '}
+                                        {commentsCount === 1
+                                          ? 'comment'
+                                          : 'comments'}{' '}
+                                        - View all
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {/* Date Info */}
+                                  <div className="flex items-start gap-3 pt-3 border-t border-border/10">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                      <Calendar className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div>
+                                      <h3 className="text-xs font-semibold">
+                                        Created
+                                      </h3>
+                                      <p className="text-sm text-muted-foreground">
+                                        {formatDate(tool.created_at)}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Usage Count */}
+                                  <div className="flex items-start gap-3 pt-3 border-t border-border/10">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                      <Zap className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div>
+                                      <h3 className="text-xs font-semibold">
+                                        Usage Count
+                                      </h3>
+                                      <p className="text-sm text-muted-foreground">
+                                        {tool.usage_count?.toLocaleString() ||
+                                          '0'}{' '}
+                                        uses
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Prompt Button */}
+                                  <div className="flex items-start gap-3 pt-3 border-t border-border/10">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                      <Code className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <h3 className="text-xs font-semibold">
+                                        Prompt
+                                      </h3>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs text-muted-foreground hover:text-foreground p-0 h-auto"
+                                        onClick={() =>
+                                          setPromptDialogOpen(true)
+                                        }
+                                      >
+                                        View prompt details
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {/* Categories */}
+                                  <div className="flex items-start gap-3 pt-3 border-t border-border/10">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                      <Tag className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <h3 className="text-xs font-semibold">
+                                        Categories
+                                      </h3>
+                                      <div className="flex flex-wrap gap-2 mt-1.5">
+                                        {tool.category.map((cat, idx) => (
+                                          <Link
+                                            key={idx}
+                                            to={`/tools?category=${encodeURIComponent(
+                                              cat
+                                            )}&type=quick`}
+                                            className="inline-flex items-center text-xs px-3 py-1.5 rounded-full bg-secondary/50 hover:bg-secondary text-secondary-foreground transition-colors hover:scale-105 duration-300"
+                                          >
+                                            {cat}
+                                          </Link>
+                                        ))}
                                       </div>
                                     </div>
                                   </div>
-                                </AccordionContent>
-                              </AccordionItem>
-                            </Accordion>
-                          </div>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
                         </div>
                       )}
 
@@ -745,6 +748,7 @@ const QuickToolDetails = () => {
                       toolPrompt={tool.prompt}
                       imageUrl={tool.image_url}
                       initialMessage={tool.initial_message}
+                      suggested_replies={tool.suggested_replies}
                     />
                   </div>
                 </div>

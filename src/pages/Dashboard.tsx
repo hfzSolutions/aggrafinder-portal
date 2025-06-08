@@ -163,12 +163,65 @@ const Dashboard = () => {
             </div>
 
             <div className="md:w-2/3">
-              <Tabs defaultValue="external" className="w-full">
+              <Tabs defaultValue="quick" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="external">External Tools</TabsTrigger>
                   <TabsTrigger value="quick">Quick Tools</TabsTrigger>
+                  <TabsTrigger value="external">External Tools</TabsTrigger>
                   <TabsTrigger value="profile">Profile Settings</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="quick">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle>Your Quick Tools</CardTitle>
+                          <CardDescription>
+                            Manage your quick AI tool submissions
+                          </CardDescription>
+                        </div>
+                        <Dialog
+                          open={isQuickToolDialogOpen}
+                          onOpenChange={setIsQuickToolDialogOpen}
+                        >
+                          <DialogTrigger asChild>
+                            <Button>
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Quick Tool
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Add a Quick AI Tool</DialogTitle>
+                              <DialogDescription>
+                                Add a quick AI tool that you can use in your
+                                workflows
+                              </DialogDescription>
+                            </DialogHeader>
+                            <QuickToolFormSimplified
+                              onSuccess={() => {
+                                setIsQuickToolDialogOpen(false);
+                                toast.success('Quick tool added successfully!');
+                                // Trigger refresh of the tools list
+                                setToolsRefreshTrigger((prev) => prev + 1);
+                              }}
+                              userId={user?.id}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {user && (
+                        <MyToolsManager
+                          userId={user.id}
+                          toolType="quick"
+                          key={`quick-tools-${toolsRefreshTrigger}`}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
                 <TabsContent value="external">
                   <Card>
@@ -218,59 +271,6 @@ const Dashboard = () => {
                           userId={user.id}
                           toolType="external"
                           key={`external-tools-${toolsRefreshTrigger}`}
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="quick">
-                  <Card>
-                    <CardHeader>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <CardTitle>Your Quick Tools</CardTitle>
-                          <CardDescription>
-                            Manage your quick AI tool submissions
-                          </CardDescription>
-                        </div>
-                        <Dialog
-                          open={isQuickToolDialogOpen}
-                          onOpenChange={setIsQuickToolDialogOpen}
-                        >
-                          <DialogTrigger asChild>
-                            <Button>
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add Quick Tool
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Add a Quick AI Tool</DialogTitle>
-                              <DialogDescription>
-                                Add a quick AI tool that you can use in your
-                                workflows
-                              </DialogDescription>
-                            </DialogHeader>
-                            <QuickToolFormSimplified
-                              onSuccess={() => {
-                                setIsQuickToolDialogOpen(false);
-                                toast.success('Quick tool added successfully!');
-                                // Trigger refresh of the tools list
-                                setToolsRefreshTrigger((prev) => prev + 1);
-                              }}
-                              userId={user?.id}
-                            />
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {user && (
-                        <MyToolsManager
-                          userId={user.id}
-                          toolType="quick"
-                          key={`quick-tools-${toolsRefreshTrigger}`}
                         />
                       )}
                     </CardContent>

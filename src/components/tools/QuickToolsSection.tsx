@@ -133,11 +133,11 @@ const QuickToolsSection = ({
   });
 
   // Determine how many tools to display based on view type and showAllTools flag
-  // If view is 'quick', show all tools, otherwise limit to 6 tools unless showAllTools is true
+  // If view is 'quick', show all tools, otherwise limit to 9 tools unless showAllTools is true
   const displayTools =
     showAllTools || view === 'quick'
       ? filteredTools
-      : filteredTools.slice(0, 6);
+      : filteredTools.slice(0, 9);
 
   // Flag to determine if we need to show the "See More" button
   const hasMoreTools =
@@ -145,7 +145,7 @@ const QuickToolsSection = ({
 
   // New state for pagination
   const [page, setPage] = useState(1);
-  const toolsPerPage = 6;
+  const toolsPerPage = 9;
 
   // Function to load more tools
   const loadMoreTools = () => {
