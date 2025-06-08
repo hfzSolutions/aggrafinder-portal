@@ -64,6 +64,7 @@ interface QuickToolChatProps {
   className?: string;
   imageUrl?: string; // Add imageUrl prop
   initialMessage?: string; // Add initialMessage prop
+  suggested_replies?: boolean; // Add suggested_replies prop
 }
 
 // Create a function to check for sponsor ads that can be reused
@@ -289,6 +290,7 @@ export const QuickToolChat = ({
   className,
   imageUrl, // Add imageUrl to destructuring
   initialMessage, // Add initialMessage to destructuring
+  suggested_replies, // Add suggested_replies prop
 }: QuickToolChatProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -349,6 +351,8 @@ export const QuickToolChat = ({
   // Add state for expanded input
   const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [shouldShowExpandButton, setShouldShowExpandButton] = useState(false);
+  // Add state for suggested replies
+  const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
 
   const { trackChatEvent } = useAIChatAnalytics();
   const { incrementUsageCount } = useQuickToolUsage();
@@ -357,6 +361,7 @@ export const QuickToolChat = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Reference to store typing timeout
   const botMessageRef = useRef<HTMLDivElement>(null); // New ref for bot messages
+  const suggestedRepliesRef = useRef<HTMLDivElement>(null); // New ref for suggested replies
 
   // Add state to control ad display
   const [pendingMessage, setPendingMessage] = useState<Message | null>(null);
@@ -368,6 +373,120 @@ export const QuickToolChat = ({
   const [latestBotMessageId, setLatestBotMessageId] = useState<string | null>(
     null
   );
+
+  // Function to generate suggested replies based on the latest bot message
+  const generateSuggestedReplies = async (botMessage: string) => {
+    if (!suggested_replies) return;
+
+    try {
+      // Prepare a simplified conversation history for context
+      const recentMessages = messages.slice(-3).map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      // Call OpenRouter API to generate suggested replies
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'DeepList AI',
+          },
+          body: JSON.stringify({
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME_2,
+            messages: [
+              {
+                role: 'system',
+                content: `You are generating exactly 3 short suggested replies for a user in a chat conversation about ${toolName}. The last message from the assistant was: "${botMessage}". 
+
+Generate 3 short, natural follow-up questions or responses that the user might want to ask or say next. Each reply should be 2-8 words only, conversational, and directly relevant to the assistant's last message. 
+
+You must respond with valid JSON in this exact format:
+{
+  "replies": ["Reply 1", "Reply 2", "Reply 3"]
+}
+
+Example:
+{
+  "replies": ["Tell me more", "What about alternatives?", "How do I start?"]
+}`,
+              },
+              ...recentMessages,
+            ],
+            temperature: 0.3,
+            max_tokens: 500,
+            top_p: 0.9,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.error('Error generating suggested replies');
+        return;
+      }
+
+      const data = await response.json();
+
+      let replies: string[] = [];
+
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) {
+        console.error('No content in suggested replies response');
+        return;
+      }
+
+      try {
+        // Parse the JSON response directly
+        const parsed = JSON.parse(content);
+
+        if (parsed.replies && Array.isArray(parsed.replies)) {
+          replies = parsed.replies
+            .slice(0, 3)
+            .filter(
+              (reply) => typeof reply === 'string' && reply.trim().length > 0
+            );
+        } else {
+          console.error(
+            'Invalid response format, missing replies array:',
+            parsed
+          );
+        }
+      } catch (parseError) {
+        console.error('JSON parsing failed:', parseError);
+        // Since we're using response_format, this should rarely happen
+        // But keep fallback for safety
+        const quotedStrings = content.match(/"([^"]+)"/g);
+        if (quotedStrings && quotedStrings.length > 0) {
+          replies = quotedStrings
+            .slice(0, 3)
+            .map((str) => str.replace(/"/g, ''))
+            .filter((reply) => reply.trim().length > 0);
+        }
+      }
+
+      // Update state with the generated replies
+      setSuggestedReplies(replies.length > 0 ? replies : []);
+
+      // Scroll to show suggested replies after they are set
+      if (replies.length > 0) {
+        setTimeout(() => {
+          if (suggestedRepliesRef.current) {
+            suggestedRepliesRef.current.scrollIntoView({
+              behavior: 'smooth',
+              block: 'nearest',
+            });
+          }
+        }, 200);
+      }
+    } catch (error) {
+      console.error('Error generating suggested replies:', error);
+      setSuggestedReplies([]);
+    }
+  };
 
   // Function to handle textarea input and auto-resize
   const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -415,11 +534,65 @@ export const QuickToolChat = ({
     }, 0);
   };
 
+  // Function to handle suggested reply click - auto send message
+  const handleSuggestedReplyClick = async (reply: string) => {
+    // Clear suggested replies immediately
+    setSuggestedReplies([]);
+
+    try {
+      setIsLoading(true);
+
+      // Auto-send the message without setting it in input
+      const userMessage: Message = {
+        id: Date.now().toString() + '-user',
+        role: 'user',
+        content: reply,
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+      setPersistentUserMessageCount((prev) => prev + 1);
+
+      // Check for ads and process message
+      const { available } = await checkForSponsorAds();
+      setIsAdAvailable(available);
+
+      const shouldShowAd =
+        messages.length >= 1 && Math.random() < 0.7 && available;
+
+      if (shouldShowAd && !isShowingAd) {
+        setPendingUserInput(reply);
+        setIsShowingAd(true);
+
+        const adMessage: Message = {
+          id: Date.now().toString() + '-ad',
+          role: 'ad',
+          content: '',
+          isAdComplete: false,
+        };
+
+        setMessages((prev) => [...prev, adMessage]);
+        return;
+      }
+
+      await processUserMessage(reply);
+    } catch (error) {
+      console.error('Error in handleSuggestedReplyClick:', error);
+      toast.error(
+        'An error occurred while sending the message. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Function to animate typing effect for a message with realistic timing
   const animateTyping = (messageId: string, content: string) => {
     let index = 0;
     setIsBotTyping(true); // Set bot typing state to true
     setLatestBotMessageId(messageId); // Set the latest bot message ID
+
+    // Clear any existing suggested replies when bot starts typing
+    setSuggestedReplies([]);
 
     // Scroll to bottom once at the beginning of typing
     scrollToBottom();
@@ -743,12 +916,7 @@ export const QuickToolChat = ({
       // Set loading state immediately to prevent multiple clicks
       setIsLoading(true);
 
-      // Check if user is authenticated and message limit
-      const userMessageCount = getUserMessageCount();
-      if (!user && userMessageCount >= 2) {
-        handleLoginRedirect();
-        return;
-      }
+      // Removed login check to allow unlimited messages without login
 
       // Set isFirstVisit to false when user sends their first message
       if (isFirstVisit) {
@@ -813,6 +981,9 @@ export const QuickToolChat = ({
   ) => {
     setIsLoading(true);
     setIsBotTyping(true);
+
+    // Clear suggested replies when processing new message
+    setSuggestedReplies([]);
 
     // Track when user sends a message for analytics
     trackChatEvent(toolId, 'message_sent');
@@ -919,6 +1090,13 @@ export const QuickToolChat = ({
         )
       );
 
+      // Generate suggested replies if feature is enabled
+      if (suggested_replies) {
+        generateSuggestedReplies(responseContent);
+      } else {
+        setSuggestedReplies([]);
+      }
+
       // Only start typing animation if we're not using an existing typing message
       if (!existingTypingId) {
         animateTyping(assistantMessage.id, responseContent);
@@ -931,6 +1109,12 @@ export const QuickToolChat = ({
           )
         );
         setIsBotTyping(false);
+        // Generate suggested replies for existing message
+        if (suggested_replies) {
+          setTimeout(() => {
+            generateSuggestedReplies(responseContent);
+          }, 500);
+        }
       }
     } catch (error) {
       // Log the detailed error for developers
@@ -1042,6 +1226,60 @@ export const QuickToolChat = ({
 
   // Note: The scrollToBottom function has been moved and improved above
 
+  // Constants for conversation management
+  const MAX_CONTEXT_MESSAGES = 10; // Maximum number of messages to include in context
+  const SUMMARY_REFRESH_COUNT = 5; // Number of new messages before refreshing summary
+
+  // Add this function to prepare messages for the API request
+  const prepareConversationHistory = (
+    messages: Message[],
+    newUserInput: string
+  ) => {
+    // Filter out ad messages and empty messages
+    const validMessages = messages.filter(
+      (msg) =>
+        (msg.role === 'user' || msg.role === 'assistant') &&
+        msg.content.trim() !== ''
+    );
+
+    // If we have fewer messages than our maximum, just return them all
+    if (validMessages.length <= MAX_CONTEXT_MESSAGES) {
+      return validMessages.map((msg) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      }));
+    }
+
+    // Otherwise, we need to create a summary and include only recent messages
+    // Get the most recent messages up to our limit (minus 1 to leave room for the summary)
+    const recentMessages = validMessages.slice(-(MAX_CONTEXT_MESSAGES - 1));
+
+    // Create a summary message from older messages
+    const olderMessages = validMessages.slice(
+      0,
+      validMessages.length - recentMessages.length
+    );
+    const summaryContent = `Previous conversation summary: ${olderMessages
+      .map(
+        (msg) =>
+          `${
+            msg.role === 'user' ? 'User' : 'Assistant'
+          }: ${msg.content.substring(0, 100)}${
+            msg.content.length > 100 ? '...' : ''
+          }`
+      )
+      .join(' | ')}`;
+
+    // Return the summary message followed by recent messages
+    return [
+      { role: 'system' as 'system', content: summaryContent },
+      ...recentMessages.map((msg) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      })),
+    ];
+  };
+
   return (
     <div className={cn('flex flex-col h-full', className)}>
       {/* Reset Confirmation Dialog */}
@@ -1067,7 +1305,7 @@ export const QuickToolChat = ({
 
       {/* Messages Area - No card styling */}
       <div
-        className="flex-1 overflow-y-auto p-0 sm:p-4 space-y-4 relative bg-transparent pb-[80px] sm:pb-4"
+        className="flex-1 overflow-y-auto p-0 sm:p-4 space-y-4 relative bg-transparent pb-[200px] sm:pb-[160px]"
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
@@ -1175,6 +1413,56 @@ export const QuickToolChat = ({
               </motion.div>
             );
           })}
+
+          {/* Render suggested replies as part of the messages flow */}
+          {suggested_replies &&
+            suggestedReplies.length > 0 &&
+            !isBotTyping &&
+            !isLoading && (
+              <motion.div
+                ref={suggestedRepliesRef}
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="flex items-start gap-2 justify-start"
+              >
+                {/* Empty space for avatar alignment - hidden on mobile, padding on desktop */}
+                <div className="hidden sm:flex flex-shrink-0 w-8 h-8"></div>
+
+                {/* Suggested replies container */}
+                <div className="max-w-[85%] space-y-2">
+                  <div className="text-xs text-muted-foreground mb-2 px-1">
+                    Suggested replies:
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                    {suggestedReplies.slice(0, 3).map((reply, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.2,
+                          delay: index * 0.1,
+                          ease: 'easeOut',
+                        }}
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full text-sm py-2 px-4 bg-muted/30 hover:bg-muted/60 transition-all duration-200 border-primary/20 hover:border-primary/40 whitespace-nowrap text-left justify-start h-auto min-h-[32px] w-full sm:w-auto"
+                          onClick={() => handleSuggestedReplyClick(reply)}
+                          disabled={isLoading || isBotTyping}
+                        >
+                          {reply}
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
           {isShowingAd && pendingMessage && (
             <motion.div
               initial={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -1297,24 +1585,11 @@ export const QuickToolChat = ({
                   overflow: 'auto',
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder={
-                  !user && getUserMessageCount() >= 2
-                    ? 'Sign in to continue chatting...'
-                    : 'Ask your question here...'
-                }
-                disabled={
-                  isLoading ||
-                  isBotTyping ||
-                  isShowingAd ||
-                  (!user && getUserMessageCount() >= 2)
-                } // Disable input when bot is typing, ad is showing, or user reached limit
+                placeholder="Ask your question here..."
+                disabled={isLoading || isBotTyping || isShowingAd} // Removed login check
                 className={cn(
                   'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-4 py-2.5 min-h-[40px] resize-none bg-background/50 text-foreground placeholder:text-muted-foreground/70 text-base placeholder:text-base',
-                  (isLoading ||
-                    isBotTyping ||
-                    isShowingAd ||
-                    (!user && getUserMessageCount() >= 2)) &&
-                    'opacity-60', // Reduce opacity when disabled
+                  (isLoading || isBotTyping || isShowingAd) && 'opacity-60', // Removed login check
                   isMessageTooLong && 'border-red-500 focus:border-red-500'
                 )}
                 rows={1}
@@ -1350,25 +1625,17 @@ export const QuickToolChat = ({
               >
                 <Button
                   size="icon"
-                  onClick={
-                    !user && getUserMessageCount() >= 2
-                      ? handleLoginRedirect
-                      : handleSendMessage
-                  }
+                  onClick={handleSendMessage} // Always use handleSendMessage
                   disabled={!input.trim() || isLoading || isMessageTooLong} // Disable when message is too long
                   className={cn(
                     'h-10 w-10 transition-all duration-300 shadow-sm text-primary-foreground flex items-center justify-center',
-                    !user && getUserMessageCount() >= 2
-                      ? 'bg-orange-500 hover:bg-orange-600'
-                      : isMessageTooLong
+                    isMessageTooLong
                       ? 'bg-red-500 hover:bg-red-600 cursor-not-allowed'
                       : 'bg-primary hover:bg-primary/90'
                   )}
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : !user && getUserMessageCount() >= 2 ? (
-                    <LogIn className="h-4 w-4" />
                   ) : (
                     <ArrowUp className="h-4 w-4" />
                   )}
@@ -1382,30 +1649,10 @@ export const QuickToolChat = ({
             <p className="text-xs text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/20 inline-flex items-center">
               Message too long ({input.length}/{MAX_MESSAGE_LENGTH} characters)
             </p>
-          ) : !user && getUserMessageCount() < 2 ? (
-            <div className="flex items-center gap-3">
-              <p className="text-xs text-muted-foreground/80 px-2 py-0.5 rounded-full bg-muted/20 inline-flex items-center">
-                AI may make mistakes. Please verify results.
-              </p>
-              {/* <div className="text-xs text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/20 inline-flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" />
-                <span>{2 - getUserMessageCount()} free messages left</span>
-              </div> */}
-            </div>
-          ) : !user && getUserMessageCount() >= 2 ? (
-            <button
-              onClick={handleLoginRedirect}
-              className="text-xs text-orange-600 dark:text-orange-400 px-3 py-1.5 rounded-full bg-orange-100 dark:bg-orange-900/20 inline-flex items-center gap-2 hover:bg-orange-200 dark:hover:bg-orange-900/30 transition-colors cursor-pointer"
-            >
-              <Lock className="h-3 w-3" />
-              <span>Sign in to continue</span>
-            </button>
           ) : (
-            <>
-              {/* <p className="text-xs text-muted-foreground/80 px-2 py-0.5 rounded-full bg-muted/20 inline-flex items-center">
+            <p className="text-xs text-muted-foreground/30 px-2 py-0.5 rounded-full bg-muted/20 inline-flex items-center">
               AI may make mistakes. Please verify results.
-            </p> */}
-            </>
+            </p>
           )}
         </div>
       </div>
@@ -1414,56 +1661,3 @@ export const QuickToolChat = ({
 };
 
 export default QuickToolChat;
-
-// Constants for conversation management
-const MAX_CONTEXT_MESSAGES = 10; // Maximum number of messages to include in context
-const SUMMARY_REFRESH_COUNT = 5; // Number of new messages before refreshing summary
-
-// Add this function to prepare messages for the API request
-const prepareConversationHistory = (
-  messages: Message[],
-  newUserInput: string
-) => {
-  // Filter out ad messages and empty messages
-  const validMessages = messages.filter(
-    (msg) =>
-      (msg.role === 'user' || msg.role === 'assistant') &&
-      msg.content.trim() !== ''
-  );
-
-  // If we have fewer messages than our maximum, just return them all
-  if (validMessages.length <= MAX_CONTEXT_MESSAGES) {
-    return validMessages.map((msg) => ({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content,
-    }));
-  }
-
-  // Otherwise, we need to create a summary and include only recent messages
-  // Get the most recent messages up to our limit (minus 1 to leave room for the summary)
-  const recentMessages = validMessages.slice(-(MAX_CONTEXT_MESSAGES - 1));
-
-  // Create a summary message from older messages
-  const olderMessages = validMessages.slice(
-    0,
-    validMessages.length - recentMessages.length
-  );
-  const summaryContent = `Previous conversation summary: ${olderMessages
-    .map(
-      (msg) =>
-        `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content.substring(
-          0,
-          100
-        )}${msg.content.length > 100 ? '...' : ''}`
-    )
-    .join(' | ')}`;
-
-  // Return the summary message followed by recent messages
-  return [
-    { role: 'system' as 'system', content: summaryContent },
-    ...recentMessages.map((msg) => ({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content,
-    })),
-  ];
-};

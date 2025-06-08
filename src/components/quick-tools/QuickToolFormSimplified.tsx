@@ -307,13 +307,85 @@ export const QuickToolFormSimplified = ({
       const data = await response.json();
 
       // Handle both response formats (URL and base64)
-      let imageUrl;
+      let imageFile;
       if (data.data && data.data[0]) {
         if (data.data[0].url) {
-          // URL format
-          imageUrl = data.data[0].url;
+          // URL format - Try to download the image, fallback to URL if CORS blocked
+          try {
+            // Try direct fetch first
+            const imageResponse = await fetch(data.data[0].url, {
+              mode: 'cors',
+              headers: {
+                Accept: 'image/*',
+              },
+            });
+
+            if (!imageResponse.ok) {
+              throw new Error(
+                `HTTP ${imageResponse.status}: ${imageResponse.statusText}`
+              );
+            }
+
+            const imageBlob = await imageResponse.blob();
+            const file = new File(
+              [imageBlob],
+              `${formData.name.replace(/\s+/g, '-').toLowerCase()}-avatar.png`,
+              { type: imageBlob.type || 'image/png' }
+            );
+
+            imageFile = file;
+            console.log('Successfully downloaded and converted image to File');
+          } catch (downloadError) {
+            console.warn(
+              'Direct download failed due to CORS or network error:',
+              downloadError
+            );
+
+            // Fallback: Try using a CORS proxy service
+            try {
+              console.log('Attempting download via CORS proxy...');
+              const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(
+                data.data[0].url
+              )}`;
+              const proxyResponse = await fetch(proxyUrl);
+
+              if (!proxyResponse.ok) {
+                throw new Error(`Proxy failed: ${proxyResponse.status}`);
+              }
+
+              const imageBlob = await proxyResponse.blob();
+              const file = new File(
+                [imageBlob],
+                `${formData.name
+                  .replace(/\s+/g, '-')
+                  .toLowerCase()}-avatar.png`,
+                { type: imageBlob.type || 'image/png' }
+              );
+
+              imageFile = file;
+              console.log('Successfully downloaded via CORS proxy');
+            } catch (proxyError) {
+              console.warn('CORS proxy also failed:', proxyError);
+
+              // Final fallback: Just use the URL (backend will need to handle the download)
+              console.log(
+                'Using URL as fallback - backend will handle download'
+              );
+              setFormData((prev) => ({
+                ...prev,
+                imageFile: null,
+                imageUrl: data.data[0].url,
+              }));
+
+              toast.success(
+                'Avatar generated successfully! (Using external URL)'
+              );
+              setIsGeneratingAvatar(false);
+              return;
+            }
+          }
         } else if (data.data[0].b64_json) {
-          // Base64 format - Convert to File object instead of storing as base64
+          // Base64 format - Convert to File object
           const base64Data = data.data[0].b64_json;
           const byteCharacters = atob(base64Data);
           const byteArrays = [];
@@ -333,35 +405,26 @@ export const QuickToolFormSimplified = ({
           const blob = new Blob(byteArrays, { type: 'image/png' });
           const file = new File(
             [blob],
-            `${formData.name.replace(/\s+/g, '-').toLowerCase()}-logo.png`,
+            `${formData.name.replace(/\s+/g, '-').toLowerCase()}-avatar.png`,
             { type: 'image/png' }
           );
 
-          // Update the form data with the generated image as a File
-          setFormData((prev) => ({
-            ...prev,
-            imageFile: file,
-            imageUrl: URL.createObjectURL(file),
-          }));
-
-          toast.success('Avatar generated successfully!');
-          setIsGeneratingAvatar(false);
-          return; // Exit early since we've already updated the form data
+          imageFile = file;
         }
       }
 
-      if (!imageUrl) {
+      if (!imageFile) {
         throw new Error('No image was generated');
       }
 
-      // Update the form data with the generated image URL
+      // Update the form data with the generated image as a File
       setFormData((prev) => ({
         ...prev,
-        imageFile: null,
-        imageUrl: imageUrl,
+        imageFile: imageFile,
+        imageUrl: URL.createObjectURL(imageFile),
       }));
 
-      toast.success('Logo generated successfully!');
+      toast.success('Avatar generated successfully!');
     } catch (error) {
       console.error('Error generating logo:', error);
       // Check for daily limit error (429)
