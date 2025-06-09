@@ -31,7 +31,21 @@ interface QuickToolsSectionProps {
   tools?: AITool[]; // Add prop to accept AITool array from parent component
   view?: 'grid' | 'list'; // View mode for displaying tools
   isMobile?: boolean; // Flag to indicate mobile view
-  setToolType?: (type: 'all' | 'quick' | 'external') => void; // Function to update toolType state
+  setToolType?: (type: 'quick' | 'external') => void; // Function to update toolType state
+}
+
+// QuickTool interface for converted tools
+interface QuickTool {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  category: string[];
+  createdBy: string;
+  createdAt: string;
+  isPublic: boolean;
+  usageCount: number;
+  rating?: number;
 }
 
 // Helper function to convert AITool to QuickTool
@@ -132,20 +146,9 @@ const QuickToolsSection = ({
     return true;
   });
 
-  // Determine how many tools to display based on view type and showAllTools flag
-  // If view is 'quick', show all tools, otherwise limit to 9 tools unless showAllTools is true
-  const displayTools =
-    showAllTools || view === 'quick'
-      ? filteredTools
-      : filteredTools.slice(0, 9);
-
-  // Flag to determine if we need to show the "See More" button
-  const hasMoreTools =
-    filteredTools.length > 6 && !showAllTools && view !== 'quick';
-
   // New state for pagination
   const [page, setPage] = useState(1);
-  const toolsPerPage = 9;
+  const toolsPerPage = 18; // Increased from 9 to 18 tools per page
 
   // Function to load more tools
   const loadMoreTools = () => {
@@ -198,13 +201,19 @@ const QuickToolsSection = ({
       )}
 
       <div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div
+          className={
+            view === 'grid'
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 md:gap-6'
+              : 'grid grid-cols-1 gap-3 md:gap-4'
+          }
+        >
           {paginatedTools.map((tool) => (
             <div key={tool.id} className="w-full">
-              {isMobile ? (
-                // Mobile view (same for homepage and non-homepage)
+              {isMobile || view === 'list' ? (
+                // Mobile view or List view - horizontal card layout
                 <div
-                  className="group relative rounded-md overflow-hidden bg-background border border-primary/20 hover:border-primary/40 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-row items-center cursor-pointer p-3 touch-manipulation"
+                  className="group relative rounded-xl overflow-hidden bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:border-primary/40 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-row items-center cursor-pointer p-4 touch-manipulation"
                   onClick={() => handleQuickToolClick(tool.id)}
                 >
                   <div className="flex-shrink-0">
@@ -212,74 +221,70 @@ const QuickToolsSection = ({
                       <img
                         src={tool.imageUrl}
                         alt={tool.name}
-                        className="h-8 w-8 object-contain rounded-md mr-2.5"
+                        className="h-12 w-12 object-cover rounded-lg mr-4 shadow-sm"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mr-2.5 text-primary">
-                        <Bot className="h-4 w-4" />
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mr-4 text-primary shadow-sm">
+                        <Bot className="h-6 w-6" />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium truncate group-hover:text-primary transition-colors duration-200">
+                    <h3 className="text-sm font-semibold truncate group-hover:text-primary transition-colors duration-200 mb-1">
                       {tool.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-muted-foreground truncate mb-2">
                       {tool.description}
                     </p>
                     {tool.usageCount > 0 && (
-                      <div className="mt-1 flex items-center">
-                        <span className="text-[10px] text-primary/70 font-medium">
+                      <div className="flex items-center">
+                        <span className="text-[10px] text-primary/70 font-medium px-2 py-0.5 bg-primary/10 rounded-full">
                           {tool.usageCount.toLocaleString()}+ uses
                         </span>
                       </div>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="ml-1 h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuickToolClick(tool.id);
-                    }}
-                  >
-                    <SquareArrowOutUpRight className="h-3 w-3" />
-                  </Button>
                 </div>
               ) : (
-                // Regular view for homepage - improved card layout
+                // Desktop grid view - vertical card layout with larger image
                 <div
-                  className="bg-background border border-border/50 rounded-lg hover:border-primary/30 hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer touch-manipulation h-full flex flex-col"
+                  className="group bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-primary/40 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer touch-manipulation h-full flex flex-col overflow-hidden"
                   onClick={() => handleQuickToolClick(tool.id)}
                 >
-                  <div className="p-4 flex flex-col h-full">
-                    <div className="flex items-center mb-3">
-                      {tool.imageUrl ? (
-                        <img
-                          src={tool.imageUrl}
-                          alt={tool.name}
-                          className="w-10 h-10 object-contain rounded-md mr-3 flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mr-3 text-primary flex-shrink-0">
-                          <Bot className="h-5 w-5" />
-                        </div>
-                      )}
-                      <h3 className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors duration-200">
-                        {tool.name}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2 flex-grow">
+                  {/* Image Section - Compact and balanced */}
+                  <div className="relative w-full h-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
+                    {tool.imageUrl ? (
+                      <img
+                        src={tool.imageUrl}
+                        alt={tool.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary">
+                        <Bot className="h-4 w-4" />
+                      </div>
+                    )}
+                    {/* Overlay gradient for better text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+                  </div>
+
+                  {/* Content Section */}
+                  <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors duration-200 mb-1">
+                      {tool.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground line-clamp-3 flex-grow mb-3 leading-relaxed">
                       {tool.description}
                     </p>
-                    <div className="flex items-center justify-between mt-auto">
+
+                    {/* Footer Section */}
+                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
                       <div className="flex items-center overflow-hidden max-w-[60%]">
                         {tool.category.length > 0 && (
                           <div className="flex flex-wrap gap-1 overflow-hidden">
                             <Badge
                               variant="secondary"
-                              className="text-[10px] px-1.5 py-0 h-4 bg-secondary/40 truncate max-w-[100px]"
+                              className="text-[10px] px-2 py-0.5 h-5 bg-primary/10 text-primary border-primary/20 truncate max-w-[80px] font-medium"
                               onClick={(e) => e.stopPropagation()}
                             >
                               {tool.category[0]}
@@ -289,14 +294,17 @@ const QuickToolsSection = ({
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Badge
-                                      variant="secondary"
-                                      className="text-[10px] px-1 py-0 h-4 bg-secondary/30 cursor-help"
+                                      variant="outline"
+                                      className="text-[10px] px-1.5 py-0.5 h-5 cursor-help hover:bg-primary/5"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       +{tool.category.length - 1}
                                     </Badge>
                                   </TooltipTrigger>
-                                  <TooltipContent side="bottom">
+                                  <TooltipContent
+                                    side="bottom"
+                                    className="max-w-xs"
+                                  >
                                     <div className="text-xs">
                                       {tool.category.slice(1).join(', ')}
                                     </div>
@@ -309,7 +317,7 @@ const QuickToolsSection = ({
                       </div>
                       {tool.usageCount > 0 && (
                         <div className="flex items-center">
-                          <span className="text-xs text-primary/70 font-medium">
+                          <span className="text-[10px] text-primary/70 font-medium px-2 py-0.5 bg-primary/5 rounded-full">
                             {tool.usageCount.toLocaleString()}+ uses
                           </span>
                         </div>
@@ -324,14 +332,20 @@ const QuickToolsSection = ({
 
         {/* Load More Button */}
         {hasMoreToolsToLoad && (
-          <div className="flex justify-center mt-6 md:mt-10">
+          <div className="flex justify-center mt-8 md:mt-12">
             <Button
               variant="default"
               onClick={loadMoreTools}
-              className="w-full max-w-md py-2 md:py-3 font-medium flex items-center justify-center gap-2 rounded-xl"
+              className="group w-full max-w-sm py-3 md:py-4 font-semibold flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 text-white"
             >
-              <span>Load More Quick Tools</span>
-              <ArrowDown className="h-4 w-4 md:h-5 md:w-5 animate-bounce" />
+              <span>Load More Tools</span>
+              <ArrowDown className="h-4 w-4 md:h-5 md:w-5 group-hover:animate-bounce transition-all duration-300" />
+              <Badge
+                variant="secondary"
+                className="ml-2 bg-white/20 text-white border-0 text-xs px-2 py-0 h-5"
+              >
+                {filteredTools.length - page * toolsPerPage} left
+              </Badge>
             </Button>
           </div>
         )}

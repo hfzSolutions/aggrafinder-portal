@@ -115,236 +115,167 @@ export const ToolCard = ({
   if (viewType === 'grid') {
     return (
       <div
-        className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col cursor-pointer touch-manipulation"
+        className="group bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-primary/40 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer touch-manipulation h-full flex flex-col overflow-hidden"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onClick={handleCardClick}
       >
-        <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent rounded-tl-xl"></div>
-          <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-primary/20 to-transparent rounded-br-xl"></div>
-        </div>
-
+        {/* Featured border overlay */}
         {tool.featured && (
-          <div className="absolute inset-0 border-2 border-yellow-200 dark:border-yellow-500/40 rounded-xl pointer-events-none z-10"></div>
+          <div className="absolute inset-0 border-2 border-yellow-300/60 dark:border-yellow-500/40 rounded-2xl pointer-events-none z-10"></div>
         )}
 
-        <div className="relative pt-[56.25%] w-full overflow-hidden bg-secondary/30">
+        {/* Image Section - Compact and balanced like quick tools */}
+        <div className="relative w-full h-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
-              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+              <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
             </div>
           )}
 
           {isImageError ? (
-            <div
-              className={`absolute inset-0 flex flex-col items-center justify-center ${getGradientForTool()}`}
-              onClick={handleCardClick}
-            >
-              <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
-              <span className="text-xs text-primary/60 font-medium">
-                Preview not available
-              </span>
+            <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary">
+              <ImageOff className="h-6 w-6" />
             </div>
           ) : (
-            <div onClick={handleCardClick}>
-              <img
-                src={tool.imageUrl}
-                alt={tool.name}
-                className={cn(
-                  'absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105',
-                  isImageLoaded ? 'opacity-100' : 'opacity-0'
-                )}
-                onLoad={() => setIsImageLoaded(true)}
-                onError={handleImageError}
-                onClick={handleCardClick}
-              />
-            </div>
+            <img
+              src={tool.imageUrl}
+              alt={tool.name}
+              className={cn(
+                'w-full h-full object-cover group-hover:scale-105 transition-transform duration-300',
+                isImageLoaded ? 'opacity-100' : 'opacity-0'
+              )}
+              onLoad={() => setIsImageLoaded(true)}
+              onError={handleImageError}
+            />
           )}
 
-          <div
-            onClick={handleCardClick}
-            className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          ></div>
+          {/* Overlay gradient for better readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
 
-          <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+          {/* Top badges - Featured and Today's Pick */}
+          <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
             {tool.featured && (
               <Badge
                 variant="secondary"
-                className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border border-yellow-200"
+                className="flex items-center gap-1 bg-yellow-100/90 text-yellow-800 border border-yellow-200/50 backdrop-blur-sm text-xs px-2 py-0.5"
               >
-                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />{' '}
+                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
                 Featured
               </Badge>
             )}
             {todaysPick && (
               <Badge
                 variant="secondary"
-                className="flex items-center gap-1 bg-primary text-primary-foreground"
+                className="flex items-center gap-1 bg-primary/90 text-primary-foreground backdrop-blur-sm text-xs px-2 py-0.5"
               >
-                <Star className="h-3 w-3 fill-current" /> Today's Pick
+                <Star className="h-3 w-3 fill-current" />
+                Today's Pick
               </Badge>
             )}
-            {/* {tool.isAdminAdded && (
-              <Badge
-                variant="secondary"
-                className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200"
-              >
-                Admin Information
-              </Badge>
-            )} */}
           </div>
 
-          <div className="absolute top-3 right-3 z-10">
+          {/* Pricing badge - Top right */}
+          <div className="absolute top-2 right-2 z-10">
             <span
-              className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(
+              className={`text-xs font-medium px-2 py-1 rounded-full backdrop-blur-sm ${getPricingColor(
                 tool.pricing
               )}`}
             >
               {tool.pricing}
             </span>
           </div>
-
-          <div
-            className={cn(
-              'absolute bottom-3 left-3 z-10 transition-all duration-300',
-              'opacity-100 md:opacity-0 md:group-hover:opacity-100',
-              isToolSelected(tool.id) && 'md:opacity-100'
-            )}
-          >
-            <div className="flex space-x-2">
-              <CompareButton
-                isActive={isToolSelected(tool.id)}
-                onClick={handleCompareClick}
-                buttonText="Compare"
-                className="h-10 px-4 shadow-sm hover:shadow-md"
-              />
-
-              <AskAIButton
-                tool={tool}
-                buttonText="Ask AI"
-                className="h-10 px-4 shadow-sm hover:shadow-md"
-              />
-
-              {/* {onFavoriteToggle && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-8 px-3 rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsFavoriteState(!isFavoriteState);
-                    onFavoriteToggle(tool.id, !isFavoriteState);
-                  }}
-                >
-                  <Heart
-                    className={`h-4 w-4 mr-1 ${
-                      isFavoriteState ? 'fill-current text-red-500' : ''
-                    }`}
-                  />
-                  {isFavoriteState ? 'Saved' : 'Save'}
-                </Button>
-              )} */}
-            </div>
-          </div>
         </div>
 
-        <div className="flex-1 p-5 flex flex-col">
-          <h3
-            onClick={handleCardClick}
-            className="text-lg font-medium mb-2 group-hover:text-primary transition-colors duration-300"
-          >
+        {/* Content Section */}
+        <div className="p-4 flex flex-col flex-grow">
+          <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors duration-200 mb-1">
             {tool.name}
           </h3>
+
           {tool.tagline && (
-            <p
-              onClick={handleCardClick}
-              className="text-sm font-medium text-primary/90 mb-2.5 line-clamp-2 leading-snug"
-            >
+            <p className="text-xs font-medium text-primary/80 mb-1 line-clamp-1 leading-relaxed">
               {tool.tagline}
             </p>
           )}
-          <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-3">
+
+          <p className="text-xs text-muted-foreground line-clamp-3 flex-grow mb-3 leading-relaxed">
             {tool.description}
           </p>
-          <div className="mb-3">
-            <div className="flex flex-wrap gap-1.5">
-              {tool.category &&
-                tool.category.slice(0, 2).map((category, index) => (
+
+          {/* Categories and actions footer */}
+          <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center overflow-hidden max-w-[60%]">
+              {tool.category && tool.category.length > 0 && (
+                <div className="flex flex-wrap gap-1 overflow-hidden">
                   <Badge
-                    key={index}
-                    variant="outline"
-                    className="text-xs bg-secondary/40 hover:bg-secondary cursor-pointer"
-                    onClick={(e) => handleCategoryClick(category, e)}
+                    variant="secondary"
+                    className="text-[10px] px-2 py-0.5 h-5 bg-primary/10 text-primary border-primary/20 truncate max-w-[80px] font-medium cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCategoryClick(tool.category[0], e);
+                    }}
                   >
-                    {category}
+                    {tool.category[0]}
                   </Badge>
-                ))}
-              {tool.category && tool.category.length > 2 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge
-                        variant="outline"
-                        className="text-xs bg-secondary/40 hover:bg-secondary cursor-help"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        +{tool.category.length - 2}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="text-xs">
-                        {tool.category.slice(2).join(', ')}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                  {tool.category.length > 1 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0.5 h-5 cursor-help hover:bg-primary/5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            +{tool.category.length - 1}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          <div className="text-xs">
+                            {tool.category.slice(1).join(', ')}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
               )}
             </div>
-          </div>
-          <div className="mt-auto">
-            <div className="flex items-center justify-between">
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="flex-shrink-0"
-              >
-                <VoteButtons toolId={tool.id} variant="compact" />
-              </div>
 
-              <div className="flex items-center space-x-2">
-                <a
-                  href={tool.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                  onClick={handleLinkClick}
-                >
-                  <span className="hidden sm:inline">Visit website</span>
-                  <ExternalLink className="sm:ml-1 h-3.5 w-3.5" />
-                </a>
+            {/* Action buttons */}
+            <div className="flex items-center gap-1">
+              <div onClick={(e) => e.stopPropagation()}>
+                <CompareButton
+                  isActive={isToolSelected(tool.id)}
+                  onClick={handleCompareClick}
+                  buttonText=""
+                  className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10"
+                />
+              </div>
+              <div onClick={(e) => e.stopPropagation()}>
+                <AskAIButton
+                  tool={tool}
+                  buttonText=""
+                  className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10"
+                />
               </div>
             </div>
           </div>
         </div>
-
-        <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/10 rounded-xl pointer-events-none transition-all duration-300"></div>
-
-        {/* Shared chat modal is now rendered at the app level */}
       </div>
     );
   }
 
   if (compact) {
     return (
-      <div className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full flex cursor-pointer animate-fade-in touch-manipulation">
-        <div
-          className="relative w-1/3 overflow-hidden bg-secondary/30"
-          onClick={handleCardClick}
-        >
+      <div className="group bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:border-primary/40 hover:shadow-lg transition-all duration-300 h-full flex cursor-pointer touch-manipulation">
+        {/* Image section */}
+        <div className="relative w-1/3 min-w-[80px] overflow-hidden rounded-l-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
           {isImageError ? (
-            <div
-              className={`absolute inset-0 flex items-center justify-center ${getGradientForTool()}`}
-            >
-              <ImageOff className="h-6 w-6 text-primary/40" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary">
+                <ImageOff className="h-4 w-4" />
+              </div>
             </div>
           ) : (
             <img
@@ -352,107 +283,132 @@ export const ToolCard = ({
               alt={tool.name}
               className="absolute top-0 left-0 w-full h-full object-cover transition-all duration-500 transform group-hover:scale-105"
               onError={handleImageError}
+              onClick={handleCardClick}
             />
           )}
+
+          {/* External link indicator */}
+          <div className="absolute bottom-1 right-1 opacity-60 group-hover:opacity-100 transition-opacity">
+            <div className="w-4 h-4 rounded-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center">
+              <ExternalLink className="h-2.5 w-2.5 text-primary" />
+            </div>
+          </div>
         </div>
 
-        <div className="flex-1 p-3 flex flex-col">
+        {/* Content section */}
+        <div className="flex-1 p-3 flex flex-col min-w-0">
           <div className="flex justify-between items-start mb-1">
             <h3
-              className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors duration-300"
+              className="text-sm font-semibold truncate group-hover:text-primary transition-colors duration-200 flex-1 mr-2"
               onClick={handleCardClick}
             >
               {tool.name}
             </h3>
-            <div className="flex flex-col gap-1">
-              {tool.featured && (
-                <Badge
-                  variant="secondary"
-                  className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border border-yellow-200 ml-1 text-[10px] px-1.5 py-0"
-                >
-                  <Star className="h-2 w-2 fill-yellow-500 text-yellow-500" />
-                  Featured
-                </Badge>
-              )}
-              {todaysPick && (
-                <Badge
-                  variant="secondary"
-                  className="flex items-center gap-1 bg-primary text-primary-foreground ml-1 text-[10px] px-1.5 py-0"
-                >
-                  <Star className="h-2 w-2 fill-current" />
-                  Today's Pick
-                </Badge>
-              )}
-            </div>
+            {/* Pricing badge */}
+            <span
+              className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${getPricingColor(
+                tool.pricing
+              )}`}
+            >
+              {tool.pricing}
+            </span>
           </div>
+
           {tool.tagline && (
             <p
-              className="text-xs font-medium text-primary/80 mb-1.5 line-clamp-1 leading-snug"
+              className="text-xs font-medium text-primary/70 mb-1 truncate leading-tight"
               onClick={handleCardClick}
             >
               {tool.tagline}
             </p>
           )}
-          <p className="text-xs text-muted-foreground line-clamp-1 mb-1">
+
+          <p
+            className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow leading-relaxed"
+            onClick={handleCardClick}
+          >
             {tool.description}
           </p>
 
+          {/* Footer with actions */}
           <div className="flex items-center justify-between mt-auto">
-            <div className="flex items-center space-x-2">
+            {/* Category badge */}
+            <div className="flex-1 min-w-0 mr-2">
+              {tool.category && tool.category.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 truncate max-w-full font-medium cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCategoryClick(tool.category[0], e);
+                  }}
+                >
+                  {tool.category[0]}
+                </Badge>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 flex-shrink-0">
               <div onClick={(e) => e.stopPropagation()}>
                 <CompareButton
                   isActive={isToolSelected(tool.id)}
                   onClick={handleCompareClick}
                   buttonText=""
-                  className="h-9 w-9 p-0 rounded-full flex items-center justify-center border shadow-sm hover:shadow-md active:scale-95 transition-all"
+                  className="h-6 w-6 p-0 rounded-md hover:bg-primary/10"
                 />
               </div>
               <div onClick={(e) => e.stopPropagation()}>
                 <AskAIButton
                   tool={tool}
                   buttonText=""
-                  className="h-9 w-9 p-0 rounded-full flex items-center justify-center border shadow-sm hover:shadow-md active:scale-95 transition-all"
+                  className="h-6 w-6 p-0 rounded-md hover:bg-primary/10"
                 />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Shared chat modal is now rendered at the app level */}
+        {/* Featured overlay */}
+        {(tool.featured || todaysPick) && (
+          <div className="absolute top-1 left-1 z-10 flex flex-col gap-1">
+            {tool.featured && (
+              <div className="w-2 h-2 rounded-full bg-yellow-400" />
+            )}
+            {todaysPick && <div className="w-2 h-2 rounded-full bg-primary" />}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div
-      className="group relative rounded-xl overflow-hidden bg-background border border-border/40 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer touch-manipulation"
+      className="group bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-primary/40 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer touch-manipulation"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
-      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent rounded-tl-xl"></div>
-        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-primary/20 to-transparent rounded-br-xl"></div>
-      </div>
-
+      {/* Featured border overlay */}
       {tool.featured && (
-        <div className="absolute inset-0 border-2 border-yellow-300 dark:border-yellow-500/40 rounded-xl pointer-events-none"></div>
+        <div className="absolute inset-0 border-2 border-yellow-300/60 dark:border-yellow-500/40 rounded-2xl pointer-events-none z-10"></div>
       )}
 
       <div className="flex flex-col sm:flex-row">
-        <div className="relative sm:w-1/4 min-w-[120px] h-48 sm:h-auto overflow-hidden bg-secondary/30">
+        {/* Image Section */}
+        <div className="relative sm:w-1/4 min-w-[120px] h-48 sm:h-auto overflow-hidden rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
-              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+              <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
             </div>
           )}
 
           {isImageError ? (
-            <div
-              className={`absolute inset-0 flex flex-col items-center justify-center ${getGradientForTool()}`}
-              onClick={handleCardClick}
-            >
-              <ImageOff className="h-10 w-10 mb-2 text-primary/40" />
-              <span className="text-xs text-primary/60 font-medium">
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary">
+                <ImageOff className="h-6 w-6" />
+              </div>
+              <span className="text-xs text-primary/60 font-medium mt-2">
                 Preview not available
               </span>
             </div>
@@ -466,41 +422,38 @@ export const ToolCard = ({
               )}
               onLoad={() => setIsImageLoaded(true)}
               onError={handleImageError}
-              onClick={handleCardClick}
             />
           )}
 
+          {/* Overlay gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+
+          {/* Top badges */}
           <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
             {tool.featured && (
               <Badge
                 variant="secondary"
-                className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border border-yellow-200"
+                className="flex items-center gap-1 bg-yellow-100/90 text-yellow-800 border border-yellow-200/50 backdrop-blur-sm"
               >
-                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />{' '}
+                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
                 Featured
               </Badge>
             )}
             {todaysPick && (
               <Badge
                 variant="secondary"
-                className="flex items-center gap-1 bg-primary text-primary-foreground"
+                className="flex items-center gap-1 bg-primary/90 text-primary-foreground backdrop-blur-sm"
               >
-                <Star className="h-3 w-3 fill-current" /> Today's Pick
+                <Star className="h-3 w-3 fill-current" />
+                Today's Pick
               </Badge>
             )}
-            {/* {tool.isAdminAdded && (
-              <Badge
-                variant="secondary"
-                className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200"
-              >
-                Admin Information
-              </Badge>
-            )} */}
           </div>
 
+          {/* Pricing badge - only visible on mobile */}
           <div className="absolute top-3 right-3 z-10 sm:hidden">
             <span
-              className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(
+              className={`text-xs font-medium px-2 py-1 rounded-full backdrop-blur-sm ${getPricingColor(
                 tool.pricing
               )}`}
             >
@@ -509,17 +462,16 @@ export const ToolCard = ({
           </div>
         </div>
 
+        {/* Content Section */}
         <div className="flex-1 p-5 flex flex-col">
-          <div className="flex justify-between items-start mb-2">
-            <h3
-              onClick={handleCardClick}
-              className="text-lg font-medium group-hover:text-primary transition-colors duration-300"
-            >
+          <div className="flex justify-between items-start mb-1">
+            <h3 className="text-lg font-semibold group-hover:text-primary transition-colors duration-300 flex-1 mr-4">
               {tool.name}
             </h3>
-            <div className="hidden sm:block">
+            {/* Pricing badge - desktop */}
+            <div className="hidden sm:block flex-shrink-0">
               <span
-                className={`text-xs font-medium px-2 py-1 rounded-full ${getPricingColor(
+                className={`text-xs font-medium px-3 py-1 rounded-full ${getPricingColor(
                   tool.pricing
                 )}`}
               >
@@ -529,26 +481,28 @@ export const ToolCard = ({
           </div>
 
           {tool.tagline && (
-            <p
-              onClick={handleCardClick}
-              className="text-sm font-medium text-primary/90 mb-2.5 line-clamp-1 leading-snug"
-            >
+            <p className="text-sm font-medium text-primary/80 mb-1 line-clamp-1 leading-snug">
               {tool.tagline}
             </p>
           )}
-          <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2">
+
+          <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2 leading-relaxed">
             {tool.description}
           </p>
 
-          <div className="mb-3">
+          {/* Categories */}
+          <div className="mb-4">
             <div className="flex flex-wrap gap-1.5">
               {tool.category &&
                 tool.category.slice(0, 3).map((category, index) => (
                   <Badge
                     key={index}
                     variant="outline"
-                    className="text-xs bg-secondary/40 hover:bg-secondary cursor-pointer"
-                    onClick={(e) => handleCategoryClick(category, e)}
+                    className="text-xs bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCategoryClick(category, e);
+                    }}
                   >
                     {category}
                   </Badge>
@@ -576,56 +530,29 @@ export const ToolCard = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4 mt-auto">
+          {/* Actions Footer */}
+          <div className="flex items-center justify-between gap-4 mt-auto pt-3 border-t border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-3">
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="flex-shrink-0"
-              >
-                <VoteButtons toolId={tool.id} variant="compact" />
-              </div>
-
-              <div
-                className={cn(
-                  'transition-all duration-300',
-                  'opacity-100 md:opacity-0 md:group-hover:opacity-100',
-                  isToolSelected(tool.id) && 'md:opacity-100'
-                )}
-              >
+              <div onClick={(e) => e.stopPropagation()}>
                 <CompareButton
                   isActive={isToolSelected(tool.id)}
                   onClick={handleCompareClick}
                   buttonText="Compare"
+                  className="h-8 px-3"
                 />
               </div>
 
-              <div
-                className={cn(
-                  'transition-all duration-300',
-                  'opacity-100 md:opacity-0 md:group-hover:opacity-100',
-                  isToolSelected(tool.id) && 'md:opacity-100'
-                )}
-              >
-                <AskAIButton tool={tool} buttonText="Ask AI" />
+              <div onClick={(e) => e.stopPropagation()}>
+                <AskAIButton
+                  tool={tool}
+                  buttonText="Ask AI"
+                  className="h-8 px-3"
+                />
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <a
-                href={tool.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                onClick={handleLinkClick}
-              >
-                <span className="hidden sm:inline">Visit website</span>
-                <ExternalLink className="sm:ml-1 h-3.5 w-3.5" />
-              </a>
             </div>
           </div>
         </div>
       </div>
-
-      <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/10 rounded-xl pointer-events-none transition-all duration-300"></div>
 
       <ToolChatModal
         tool={tool}
