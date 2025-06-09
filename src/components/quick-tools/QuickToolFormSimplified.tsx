@@ -705,7 +705,7 @@ export const QuickToolFormSimplified = ({
             'X-Title': 'DeepList AI',
           },
           body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME_2,
             messages: [
               {
                 role: 'user',
@@ -938,7 +938,7 @@ export const QuickToolFormSimplified = ({
             'X-Title': 'DeepList AI',
           },
           body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME_2,
             messages: [
               {
                 role: 'user',
@@ -1030,11 +1030,14 @@ export const QuickToolFormSimplified = ({
       1. Be concise and catchy (1-4 words maximum)
       2. Clearly relate to the tool's purpose
       3. Be memorable and easy to pronounce
-      4. Don't combine words
+      4. Don't combine words, space each word
       5. No markdown or special characters
       6. One tool name only
       
-      Return ONLY the improved name with no additional commentary or formatting.`;
+      Return ONLY the improved name with no additional commentary or formatting.
+      
+      (IMPORTANT: 1-4 words maximum output words)
+      `;
       } else {
         prompt = `You are creating a name for an AI tool. 
       ${
@@ -1047,12 +1050,15 @@ export const QuickToolFormSimplified = ({
       1. Be concise and catchy (1-4 words maximum)
       2. Clearly relate to the tool's purpose
       3. Be memorable and easy to pronounce
-      4. Don't combine words
+      4. Don't combine words, space each word
       5. No markdown or special characters
       6. One tool name only
       7. Do not use word 'AI' or 'AI assistant'
       
-      Return ONLY the name with no additional commentary or formatting.`;
+      Return ONLY the name with no additional commentary or formatting.
+      
+      (IMPORTANT: 1-4 words maximum output words)
+      `;
       }
 
       const response = await fetch(
@@ -1066,7 +1072,7 @@ export const QuickToolFormSimplified = ({
             'X-Title': 'DeepList AI',
           },
           body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
+            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME_2,
             messages: [
               {
                 role: 'user',

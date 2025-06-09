@@ -11,7 +11,6 @@ import CompareTools from '@/pages/CompareTools';
 
 import Resources from '@/pages/Resources';
 import UTMTracker from './components/analytics/UTMTracker';
-import AddToHomeScreen from './components/mobile/AddToHomeScreen';
 
 // Removed Outcomes import
 import NotFound from '@/pages/NotFound';
@@ -52,7 +51,6 @@ const App = () => (
         <ToolsCompareProvider>
           <SharedChatProvider>
             <UTMTracker />
-            <AddToHomeScreen />
             <SharedToolChatModal />
 
             <Routes>
