@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
 
 type Message = {
   id: string;
@@ -1282,6 +1283,19 @@ Example:
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt
+        toolName={toolName}
+        toolImage={imageUrl}
+        onDismiss={() => {
+          // Optional: track dismissal for analytics
+          trackEvent?.('pwa_install_prompt', 'dismissed', {
+            tool_id: toolId,
+            tool_name: toolName,
+          });
+        }}
+      />
+
       {/* Reset Confirmation Dialog */}
       <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
         <AlertDialogContent>
@@ -1303,9 +1317,9 @@ Example:
 
       {/* Removed Login Prompt Dialog - direct redirect to auth page instead */}
 
-      {/* Messages Area - No card styling */}
+      {/* Messages Area - Add extra bottom padding when PWA prompt might be visible */}
       <div
-        className="flex-1 overflow-y-auto p-0 sm:p-4 space-y-4 relative bg-transparent pb-[200px] sm:pb-[160px]"
+        className="flex-1 overflow-y-auto p-0 sm:p-4 space-y-4 relative bg-transparent pb-[240px] sm:pb-[160px]"
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
@@ -1506,7 +1520,7 @@ Example:
       </div>
 
       {hasNewMessage && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[120px] sm:bottom-[72px] flex justify-center">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-[160px] sm:bottom-[72px] flex justify-center">
           <div
             className="text-primary rounded-full px-3 py-1.5 text-xs font-medium cursor-pointer animate-bounce inline-flex items-center backdrop-filter backdrop-blur-sm border border-primary/20"
             onClick={scrollToBottom}
@@ -1516,10 +1530,10 @@ Example:
         </div>
       )}
 
-      {/* Input Area with Modern Card Styling */}
+      {/* Input Area - Adjust z-index to be below PWA prompt */}
       <div
         data-input-area
-        className="p-4 border border-primary/90 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm fixed bottom-7 left-2 right-2 sm:sticky sm:bottom-10 z-10 hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
+        className="p-4 border border-primary/90 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm fixed bottom-7 left-2 right-2 sm:sticky sm:bottom-10 z-[45] hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
       >
         <div className="flex items-center gap-3 w-full">
           <div className="flex flex-col gap-2">
