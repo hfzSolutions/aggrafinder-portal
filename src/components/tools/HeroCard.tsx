@@ -31,7 +31,7 @@ const HeroCard = ({ isMobile = false }: HeroCardProps) => {
               >
                 <Link to="/auth">
                   <CirclePlus className="mr-1.5 h-3.5 w-3.5" />
-                  Submit Tool
+                  Add Tool
                 </Link>
               </Button>
               {/* <Button

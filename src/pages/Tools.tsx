@@ -27,8 +27,10 @@ import {
   Plus,
   Sparkles,
   ArrowRight,
+  Globe,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { useSupabaseTools } from '@/hooks/useSupabaseTools';
 import { useSupabaseCategories } from '@/hooks/useSupabaseCategories';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -51,7 +53,7 @@ const Tools = () => {
   const initialCategory = searchParams.get('category') || 'All';
   const initialSearch = searchParams.get('search') || '';
   const initialToolType =
-    (searchParams.get('type') as 'all' | 'quick' | 'external') || 'all';
+    (searchParams.get('type') as 'quick' | 'external') || 'quick'; // Default to 'quick' tab
   const isMobile = useIsMobile();
 
   const [searchTerm, setSearchTerm] = useState(initialSearch);
@@ -72,7 +74,7 @@ const Tools = () => {
   const [selectedFeaturedTool, setSelectedFeaturedTool] = useState<any | null>(
     null
   );
-  const [toolType, setToolType] = useState<'all' | 'quick' | 'external'>(
+  const [toolType, setToolType] = useState<'quick' | 'external'>(
     initialToolType
   );
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -160,22 +162,12 @@ const Tools = () => {
 
   // Combined values for backward compatibility
   const filteredTools =
-    toolType === 'quick'
-      ? quickToolsData
-      : toolType === 'external'
-      ? externalToolsData
-      : [...quickToolsData, ...externalToolsData];
+    toolType === 'quick' ? quickToolsData : externalToolsData;
   const toolsLoading =
-    toolType === 'quick' || toolType === 'all'
-      ? quickToolsLoading
-      : externalToolsLoading;
+    toolType === 'quick' ? quickToolsLoading : externalToolsLoading;
   const error = quickToolsError || externalToolsError;
   const hasMore =
-    toolType === 'quick'
-      ? hasMoreQuickTools
-      : toolType === 'external'
-      ? hasMoreExternalTools
-      : hasMoreQuickTools || hasMoreExternalTools;
+    toolType === 'quick' ? hasMoreQuickTools : hasMoreExternalTools;
   // Removed loadNextPage variable as it's not being used
 
   // Removed infinite scroll observer in favor of a 'See More' button approach
@@ -187,7 +179,7 @@ const Tools = () => {
     if (searchTerm) params.set('search', searchTerm);
     if (activeCategory !== 'All') params.set('category', activeCategory);
     if (selectedPricing !== 'All') params.set('pricing', selectedPricing);
-    if (toolType !== 'all') params.set('tool_type', toolType);
+    if (toolType !== 'quick') params.set('type', toolType); // Default to 'quick' tab
 
     const newUrl = `${location.pathname}${
       params.toString() ? '?' + params.toString() : ''
@@ -208,7 +200,7 @@ const Tools = () => {
     const categoryParam = params.get('category');
     const searchParam = params.get('search');
     const pricingParam = params.get('pricing');
-    const typeParam = params.get('type') as 'all' | 'quick' | 'external';
+    const typeParam = params.get('type') as 'quick' | 'external';
 
     if (categoryParam && categoryParam !== activeCategory) {
       setActiveCategory(categoryParam);
@@ -273,14 +265,10 @@ const Tools = () => {
     if (toolType === 'quick') {
       if (quickTools.length <= 3) return null;
       return Math.min(8, Math.floor(quickTools.length / 2));
-    } else if (toolType === 'external') {
+    } else {
+      // For 'external' type
       if (externalTools.length <= 3) return null;
       return Math.min(8, Math.floor(externalTools.length / 2));
-    } else {
-      // For 'all' type
-      const totalTools = quickTools.length + externalTools.length;
-      if (totalTools <= 3) return null;
-      return Math.min(8, Math.floor(totalTools / 2));
     }
   };
 
@@ -379,8 +367,9 @@ const Tools = () => {
                                   (e.target as HTMLImageElement).style.display =
                                     'none';
                                   (
-                                    e.target as HTMLImageElement
-                                  ).nextElementSibling!.style.display = 'flex';
+                                    (e.target as HTMLImageElement)
+                                      .nextElementSibling as HTMLElement
+                                  ).style.display = 'flex';
                                 }}
                               />
                             ) : null}
@@ -417,7 +406,9 @@ const Tools = () => {
                   Filters
                 </span>
                 <span className="bg-secondary rounded-full px-1.5 py-0.5 text-xs">
-                  {filteredTools.length}
+                  {toolType === 'quick'
+                    ? quickTools.length
+                    : externalTools.length}
                 </span>
               </Button>
             </div>
@@ -460,52 +451,6 @@ const Tools = () => {
                       </div>
                     ) : (
                       <div className="space-y-2 md:space-y-3 animate-fade-in">
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1.5">
-                            Tool Type
-                          </p>
-                          <div className="flex flex-wrap gap-2 w-full mb-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={`px-3 flex-1 ${
-                                toolType === 'all'
-                                  ? 'bg-secondary/70 border-primary/30'
-                                  : ''
-                              }`}
-                              onClick={() => setToolType('all')}
-                            >
-                              All Tools
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={`px-3 flex-1 ${
-                                toolType === 'quick'
-                                  ? 'bg-secondary/70 border-primary/30'
-                                  : ''
-                              }`}
-                              onClick={() => setToolType('quick')}
-                            >
-                              <Zap className="h-3 w-3 mr-1" />
-                              Quick
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={`px-3 flex-1 ${
-                                toolType === 'external'
-                                  ? 'bg-secondary/70 border-primary/30'
-                                  : ''
-                              }`}
-                              onClick={() => setToolType('external')}
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              External
-                            </Button>
-                          </div>
-                        </div>
-
                         <FilterButton
                           label="Category"
                           options={categories}
@@ -534,7 +479,7 @@ const Tools = () => {
                             setSearchTerm('');
                             setShowFavorites(false);
                             setSortOption('random');
-                            setToolType('all');
+                            setToolType('quick'); // Default to quick tab
                             setView('grid'); // Changed from 'list' to 'grid' to maintain grid as default
                             // Reset URL to clean state
                             navigate('/', { replace: true });
@@ -554,14 +499,10 @@ const Tools = () => {
                         <>
                           {toolType === 'quick'
                             ? quickTools.length
-                            : toolType === 'external'
-                            ? externalTools.length
-                            : quickTools.length + externalTools.length}{' '}
+                            : externalTools.length}{' '}
                           {(toolType === 'quick'
                             ? quickTools.length
-                            : toolType === 'external'
-                            ? externalTools.length
-                            : quickTools.length + externalTools.length) === 1
+                            : externalTools.length) === 1
                             ? 'tool'
                             : 'tools'}{' '}
                           found
@@ -643,7 +584,6 @@ const Tools = () => {
               </div>
 
               <div className="lg:w-3/4">
-                {/* Tab component removed - now using filter buttons for tool type selection */}
                 {searchTerm && (
                   <div className="mb-4 flex items-center">
                     <Button
@@ -679,83 +619,7 @@ const Tools = () => {
                   </div>
                 )}
                 {<HeroCard isMobile={isMobile} />}
-                {isLoading && (
-                  <div
-                    className={
-                      view === 'grid'
-                        ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6'
-                        : 'grid grid-cols-1 gap-3 md:gap-4'
-                    }
-                  >
-                    {Array(isMobile ? 6 : 8)
-                      .fill(0)
-                      .map((_, index) => (
-                        <div
-                          key={`skeleton-${index}`}
-                          className="space-y-2 md:space-y-3"
-                        >
-                          {view === 'grid' || isMobile ? (
-                            <>
-                              <Skeleton className="h-32 md:h-48 w-full rounded-lg" />
-                              <Skeleton className="h-5 md:h-6 w-3/4" />
-                              <Skeleton className="h-10 md:h-16 w-full" />
-                              <div className="flex gap-1 md:gap-2">
-                                <Skeleton className="h-5 md:h-6 w-12 md:w-16 rounded-full" />
-                                <Skeleton className="h-5 md:h-6 w-12 md:w-16 rounded-full" />
-                              </div>
-                            </>
-                          ) : (
-                            <div className="flex items-start gap-3 md:gap-4 p-3 md:p-4 border rounded-lg">
-                              <Skeleton className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-lg" />
-                              <div className="flex-grow space-y-1 md:space-y-2">
-                                <Skeleton className="h-5 md:h-6 w-3/4" />
-                                <Skeleton className="h-3 md:h-4 w-full" />
-                                <Skeleton className="h-3 md:h-4 w-2/3" />
-                                <div className="flex gap-1 md:gap-2 pt-1 md:pt-2">
-                                  <Skeleton className="h-5 md:h-6 w-12 md:w-16 rounded-full" />
-                                  <Skeleton className="h-5 md:h-6 w-12 md:w-16 rounded-full" />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                )}
-                {!isLoading &&
-                  ((toolType === 'all' &&
-                    quickTools.length === 0 &&
-                    externalTools.length === 0) ||
-                    (toolType === 'quick' && quickTools.length === 0) ||
-                    (toolType === 'external' && externalTools.length === 0)) &&
-                  !error && (
-                    <div className="text-center py-6 md:py-12">
-                      <h3 className="text-base md:text-lg font-medium mb-1 md:mb-2">
-                        No{' '}
-                        {toolType === 'quick'
-                          ? 'quick'
-                          : toolType === 'external'
-                          ? 'external'
-                          : ''}{' '}
-                        tools found
-                      </h3>
-                      <p className="text-sm md:text-base text-muted-foreground">
-                        Try adjusting your filters or search term to find what
-                        you're looking for.
-                      </p>
-                      <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                        <Button
-                          onClick={() => {
-                            setSearchTerm('');
-                            setActiveCategory('All');
-                            setSelectedPricing('All');
-                          }}
-                        >
-                          Reset filters
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+
                 {/* Category quick selection carousel */}
                 {!isLoading && (
                   <div className="mt-4 mb-6 px-1">
@@ -767,157 +631,451 @@ const Tools = () => {
                     />
                   </div>
                 )}
-                {/* Show Quick Tools section if viewing all tools or specifically quick tools */}
-                {(toolType === 'all' || toolType === 'quick') && !isLoading && (
-                  <div className="mt-8 mb-8">
-                    <QuickToolsSection
-                      category={
-                        activeCategory !== 'All' ? activeCategory : undefined
-                      }
-                      searchTerm={searchTerm}
-                      showHeader={true}
-                      showAllTools={toolType === 'quick'}
-                      tools={quickTools}
-                      view={view}
-                      isMobile={isMobile}
-                      setToolType={setToolType}
-                    />
-                  </div>
-                )}
 
-                <hr />
-                {/* Only show external tools section if viewing all tools or specifically external tools */}
-                {(toolType === 'all' || toolType === 'external') &&
-                  !isLoading &&
-                  externalTools.length > 0 && (
-                    <>
-                      {(toolType === 'all' || toolType === 'external') && (
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 mt-8">
-                          <div>
-                            <h2 className="text-lg md:text-xl font-semibold mb-1 flex items-center">
-                              <ExternalLink className="h-4 w-4 mr-2 text-primary" />
-                              External Tools
-                              <Badge
-                                variant="outline"
-                                className="ml-2 bg-primary/10 text-primary text-xs px-2 py-0 h-5"
-                              >
-                                Third-party
-                              </Badge>
-                            </h2>
-                            <p className="text-xs text-muted-foreground max-w-2xl">
-                              Curated collection of external AI tools from
-                              around the web
-                            </p>
+                {/* Enhanced Tab-based interface for Quick Tools and External Tools */}
+                <div className="w-full space-y-6">
+                  {/* Compact Tab Header */}
+                  <div className="relative">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+                          AI Tools Collection
+                        </h2>
+                        <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
+                          <div className="w-1 h-1 rounded-full bg-muted-foreground/40"></div>
+                          <span>{filteredTools.length}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Compact Tab Navigation */}
+                    <div className="relative bg-muted/20 p-1 rounded-lg border border-border/30">
+                      <div className="grid grid-cols-2 gap-0.5">
+                        <button
+                          onClick={() => setToolType('quick')}
+                          className={cn(
+                            'relative flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200',
+                            toolType === 'quick'
+                              ? 'bg-background text-foreground shadow-sm border border-border/40'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
+                          )}
+                        >
+                          <Zap
+                            className={cn(
+                              'h-3 w-3 sm:h-3.5 sm:w-3.5 transition-colors',
+                              toolType === 'quick'
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-muted-foreground'
+                            )}
+                          />
+                          <span className="font-medium">Quick Tools</span>
+                          <span
+                            className={cn(
+                              'ml-1 px-1.5 py-0.5 rounded-full text-xs font-medium transition-colors',
+                              toolType === 'quick'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                : 'bg-muted/60 text-muted-foreground'
+                            )}
+                          >
+                            {quickTools.length}
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() => setToolType('external')}
+                          className={cn(
+                            'relative flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200',
+                            toolType === 'external'
+                              ? 'bg-background text-foreground shadow-sm border border-border/40'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
+                          )}
+                        >
+                          <ExternalLink
+                            className={cn(
+                              'h-3 w-3 sm:h-3.5 sm:w-3.5 transition-colors',
+                              toolType === 'external'
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-muted-foreground'
+                            )}
+                          />
+                          <span className="font-medium">External Tools</span>
+                          <span
+                            className={cn(
+                              'ml-1 px-1.5 py-0.5 rounded-full text-xs font-medium transition-colors',
+                              toolType === 'external'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                : 'bg-muted/60 text-muted-foreground'
+                            )}
+                          >
+                            {externalTools.length}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Compact Tab Description */}
+                    <div className="mt-2 sm:mt-3">
+                      {toolType === 'quick' ? (
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                          <div className="w-1 h-1 rounded-full bg-blue-500 flex-shrink-0"></div>
+                          <span className="leading-relaxed">
+                            Interactive tools you can use instantly
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                          <div className="w-1 h-1 rounded-full bg-green-500 flex-shrink-0"></div>
+                          <span className="leading-relaxed">
+                            Curated external AI tools and platforms
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Tabs
+                    value={toolType}
+                    onValueChange={(value) =>
+                      setToolType(value as 'quick' | 'external')
+                    }
+                    className="w-full"
+                  >
+                    {/* Enhanced Quick Tools Tab Content */}
+                    <TabsContent value="quick" className="space-y-6 mt-6">
+                      {/* Loading State with improved skeletons */}
+                      {isLoading && quickToolsLoading && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <Skeleton className="h-6 w-6 rounded-full" />
+                            <Skeleton className="h-4 w-48" />
                           </div>
-                          <div className="flex items-center gap-2 mt-3 md:mt-0 ml-auto">
-                            <Button
-                              variant="outline"
-                              asChild
-                              className="text-xs px-3 border-primary/30 text-primary hover:bg-primary/10"
-                            >
-                              <Link to="/dashboard">
-                                <Plus className="h-3.5 w-3.5" />
-                                Add External Tool
-                              </Link>
-                            </Button>
+                          <div
+                            className={
+                              view === 'grid'
+                                ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6'
+                                : 'grid grid-cols-1 gap-3 md:gap-4'
+                            }
+                          >
+                            {Array(isMobile ? 6 : 8)
+                              .fill(0)
+                              .map((_, index) => (
+                                <div
+                                  key={`quick-skeleton-${index}`}
+                                  className="group animate-pulse"
+                                >
+                                  {view === 'grid' || isMobile ? (
+                                    <div className="space-y-3 p-4 border border-border/40 rounded-xl bg-muted/20">
+                                      <Skeleton className="h-32 md:h-40 w-full rounded-lg" />
+                                      <Skeleton className="h-5 w-3/4" />
+                                      <Skeleton className="h-12 w-full" />
+                                      <div className="flex gap-2">
+                                        <Skeleton className="h-6 w-16 rounded-full" />
+                                        <Skeleton className="h-6 w-16 rounded-full" />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-start gap-4 p-4 border border-border/40 rounded-xl bg-muted/20">
+                                      <Skeleton className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-lg" />
+                                      <div className="flex-grow space-y-2">
+                                        <Skeleton className="h-5 w-3/4" />
+                                        <Skeleton className="h-4 w-full" />
+                                        <Skeleton className="h-4 w-2/3" />
+                                        <div className="flex gap-2 pt-2">
+                                          <Skeleton className="h-6 w-16 rounded-full" />
+                                          <Skeleton className="h-6 w-16 rounded-full" />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
                           </div>
                         </div>
                       )}
-                      <div
-                        className={
-                          view === 'grid'
-                            ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6'
-                            : 'grid grid-cols-1 gap-2 md:gap-4'
-                        }
-                      >
-                        {externalTools.map((tool, index) => {
-                          // Insert sponsor ad after the 4th tool
-                          if (index === 4) {
-                            return (
-                              <>
-                                <div key={`tool-${tool.id}`}>
-                                  <ToolCard
-                                    tool={tool}
-                                    viewType={isMobile ? 'list' : view}
-                                    onFavoriteToggle={handleFavoriteToggle}
-                                    isFavorite={isFavorite(tool.id)}
-                                    compact={isMobile}
-                                  />
-                                </div>
-                                <div key="sponsor-ad">
-                                  <SponsorAdCard viewType={view} />
-                                </div>
-                              </>
-                            );
-                          }
 
-                          if (index === 12) {
-                            return (
-                              <>
-                                <div key={`tool-${tool.id}`}>
-                                  <ToolCard
-                                    tool={tool}
-                                    viewType={isMobile ? 'list' : view}
-                                    onFavoriteToggle={handleFavoriteToggle}
-                                    isFavorite={isFavorite(tool.id)}
-                                    compact={isMobile}
-                                  />
+                      {/* Enhanced Empty State for Quick Tools */}
+                      {!isLoading &&
+                        quickTools.length === 0 &&
+                        !quickToolsError && (
+                          <div className="text-center py-12 md:py-16">
+                            <div className="max-w-md mx-auto">
+                              <div className="relative mb-6">
+                                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl flex items-center justify-center shadow-lg">
+                                  <Zap className="h-10 w-10 text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <div key="subscription">
-                                  <InlineSubscription
-                                    viewType={view}
-                                    compact={isMobile}
-                                  />
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <Sparkles className="h-3 w-3 text-white" />
                                 </div>
-                              </>
-                            );
-                          }
-
-                          return (
-                            <div key={`tool-${tool.id}`}>
-                              <ToolCard
-                                tool={tool}
-                                viewType={isMobile ? 'list' : view}
-                                onFavoriteToggle={handleFavoriteToggle}
-                                isFavorite={isFavorite(tool.id)}
-                                compact={isMobile}
-                              />
+                              </div>
+                              <h3 className="text-xl font-semibold mb-3 text-foreground">
+                                No Quick Tools Found
+                              </h3>
+                              <p className="text-muted-foreground mb-8 leading-relaxed">
+                                {searchTerm ||
+                                activeCategory !== 'All' ||
+                                selectedPricing !== 'All'
+                                  ? 'Try adjusting your filters to discover more tools, or explore our collection of interactive AI utilities.'
+                                  : 'Discover powerful interactive AI tools that work directly in your browser. No downloads required!'}
+                              </p>
+                              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                <Button
+                                  onClick={() => {
+                                    setSearchTerm('');
+                                    setActiveCategory('All');
+                                    setSelectedPricing('All');
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                >
+                                  <ArrowLeft className="h-4 w-4 mr-2" />
+                                  Reset Filters
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  asChild
+                                  className="border-blue-200 hover:bg-blue-50 dark:border-blue-800 dark:hover:bg-blue-900/20"
+                                >
+                                  <Link to="/dashboard">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Create Quick Tool
+                                  </Link>
+                                </Button>
+                              </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                {/* Load More Button for External Tools - Only shown when viewing external tools or all tools and there are more external tools */}
-                {!isLoading &&
-                  externalTools.length > 0 &&
-                  hasMoreExternalTools &&
-                  (toolType === 'external' || toolType === 'all') && (
-                    <div className="flex justify-center mt-6 md:mt-10">
-                      <Button
-                        variant="default"
-                        onClick={() => {
-                          if (!externalToolsLoading && hasMoreExternalTools) {
-                            loadNextExternalToolsPage();
-                          }
-                        }}
-                        disabled={externalToolsLoading}
-                        className="w-full max-w-md py-2 md:py-3 font-medium flex items-center justify-center gap-2 rounded-xl"
-                      >
-                        {externalToolsLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
-                            <span>Loading more external tools...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Load More External Tools</span>
-                            <ArrowDown className="h-4 w-4 md:h-5 md:w-5 animate-bounce" />
-                          </>
+                          </div>
                         )}
-                      </Button>
-                    </div>
-                  )}
+
+                      {/* Quick Tools List */}
+                      {!isLoading && quickTools.length > 0 && (
+                        <div className="space-y-4">
+                          <QuickToolsSection
+                            category={
+                              activeCategory !== 'All'
+                                ? activeCategory
+                                : undefined
+                            }
+                            searchTerm={searchTerm}
+                            showHeader={false}
+                            showAllTools={true}
+                            tools={quickTools}
+                            view={view}
+                            isMobile={isMobile}
+                            setToolType={setToolType}
+                          />
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* Enhanced External Tools Tab Content */}
+                    <TabsContent value="external" className="space-y-6 mt-6">
+                      {/* Loading State with improved skeletons */}
+                      {isLoading && externalToolsLoading && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <Skeleton className="h-6 w-6 rounded-full" />
+                            <Skeleton className="h-4 w-48" />
+                          </div>
+                          <div
+                            className={
+                              view === 'grid'
+                                ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6'
+                                : 'grid grid-cols-1 gap-3 md:gap-4'
+                            }
+                          >
+                            {Array(isMobile ? 6 : 8)
+                              .fill(0)
+                              .map((_, index) => (
+                                <div
+                                  key={`external-skeleton-${index}`}
+                                  className="group animate-pulse"
+                                >
+                                  {view === 'grid' || isMobile ? (
+                                    <div className="space-y-3 p-4 border border-border/40 rounded-xl bg-muted/20">
+                                      <Skeleton className="h-32 md:h-40 w-full rounded-lg" />
+                                      <Skeleton className="h-5 w-3/4" />
+                                      <Skeleton className="h-12 w-full" />
+                                      <div className="flex gap-2">
+                                        <Skeleton className="h-6 w-16 rounded-full" />
+                                        <Skeleton className="h-6 w-16 rounded-full" />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-start gap-4 p-4 border border-border/40 rounded-xl bg-muted/20">
+                                      <Skeleton className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-lg" />
+                                      <div className="flex-grow space-y-2">
+                                        <Skeleton className="h-5 w-3/4" />
+                                        <Skeleton className="h-4 w-full" />
+                                        <Skeleton className="h-4 w-2/3" />
+                                        <div className="flex gap-2 pt-2">
+                                          <Skeleton className="h-6 w-16 rounded-full" />
+                                          <Skeleton className="h-6 w-16 rounded-full" />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Enhanced Empty State for External Tools */}
+                      {!isLoading &&
+                        externalTools.length === 0 &&
+                        !externalToolsError && (
+                          <div className="text-center py-12 md:py-16">
+                            <div className="max-w-md mx-auto">
+                              <div className="relative mb-6">
+                                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl flex items-center justify-center shadow-lg">
+                                  <ExternalLink className="h-10 w-10 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                  <Globe className="h-3 w-3 text-white" />
+                                </div>
+                              </div>
+                              <h3 className="text-xl font-semibold mb-3 text-foreground">
+                                No External Tools Found
+                              </h3>
+                              <p className="text-muted-foreground mb-8 leading-relaxed">
+                                {searchTerm ||
+                                activeCategory !== 'All' ||
+                                selectedPricing !== 'All'
+                                  ? 'Try adjusting your filters to discover more tools, or explore our curated collection of AI platforms from around the web.'
+                                  : 'Discover powerful AI tools and platforms from around the web. Expand your toolkit with the best external resources!'}
+                              </p>
+                              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                <Button
+                                  onClick={() => {
+                                    setSearchTerm('');
+                                    setActiveCategory('All');
+                                    setSelectedPricing('All');
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                >
+                                  <ArrowLeft className="h-4 w-4 mr-2" />
+                                  Reset Filters
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  asChild
+                                  className="border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-900/20"
+                                >
+                                  <Link to="/dashboard">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add External Tool
+                                  </Link>
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      {/* External Tools List */}
+                      {!isLoading && externalTools.length > 0 && (
+                        <div className="space-y-4">
+                          <div
+                            className={
+                              view === 'grid'
+                                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 md:gap-6'
+                                : 'grid grid-cols-1 gap-3 md:gap-4'
+                            }
+                          >
+                            {externalTools.map((tool, index) => {
+                              // Insert sponsor ad after the 4th tool
+                              if (index === 4) {
+                                return (
+                                  <>
+                                    <div key={`tool-${tool.id}`}>
+                                      <ToolCard
+                                        tool={tool}
+                                        viewType={isMobile ? 'list' : view}
+                                        onFavoriteToggle={handleFavoriteToggle}
+                                        isFavorite={isFavorite(tool.id)}
+                                        compact={isMobile}
+                                      />
+                                    </div>
+                                    <div key="sponsor-ad">
+                                      <SponsorAdCard viewType={view} />
+                                    </div>
+                                  </>
+                                );
+                              }
+
+                              if (index === 12) {
+                                return (
+                                  <>
+                                    <div key={`tool-${tool.id}`}>
+                                      <ToolCard
+                                        tool={tool}
+                                        viewType={isMobile ? 'list' : view}
+                                        onFavoriteToggle={handleFavoriteToggle}
+                                        isFavorite={isFavorite(tool.id)}
+                                        compact={isMobile}
+                                      />
+                                    </div>
+                                    <div key="subscription">
+                                      <InlineSubscription
+                                        viewType={view}
+                                        compact={isMobile}
+                                      />
+                                    </div>
+                                  </>
+                                );
+                              }
+
+                              return (
+                                <div key={`tool-${tool.id}`}>
+                                  <ToolCard
+                                    tool={tool}
+                                    viewType={isMobile ? 'list' : view}
+                                    onFavoriteToggle={handleFavoriteToggle}
+                                    isFavorite={isFavorite(tool.id)}
+                                    compact={isMobile}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Load More Button for External Tools */}
+                          {hasMoreExternalTools && (
+                            <div className="flex justify-center mt-8 md:mt-12">
+                              <Button
+                                variant="default"
+                                onClick={() => {
+                                  if (
+                                    !externalToolsLoading &&
+                                    hasMoreExternalTools
+                                  ) {
+                                    loadNextExternalToolsPage();
+                                  }
+                                }}
+                                disabled={externalToolsLoading}
+                                className="group w-full max-w-sm py-3 md:py-4 font-semibold flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 text-white"
+                              >
+                                {externalToolsLoading ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                                    <span>Loading more tools...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>Load More Tools</span>
+                                    <ArrowDown className="h-4 w-4 md:h-5 md:w-5 group-hover:animate-bounce transition-all duration-300" />
+                                    <Badge
+                                      variant="secondary"
+                                      className="ml-2 bg-white/20 text-white border-0 text-xs px-2 py-0 h-5"
+                                    >
+                                      More available
+                                    </Badge>
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                </div>
               </div>
             </div>
           </div>

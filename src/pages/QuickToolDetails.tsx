@@ -135,7 +135,7 @@ const QuickToolDetails = () => {
             data.image_url
           }`;
         }
-        console.log('data', data);
+
         setTool(data as QuickTool);
 
         // Fetch comments count

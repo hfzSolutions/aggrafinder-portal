@@ -39,28 +39,38 @@ export const PWAInstallPrompt = ({
       (window.navigator as any).standalone ||
       window.matchMedia('(display-mode: standalone)').matches;
 
-    setIsIOS(isIOSDevice);
-    setIsAndroid(isAndroidDevice);
+    // Debug mode for testing on desktop
+    const urlParams = new URLSearchParams(window.location.search);
+    const debugMode =
+      urlParams.get('pwa-debug') === 'true' || import.meta.env.DEV;
+    const forceDevice = urlParams.get('pwa-device'); // 'ios' or 'android'
+
+    setIsIOS(isIOSDevice || (debugMode && forceDevice === 'ios'));
+    setIsAndroid(isAndroidDevice || (debugMode && forceDevice === 'android'));
     setIsStandalone(isInStandaloneMode);
 
     // Check if user has already dismissed for this tool
-    const dismissedKey = `pwa-dismissed-${window.location.pathname}`;
+    const dismissedKey = `pwa-dismissed-${toolName}-${window.location.pathname}`;
     const wasDismissed = localStorage.getItem(dismissedKey);
     setHasBeenDismissed(!!wasDismissed);
 
     // Show prompt if on mobile, not in standalone mode, and not dismissed
+    // OR if in debug mode
     if (
-      (isIOSDevice || isAndroidDevice) &&
+      (isIOSDevice || isAndroidDevice || debugMode) &&
       !isInStandaloneMode &&
       !wasDismissed
     ) {
       // Delay showing the prompt to avoid overwhelming the user
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-      }, 3000);
+      const timer = setTimeout(
+        () => {
+          setIsVisible(true);
+        },
+        debugMode ? 1000 : 3000
+      ); // Shorter delay in debug mode
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [toolName]);
 
   // Handle Android PWA install prompt
   useEffect(() => {
@@ -95,8 +105,8 @@ export const PWAInstallPrompt = ({
   const handleDismiss = (installed = false) => {
     setIsVisible(false);
 
-    // Remember dismissal for this specific tool
-    const dismissedKey = `pwa-dismissed-${window.location.pathname}`;
+    // Remember dismissal for this specific tool and current page
+    const dismissedKey = `pwa-dismissed-${toolName}-${window.location.pathname}`;
     localStorage.setItem(dismissedKey, Date.now().toString());
 
     onDismiss?.();
@@ -119,9 +129,9 @@ export const PWAInstallPrompt = ({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 100, scale: 0.9 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="fixed bottom-2 left-2 right-2 z-50 mx-auto max-w-xs sm:max-w-sm sm:bottom-4 sm:left-4 sm:right-4"
+        className="fixed bottom-2 left-2 right-2 z-50 mx-auto max-w-sm sm:max-w-md sm:bottom-4 sm:left-4 sm:right-4"
       >
-        <div className="bg-background/95 backdrop-blur-md border border-primary/20 rounded-xl sm:rounded-2xl shadow-xl p-3 sm:p-4 relative overflow-hidden">
+        <div className="bg-background/95 backdrop-blur-md border border-primary/20 rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 relative overflow-hidden">
           {/* Subtle gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-xl sm:rounded-2xl"></div>
 
@@ -129,41 +139,44 @@ export const PWAInstallPrompt = ({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-1 right-1 sm:top-2 sm:right-2 h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground hover:text-foreground"
+            className="absolute top-2 right-2 sm:top-3 sm:right-3 h-6 w-6 sm:h-7 sm:w-7 text-muted-foreground hover:text-foreground"
             onClick={() => handleDismiss()}
           >
-            <X className="h-3 w-3 sm:h-4 sm:w-4" />
+            <X className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
           <div className="relative z-10">
             {/* App icon and name */}
-            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border border-primary/10 flex-shrink-0">
+            <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-lg sm:rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border border-primary/10 flex-shrink-0">
                 {toolImage ? (
                   <img
                     src={toolImage}
                     alt={toolName}
                     className="h-full w-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove(
-                        'hidden'
-                      );
+                      const target = e.currentTarget;
+                      target.style.display = 'none';
+                      const nextSibling =
+                        target.nextElementSibling as HTMLElement;
+                      if (nextSibling) {
+                        nextSibling.classList.remove('hidden');
+                      }
                     }}
                   />
                 ) : null}
                 <Smartphone
                   className={cn(
-                    'h-5 w-5 sm:h-6 sm:w-6 text-primary',
-                    toolImage && 'hidden'
+                    'h-6 w-6 sm:h-7 sm:w-7 text-primary',
+                    toolImage ? 'hidden' : ''
                   )}
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-xs sm:text-sm text-foreground truncate">
+                <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
                   Add {toolName}
                 </h3>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Quick access from home screen
                 </p>
               </div>
@@ -171,69 +184,62 @@ export const PWAInstallPrompt = ({
 
             {/* Instructions based on device */}
             {isIOS ? (
-              <div className="space-y-2 sm:space-y-3">
-                <p className="text-xs text-muted-foreground leading-tight">
-                  Tap <Share className="inline h-3 w-3 mx-0.5" /> below, then
+              <div className="space-y-3 sm:space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Tap <Share className="inline h-4 w-4 mx-1" /> below, then
                   scroll down and tap <strong>"Add to Home Screen"</strong>
                 </p>
-                <div className="flex gap-1.5 sm:gap-2">
+                <div className="flex gap-2 sm:gap-3">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-xs h-7 sm:h-8 px-2"
+                    className="flex-1 text-sm h-9 sm:h-10 px-3"
                     onClick={() => handleDismiss()}
                   >
                     Maybe later
                   </Button>
                   <Button
                     size="sm"
-                    className="flex-1 text-xs h-7 sm:h-8 px-2"
-                    onClick={() => {
-                      // iOS doesn't have programmatic install, just show instructions
-                      alert(
-                        'Tap the Share button (square with arrow) at the bottom of your screen, then scroll down and tap "Add to Home Screen"'
-                      );
-                    }}
+                    className="flex-1 text-sm h-9 sm:h-10 px-3"
+                    onClick={() => handleDismiss()} // Just dismiss instead of showing duplicate alert
                   >
-                    <Plus className="h-3 w-3 mr-1" />
-                    <span className="hidden xs:inline">Show me how</span>
-                    <span className="xs:hidden">How</span>
+                    Got it
                   </Button>
                 </div>
               </div>
             ) : isAndroid && deferredPrompt ? (
-              <div className="space-y-2 sm:space-y-3">
-                <p className="text-xs text-muted-foreground leading-tight">
+              <div className="space-y-3 sm:space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   Install this AI tool as an app for quick access
                 </p>
-                <div className="flex gap-1.5 sm:gap-2">
+                <div className="flex gap-2 sm:gap-3">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-xs h-7 sm:h-8 px-2"
+                    className="flex-1 text-sm h-9 sm:h-10 px-3"
                     onClick={() => handleDismiss()}
                   >
                     Not now
                   </Button>
                   <Button
                     size="sm"
-                    className="flex-1 text-xs h-7 sm:h-8 px-2"
+                    className="flex-1 text-sm h-9 sm:h-10 px-3"
                     onClick={handleInstall}
                   >
-                    <Download className="h-3 w-3 mr-1" />
+                    <Download className="h-4 w-4 mr-2" />
                     Install
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-2 sm:space-y-3">
-                <p className="text-xs text-muted-foreground leading-tight">
+              <div className="space-y-3 sm:space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   Bookmark this page for quick access to {toolName}
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full text-xs h-7 sm:h-8"
+                  className="w-full text-sm h-9 sm:h-10"
                   onClick={() => handleDismiss()}
                 >
                   Got it
@@ -242,20 +248,19 @@ export const PWAInstallPrompt = ({
             )}
 
             {/* Benefits - Show simplified version on small screens */}
-            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border/50">
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-green-500"></div>
-                  <span className="hidden sm:inline">Quick access</span>
-                  <span className="sm:hidden">Quick</span>
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border/50">
+              <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-green-500"></div>
+                  <span>Quick access</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-blue-500"></div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-blue-500"></div>
                   <span className="hidden sm:inline">No browser</span>
                   <span className="sm:hidden">Direct</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-purple-500"></div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-purple-500"></div>
                   <span className="hidden sm:inline">App-like</span>
                   <span className="sm:hidden">App</span>
                 </div>
