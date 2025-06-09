@@ -246,18 +246,18 @@ export const PWAInstallPrompt = ({
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-green-500"></div>
-                  <span className="hidden sm:inline">Works offline</span>
-                  <span className="sm:hidden">Offline</span>
+                  <span className="hidden sm:inline">Quick access</span>
+                  <span className="sm:hidden">Quick</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-blue-500"></div>
-                  <span className="hidden sm:inline">Faster loading</span>
-                  <span className="sm:hidden">Fast</span>
+                  <span className="hidden sm:inline">No browser</span>
+                  <span className="sm:hidden">Direct</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-purple-500"></div>
-                  <span className="hidden sm:inline">Native feel</span>
-                  <span className="sm:hidden">Native</span>
+                  <span className="hidden sm:inline">App-like</span>
+                  <span className="sm:hidden">App</span>
                 </div>
               </div>
             </div>
