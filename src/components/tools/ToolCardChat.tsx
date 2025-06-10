@@ -21,6 +21,7 @@ interface ToolCardChatProps {
 export const ToolCardChat = ({ tool, onClose }: ToolCardChatProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
+      id: 'initial',
       role: 'assistant',
       content: `Hi! I'm ready to help you with ${tool.name}. What would you like me to do?`,
     },
@@ -55,7 +56,12 @@ export const ToolCardChat = ({ tool, onClose }: ToolCardChatProps) => {
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage = { role: 'user', content: input.trim() };
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input.trim(),
+    } as Message;
+    const userInput = input.trim();
     setInput('');
     setMessages([...messages, userMessage]);
 
@@ -63,52 +69,74 @@ export const ToolCardChat = ({ tool, onClose }: ToolCardChatProps) => {
     trackChatEvent(tool.id, 'message_sent');
 
     try {
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
+
       // Prepare context about the tool for the AI
       const toolContext = `Tool Name: ${tool.name}\nDescription: ${
         tool.description
       }\nCategories: ${tool.category.join(', ')}\nPricing: ${tool.pricing}`;
 
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': getSiteUrl(),
-          },
-          body: JSON.stringify({
-            model: 'qwen/qwen3-0.6b-04-28:free', // Using a free model for this feature
-            messages: [
-              {
-                role: 'system',
-                content: `You are an AI assistant helping users with information about AI tools. You are currently providing information about ${tool.name}. Here is information about the tool: ${toolContext}. Keep your responses concise and focused on this specific tool.`,
-              },
-              ...messages.map((msg) => ({
-                role: msg.role,
-                content: msg.content,
-              })),
-              { role: 'user', content: input },
-            ],
-          }),
-        }
-      );
+      // Prepare conversation history
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-5) // Keep last 5 messages for context (smaller for this simpler interface)
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
+      // Create tool-specific prompt
+      const toolPrompt = `You are an AI assistant helping users with information about AI tools. You are currently providing information about ${tool.name}. Here is information about the tool: ${toolContext}. Keep your responses concise and focused on this specific tool.`;
 
-      const data = await response.json();
+      // Call the professional AI service
+      const response = await aiService.chat(userInput, {
+        toolName: tool.name,
+        toolPrompt,
+        conversationHistory,
+        maxRetries: 2,
+        timeout: 20000,
+      });
+
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: data.choices[0].message.content,
+        content: response.content,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
+      // Handle specific AI service errors
+      let userMessage =
+        "Sorry, I'm having trouble responding right now. Please try again in a moment.";
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              "I'm receiving too many requests right now. Please wait a moment and try again.";
+            break;
+          case 'INPUT_TOO_LONG':
+            userMessage =
+              'Your message is too long. Please try with a shorter message.';
+            break;
+          case 'TIMEOUT':
+            userMessage =
+              'The request took too long. Please try again with a simpler question.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            // Use default message
+            break;
+        }
+      }
+
       console.error('Error sending message:', error);
-      toast.error('Failed to get a response. Please try again.');
+      toast.error(userMessage);
     } finally {
       setIsLoading(false);
     }

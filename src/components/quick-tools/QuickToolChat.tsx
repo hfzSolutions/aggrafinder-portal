@@ -297,47 +297,17 @@ export const QuickToolChat = ({
     );
   };
 
-  // Load chat history from localStorage on component mount
-  const loadChatHistory = () => {
-    const savedHistory = localStorage.getItem(`chat-history-${toolId}`);
-    if (savedHistory) {
-      try {
-        const parsed = JSON.parse(savedHistory);
-        return {
-          messages: parsed.messages || [
-            {
-              id: '1',
-              role: 'assistant',
-              content:
-                initialMessage ||
-                `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
-            },
-          ],
-          userMessageCount: parsed.userMessageCount || 0,
-        };
-      } catch (error) {
-        console.error('Error parsing chat history:', error);
-      }
-    }
-    return {
-      messages: [
-        {
-          id: '1',
-          role: 'assistant',
-          content:
-            initialMessage ||
-            `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
-        },
-      ],
-      userMessageCount: 0,
-    };
-  };
-
-  const chatHistory = loadChatHistory();
-  const [messages, setMessages] = useState<Message[]>(chatHistory.messages);
-  const [persistentUserMessageCount, setPersistentUserMessageCount] = useState(
-    chatHistory.userMessageCount
-  );
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content:
+        initialMessage ||
+        `👋 Hi! I'm ready to help you with ${toolName}. What would you like me to do?`,
+    },
+  ]);
+  const [persistentUserMessageCount, setPersistentUserMessageCount] =
+    useState(0);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [typingIndicator, setTypingIndicator] = useState(false);
@@ -381,100 +351,32 @@ export const QuickToolChat = ({
     if (!suggested_replies) return;
 
     try {
-      // Prepare a simplified conversation history for context
-      const recentMessages = messages.slice(-3).map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      // Import AI service dynamically
+      const { aiService } = await import('@/lib/ai-service');
 
-      // Call OpenRouter API to generate suggested replies
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME_2,
-            messages: [
-              {
-                role: 'system',
-                content: `You are generating exactly 3 short suggested replies for a user in a chat conversation about ${toolName}. The last message from the assistant was: "${botMessage}". 
+      // Prepare conversation history for context
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-3) // Only use last 3 messages for context
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
 
-Generate 3 short, natural follow-up questions or responses that the user might want to ask or say next. Each reply should be 2-8 words only, conversational, and directly relevant to the assistant's last message. 
-
-You must respond with valid JSON in this exact format:
-{
-  "replies": ["Reply 1", "Reply 2", "Reply 3"]
-}
-
-Example:
-{
-  "replies": ["Tell me more", "What about alternatives?", "How do I start?"]
-}`,
-              },
-              ...recentMessages,
-            ],
-            temperature: 0.3,
-            max_tokens: 500,
-            top_p: 0.9,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        console.error('Error generating suggested replies');
-        return;
-      }
-
-      const data = await response.json();
-
-      let replies: string[] = [];
-
-      const content = data.choices?.[0]?.message?.content;
-      if (!content) {
-        console.error('No content in suggested replies response');
-        return;
-      }
-
-      try {
-        // Parse the JSON response directly
-        const parsed = JSON.parse(content);
-
-        if (parsed.replies && Array.isArray(parsed.replies)) {
-          replies = parsed.replies
-            .slice(0, 3)
-            .filter(
-              (reply) => typeof reply === 'string' && reply.trim().length > 0
-            );
-        } else {
-          console.error(
-            'Invalid response format, missing replies array:',
-            parsed
-          );
-        }
-      } catch (parseError) {
-        console.error('JSON parsing failed:', parseError);
-        // Since we're using response_format, this should rarely happen
-        // But keep fallback for safety
-        const quotedStrings = content.match(/"([^"]+)"/g);
-        if (quotedStrings && quotedStrings.length > 0) {
-          replies = quotedStrings
-            .slice(0, 3)
-            .map((str) => str.replace(/"/g, ''))
-            .filter((reply) => reply.trim().length > 0);
-        }
-      }
+      // Generate suggestions using the professional AI service
+      const suggestions = await aiService.generateSuggestions({
+        toolName,
+        lastAssistantMessage: botMessage,
+        conversationHistory,
+        count: 3,
+      });
 
       // Update state with the generated replies
-      setSuggestedReplies(replies.length > 0 ? replies : []);
+      setSuggestedReplies(suggestions.length > 0 ? suggestions : []);
 
       // Scroll to show suggested replies after they are set
-      if (replies.length > 0) {
+      if (suggestions.length > 0) {
         setTimeout(() => {
           if (suggestedRepliesRef.current) {
             suggestedRepliesRef.current.scrollIntoView({
@@ -485,8 +387,9 @@ Example:
         }, 200);
       }
     } catch (error) {
-      console.error('Error generating suggested replies:', error);
-      setSuggestedReplies([]);
+      console.warn('Failed to generate suggested replies:', error);
+      // Provide fallback suggestions
+      setSuggestedReplies(['Tell me more', 'How do I start?', 'What else?']);
     }
   };
 
@@ -847,21 +750,6 @@ Example:
     return () => subscription?.unsubscribe();
   }, []);
 
-  // Save chat history to localStorage whenever messages change
-  useEffect(() => {
-    if (messages.length > 1) {
-      // Don't save if only initial message
-      localStorage.setItem(
-        `chat-history-${toolId}`,
-        JSON.stringify({
-          messages,
-          userMessageCount: persistentUserMessageCount,
-          timestamp: Date.now(),
-        })
-      );
-    }
-  }, [messages, persistentUserMessageCount, toolId]);
-
   // Track when chat is opened
   useEffect(() => {
     trackChatEvent(toolId, 'open');
@@ -1006,82 +894,29 @@ Example:
     }
 
     try {
-      if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
-        // Log detailed error for developers
-        console.error('OpenRouter API key is missing');
-        throw new Error('Configuration error');
-      }
+      // Import AI service dynamically to avoid dependency issues
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-      // Prepare optimized conversation history
-      const optimizedMessages = prepareConversationHistory(messages, userInput);
+      // Prepare conversation history in the format expected by AI service
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-10) // Keep last 10 messages for context
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
 
-      // Call OpenRouter API
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-            messages: [
-              {
-                role: 'system',
-                content: `You are an AI assistant helping users with ${toolName}. Follow these guidelines to provide direct, specific answers:
-            
-                  1. Be concise – no introductions or unnecessary explanations
-                  2. Focus only on what the user specifically asked for
-                  3. If your answer includes a list or numbering (e.g. comparisons, pros/cons, features, steps), format it as a **table** instead of using bullets or numbers for better readability
-                  4. Do **not** explain things in list format – use normal paragraphs or tables
-                  5. Avoid unnecessary spacing or breaking lines
-                  ⚠️ Exception: If the topic is **casual or conversational** in nature (e.g., fun ideas, informal tone, entertainment), you may skip the table and write in a simple paragraph format instead. Use your judgment to keep the tone aligned with the topic's formality.
+      // Call the professional AI service
+      const response = await aiService.chat(userInput, {
+        toolName,
+        toolPrompt,
+        conversationHistory,
+        maxRetries: 2,
+        timeout: 25000,
+      });
 
-                  ${toolPrompt}
-            
-                  IMPORTANT: 
-                  - Answer directly what was asked, nothing more
-                  - If unsure about a specific detail, say so rather than guessing
-                  - Consider multiple approaches when relevant, then recommend the best one`,
-              },
-              ...optimizedMessages,
-              {
-                role: 'user',
-                content: userInput,
-              },
-            ],
-            temperature: 0.5,
-            max_tokens: 2000,
-            top_p: 0.9,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-
-        // Log detailed error for developers
-        console.error('OpenRouter API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-        });
-
-        throw new Error('API request failed');
-      }
-
-      const data = await response.json();
-
-      if (!data.choices?.[0]?.message?.content) {
-        // Log detailed error for developers
-        console.error('Empty or invalid response from OpenRouter:', data);
-        throw new Error('Invalid response');
-      }
-
-      const responseContent = data.choices[0].message.content;
+      const responseContent = response.content;
 
       // Update the existing assistant message with the response content
       setMessages((prev) =>
@@ -1119,16 +954,41 @@ Example:
         }
       }
     } catch (error) {
+      // Handle specific AI service errors
+      let userMessage =
+        "Sorry, I'm having trouble responding right now. Please try again in a moment.";
+      let duration = 4000;
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              "I'm receiving too many requests right now. Please wait a moment and try again.";
+            duration = 6000;
+            break;
+          case 'INPUT_TOO_LONG':
+            userMessage =
+              'Your message is too long. Please try with a shorter message.';
+            break;
+          case 'TIMEOUT':
+            userMessage =
+              'The request took too long. Please try again with a simpler question.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            // Use default message
+            break;
+        }
+      }
+
       // Log the detailed error for developers
       console.error('Error in chat process:', error);
 
-      // Show a simple, user-friendly error message
-      toast.error(
-        "Sorry, I'm having trouble responding right now. Please try again in a moment.",
-        {
-          duration: 4000,
-        }
-      );
+      // Show user-friendly error message
+      toast.error(userMessage, { duration });
 
       // Remove the assistant message if there was an error
       setMessages((prev) =>
@@ -1183,7 +1043,6 @@ Example:
     if (user) {
       setPersistentUserMessageCount(0);
     }
-    localStorage.removeItem(`chat-history-${toolId}`);
   };
 
   // Handle ad completion
@@ -1226,61 +1085,7 @@ Example:
     }
   };
 
-  // Note: The scrollToBottom function has been moved and improved above
-
-  // Constants for conversation management
-  const MAX_CONTEXT_MESSAGES = 10; // Maximum number of messages to include in context
-  const SUMMARY_REFRESH_COUNT = 5; // Number of new messages before refreshing summary
-
-  // Add this function to prepare messages for the API request
-  const prepareConversationHistory = (
-    messages: Message[],
-    newUserInput: string
-  ) => {
-    // Filter out ad messages and empty messages
-    const validMessages = messages.filter(
-      (msg) =>
-        (msg.role === 'user' || msg.role === 'assistant') &&
-        msg.content.trim() !== ''
-    );
-
-    // If we have fewer messages than our maximum, just return them all
-    if (validMessages.length <= MAX_CONTEXT_MESSAGES) {
-      return validMessages.map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      }));
-    }
-
-    // Otherwise, we need to create a summary and include only recent messages
-    // Get the most recent messages up to our limit (minus 1 to leave room for the summary)
-    const recentMessages = validMessages.slice(-(MAX_CONTEXT_MESSAGES - 1));
-
-    // Create a summary message from older messages
-    const olderMessages = validMessages.slice(
-      0,
-      validMessages.length - recentMessages.length
-    );
-    const summaryContent = `Previous conversation summary: ${olderMessages
-      .map(
-        (msg) =>
-          `${
-            msg.role === 'user' ? 'User' : 'Assistant'
-          }: ${msg.content.substring(0, 100)}${
-            msg.content.length > 100 ? '...' : ''
-          }`
-      )
-      .join(' | ')}`;
-
-    // Return the summary message followed by recent messages
-    return [
-      { role: 'system' as 'system', content: summaryContent },
-      ...recentMessages.map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      })),
-    ];
-  };
+  // Note: Conversation history optimization is now handled by the AI service
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
@@ -1389,7 +1194,7 @@ Example:
                       : 'bg-muted/80 rounded-tl-sm'
                   )}
                 >
-                  <p className="text-base whitespace-pre-wrap leading-relaxed break-words">
+                  <div className="text-base whitespace-pre-wrap leading-relaxed break-words">
                     {message.role === 'user' ? (
                       message.content
                     ) : !message.displayContent && message.isTyping ? (
@@ -1418,7 +1223,7 @@ Example:
                           )}
                       </>
                     )}
-                  </p>
+                  </div>
                 </motion.div>
                 {message.role === 'user' && (
                   <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 items-center justify-center text-primary-foreground">

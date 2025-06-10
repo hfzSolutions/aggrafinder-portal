@@ -78,6 +78,7 @@ interface FormData {
   imageFile: File | null;
   imageUrl: string;
   avatarIdea: string;
+  avatarPrompt: string; // Add this new field
   showAvatarIdea: boolean;
   initialMessage: string;
   showInitialMessageGenerator: boolean;
@@ -127,14 +128,16 @@ export const QuickToolFormSimplified = ({
         : [],
     imageFile: null as File | null,
     imageUrl: editMode && toolToEdit ? toolToEdit.imageUrl : '',
-    avatarIdea: '', // Idea for avatar generation
-    showAvatarIdea: false, // Control visibility of the avatar idea input
+    avatarIdea: '',
+    avatarPrompt:
+      'Create a professional avatar for an AI assistant. The avatar should be a modern, clean, professional-looking character.',
+    showAvatarIdea: false,
     initialMessage:
-      editMode && toolToEdit ? toolToEdit.initial_message || '' : '', // Initial message field
-    showInitialMessageGenerator: false, // Control visibility of the AI generator for initial message
-    showPromptGenerator: false, // Control visibility of the AI generator for prompt
-    showDescriptionGenerator: false, // Control visibility of the AI generator for description
-    showNameGenerator: false, // Control visibility of the AI generator for name
+      editMode && toolToEdit ? toolToEdit.initial_message || '' : '',
+    showInitialMessageGenerator: false,
+    showPromptGenerator: false,
+    showDescriptionGenerator: false,
+    showNameGenerator: false,
   });
 
   // Add state for showing more settings
@@ -251,8 +254,8 @@ export const QuickToolFormSimplified = ({
 
   // Function to generate AI avatar using the image generation API
   const generateAIAvatar = async () => {
-    if (!formData.name.trim()) {
-      toast.error('Tool name is required to generate an avatar');
+    if (!formData.avatarPrompt.trim()) {
+      toast.error('Avatar prompt is required to generate an avatar');
       return;
     }
 
@@ -266,18 +269,8 @@ export const QuickToolFormSimplified = ({
         );
       }
 
-      // Create a prompt based on the tool name, description, and user's idea
-      const prompt = `Create a professional avatar for an AI assistant called "${
-        formData.name
-      }". ${
-        formData.description
-          ? `The avatar should represent an assistant that ${formData.description}`
-          : ''
-      }. ${
-        formData.avatarIdea
-          ? `User's specific idea for the avatar: ${formData.avatarIdea}.`
-          : ''
-      } The avatar should be a modern, clean, professional-looking character or face that represents this AI assistant. Make it visually appealing with a simple background.`;
+      // Use the user's edited prompt directly
+      const prompt = formData.avatarPrompt.trim();
 
       const response = await fetch(
         'https://ir-api.myqa.cc/v1/openai/images/generations',
@@ -565,66 +558,33 @@ export const QuickToolFormSimplified = ({
     setIsTesting(true);
 
     try {
-      // Call OpenRouter API directly
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-            messages: [
-              {
-                role: 'system',
-                content: `You are an AI assistant helping users with ${formData.name}. Follow these guidelines to provide direct, specific answers:
-            
-                  1. Be concise – no introductions or unnecessary explanations
-                  2. Focus only on what the user specifically asked for
-                  3. If your answer includes a list or numbering (e.g. comparisons, pros/cons, features, steps), format it as a **table** instead of using bullets or numbers for better readability
-                  4. Do **not** explain things in list format – use normal paragraphs or tables
-                  5. Avoid unnecessary spacing or breaking lines
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-                  ${formData.prompt}
-            
-                  IMPORTANT: 
-                  - Answer directly what was asked, nothing more
-                  - If unsure about a specific detail, say so rather than guessing
-                  - Consider multiple approaches when relevant, then recommend the best one`,
-              },
-              {
-                role: 'user',
-                content: previewInput,
-              },
-            ],
-            temperature: 0.5,
-            max_tokens: 2000,
-            top_p: 0.9,
-          }),
-        }
-      );
+      // Prepare conversation history
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-5) // Keep last 5 messages for context in testing
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
 
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-
-      const data = await response.json();
-
-      if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response');
-      }
-
-      const responseContent = data.choices[0].message.content;
+      // Call the professional AI service
+      const response = await aiService.chat(previewInput, {
+        toolName: formData.name,
+        toolPrompt: formData.prompt,
+        conversationHistory,
+        maxRetries: 1,
+        timeout: 20000,
+      });
 
       // Create the assistant message with typing animation
       const assistantMessage: Message = {
         id: Date.now().toString() + '-assistant',
         role: 'assistant',
-        content: responseContent,
+        content: response.content,
         isTyping: true,
         displayContent: '',
       };
@@ -635,8 +595,36 @@ export const QuickToolFormSimplified = ({
       // Start typing animation
       animateTyping(assistantMessage.id, assistantMessage.content);
     } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to get a response. Please try again.');
+      // Handle specific AI service errors
+      let userMessage =
+        "Sorry, I'm having trouble responding right now. Please try again in a moment.";
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              "I'm receiving too many requests right now. Please wait a moment and try again.";
+            break;
+          case 'INPUT_TOO_LONG':
+            userMessage =
+              'Your message is too long. Please try with a shorter message.';
+            break;
+          case 'TIMEOUT':
+            userMessage =
+              'The request took too long. Please try again with a simpler question.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            // Use default message
+            break;
+        }
+      }
+
+      console.error('Error in test message:', error);
+      toast.error(userMessage);
     } finally {
       setIsTesting(false);
       setPreviewInput('');
@@ -1117,6 +1105,34 @@ export const QuickToolFormSimplified = ({
     }
   };
 
+  // Function to update avatar prompt based on tool name and description
+  const updateAvatarPrompt = () => {
+    let prompt = 'Create a professional avatar for an AI assistant';
+
+    if (formData.name.trim()) {
+      prompt += ` called "${formData.name}"`;
+    }
+
+    if (formData.description.trim()) {
+      prompt += `. This tool ${formData.description}`;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      avatarPrompt: prompt,
+    }));
+  };
+
+  // Update avatar prompt when name or description changes
+  useEffect(() => {
+    if (
+      formData.showAvatarIdea &&
+      (formData.name.trim() || formData.description.trim())
+    ) {
+      updateAvatarPrompt();
+    }
+  }, [formData.name, formData.description, formData.showAvatarIdea]);
+
   return (
     <div className="w-full max-w-2xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -1187,22 +1203,26 @@ export const QuickToolFormSimplified = ({
                 </Button>
               </div>
               {formData.showAvatarIdea && (
-                <div className="space-y-2 animate-in fade-in-50 slide-in-from-top-5 duration-300">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="avatarIdea"
-                      name="avatarIdea"
-                      value={formData.avatarIdea}
+                <div className="space-y-3 animate-in fade-in-50 slide-in-from-top-5 duration-300">
+                  <div className="space-y-2">
+                    <Textarea
+                      id="avatarPrompt"
+                      name="avatarPrompt"
+                      value={formData.avatarPrompt}
                       onChange={handleInputChange}
-                      placeholder="Describe your avatar idea"
-                      className="h-8 text-xs"
+                      placeholder="Describe how you want your avatar to look..."
+                      className="min-h-[80px] text-xs resize-none"
                     />
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="default"
                       className="h-8 text-xs"
                       onClick={generateAIAvatar}
-                      disabled={isGeneratingAvatar}
+                      disabled={
+                        isGeneratingAvatar || !formData.avatarPrompt.trim()
+                      }
                     >
                       {isGeneratingAvatar ? (
                         <>
