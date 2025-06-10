@@ -143,60 +143,38 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
     setLoadingSuggestions(true);
 
     try {
-      if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
-        throw new Error('OpenRouter API key is missing');
+      // Import AI service dynamically
+      const { aiService } = await import('@/lib/ai-service');
+
+      // Get the last assistant message for context
+      const lastAssistantMessage =
+        messages.filter((msg) => msg.role === 'assistant').slice(-1)[0]
+          ?.content || '';
+
+      if (!lastAssistantMessage.trim()) {
+        // Use fallback suggestions if no assistant message
+        throw new Error('No assistant message for context');
       }
 
-      // Prepare the conversation history for context
-      const conversationHistory = messages.map((msg) => msg.content).join('\n');
+      // Prepare conversation history
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-3) // Only use last 3 messages for context
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
 
-      // Call OpenRouter API to generate contextual suggestions
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-            messages: [
-              {
-                role: 'system',
-                content: `You are an AI assistant helping users learn about ${tool.name}, an AI tool. Based on the conversation history, generate 3-4 follow-up questions the user might want to ask next. Make these questions diverse, natural, and relevant to the conversation context. Each question should be concise (under 10 words if possible). Return ONLY the questions as a JSON array of strings with no additional text.`,
-              },
-              {
-                role: 'user',
-                content: `Here's the conversation so far about ${tool.name}:\n${conversationHistory}\n\nGenerate 3-4 natural follow-up questions as JSON array.`,
-              },
-            ],
-            temperature: 0.7,
-            max_tokens: 150,
-          }),
-        }
-      );
+      // Generate suggestions using the professional AI service
+      const generatedSuggestions = await aiService.generateSuggestions({
+        toolName: tool.name,
+        lastAssistantMessage,
+        conversationHistory,
+        count: 4,
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from OpenRouter');
-      }
-
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content.trim() || '';
-      const jsonMatch = content.match(/\[.*\]/s);
-
-      if (jsonMatch) {
-        const parsedSuggestions = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(parsedSuggestions) && parsedSuggestions.length > 0) {
-          setSuggestions(parsedSuggestions.slice(0, 4)); // Limit to 4 suggestions
-          return;
-        }
-      }
-
-      // Fallback if parsing fails
-      throw new Error('Failed to parse suggestions');
+      setSuggestions(generatedSuggestions.slice(0, 4)); // Limit to 4 suggestions
     } catch (error) {
       console.error('Error generating suggestions:', error);
       // Fallback to default suggestions if API call fails
@@ -268,6 +246,9 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
     trackChatEvent(tool.id, 'message_sent');
 
     try {
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
+
       // Prepare context about the tool for the AI
       const toolContext = `Tool Name: ${tool.name}\nDescription: ${
         tool.description
@@ -275,27 +256,18 @@ const ToolChatModal = ({ tool, isOpen, onClose }: ToolChatModalProps) => {
         tool.pricing
       }\nWebsite URL: ${tool.url}`;
 
-      if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
-        throw new Error('OpenRouter API key is missing');
-      }
+      // Prepare conversation history
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-10) // Keep last 10 messages for context
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
 
-      // Call OpenRouter API
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-            messages: [
-              {
-                role: 'system',
-                content: `You are an AI assistant helping users learn about ${tool.name}. Here is information about the tool: ${toolContext}
+      // Create tool-specific prompt
+      const toolPrompt = `You are an AI assistant helping users learn about ${tool.name}. Here is information about the tool: ${toolContext}
 
 Keep responses direct and easy to read:
 1. Use plain text and bullet points (•) for lists
@@ -304,25 +276,18 @@ Keep responses direct and easy to read:
 4. Get straight to the point without introductions
 5. Use line breaks to separate sections
 
-Keep your responses concise and focused on this specific tool.`,
-              },
-              ...messages.map((msg) => ({
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-              })),
-            ],
-            temperature: 0.7,
-            max_tokens: 1000,
-          }),
-        }
-      );
+Keep your responses concise and focused on this specific tool.`;
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from OpenRouter');
-      }
+      // Call the professional AI service
+      const response = await aiService.chat(userMessage.content, {
+        toolName: tool.name,
+        toolPrompt,
+        conversationHistory,
+        maxRetries: 2,
+        timeout: 25000,
+      });
 
-      const data = await response.json();
-      const responseContent = data.choices[0]?.message?.content || '';
+      const responseContent = response.content;
 
       // Create new assistant message
       const assistantMessage: Message = {
@@ -343,8 +308,38 @@ Keep your responses concise and focused on this specific tool.`,
         generateSuggestions();
       }, 500); // Small delay to ensure typing animation has started
     } catch (error) {
+      // Handle specific AI service errors
+      let userMessage =
+        "Sorry, I'm having trouble responding right now. Please try again in a moment.";
+      let duration = 4000;
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              "I'm receiving too many requests right now. Please wait a moment and try again.";
+            duration = 6000;
+            break;
+          case 'INPUT_TOO_LONG':
+            userMessage =
+              'Your message is too long. Please try with a shorter message.';
+            break;
+          case 'TIMEOUT':
+            userMessage =
+              'The request took too long. Please try again with a simpler question.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            // Use default message
+            break;
+        }
+      }
+
       console.error('Error sending message:', error);
-      toast.error('Failed to get a response. Please try again.');
+      toast.error(userMessage, { duration });
     } finally {
       setIsLoading(false);
       setTypingIndicator(false);

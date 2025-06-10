@@ -29,7 +29,7 @@ type SharedChatContextType = {
   openChat: (tool: AITool, comparisonTools?: AITool[]) => void;
   closeChat: () => void;
   sendMessage: () => Promise<void>;
-  handleSuggestionClick: (suggestion: string) => void;
+  handleSuggestionClick: (suggestion: string) => Promise<void>;
 };
 
 const SharedChatContext = createContext<SharedChatContextType | undefined>(
@@ -126,99 +126,56 @@ export function SharedChatProvider({
     );
 
     try {
-      if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
-        throw new Error('OpenRouter API key is missing');
+      // Import AI service dynamically
+      const { aiService } = await import('@/lib/ai-service');
+
+      // Get the last assistant message for context
+      const lastAssistantMessage =
+        messages.filter((msg) => msg.role === 'assistant').slice(-1)[0]
+          ?.content || '';
+
+      if (!lastAssistantMessage.trim()) {
+        // Use fallback suggestions if no assistant message
+        throw new Error('No assistant message for context');
       }
 
-      // Prepare the conversation history for context
-      const toolMessages = messages.filter(
-        (msg) => !msg.toolId || msg.toolId === currentTool.id
-      );
-      const conversationHistory = toolMessages
-        .map((msg) => msg.content)
-        .join('\n');
+      // Prepare conversation history
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-3) // Only use last 3 messages for context
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: cleanAIResponse(msg.content),
+        }));
 
-      // Call OpenRouter API to generate contextual suggestions
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-            messages: [
-              {
-                role: 'system',
-                content: isComparisonMode
-                  ? 'You are an AI assistant helping users compare different AI tools. Generate 4 natural follow-up questions as a JSON array of strings. Do not use markdown or meta-commentary.'
-                  : `You are an AI assistant helping users with ${currentTool.name}. Generate 4 natural follow-up questions as a JSON array of strings. Do not use markdown or meta-commentary.`,
-              },
-              ...messages.map((msg) => ({
-                role: msg.role as 'user' | 'assistant',
-                content: cleanAIResponse(msg.content),
-              })),
-            ],
-            temperature: 0.4, // Lower temperature for more focused, deterministic responses
-            max_tokens: 1000,
-          }),
-        }
-      );
+      // Generate suggestions using the professional AI service
+      const generatedSuggestions = await aiService.generateSuggestions({
+        toolName: currentTool.name,
+        lastAssistantMessage,
+        conversationHistory,
+        count: 4,
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from OpenRouter');
-      }
-
-      const data = await response.json();
-      const responseContent = cleanAIResponse(
-        data.choices[0]?.message?.content || ''
-      );
-
-      // Parse the response to get the suggestions
-      try {
-        // Extract JSON array from the response
-        const content = responseContent.trim();
-        const jsonMatch = content.match(/\[.*\]/s);
-
-        if (jsonMatch) {
-          const parsedSuggestions = JSON.parse(jsonMatch[0]);
-          if (
-            Array.isArray(parsedSuggestions) &&
-            parsedSuggestions.length > 0
-          ) {
-            setSuggestions(parsedSuggestions.slice(0, 4)); // Limit to 4 suggestions
-            return;
-          }
-        }
-
-        // Fallback if parsing fails
-        throw new Error('Failed to parse suggestions');
-      } catch (parseError) {
-        console.error('Error parsing suggestions:', parseError);
-        // Fallback to default suggestions if parsing fails
-        if (isComparisonMode) {
-          setSuggestions([
-            `Which tool has the best features?`,
-            `How do the pricing plans compare?`,
-            `Which is more suitable for beginners?`,
-            `What are the main differences between them?`,
-          ]);
-        } else {
-          setSuggestions([
-            `What can I do with ${currentTool.name}?`,
-            `How much does ${currentTool.name} cost?`,
-            `What are the main features of ${currentTool.name}?`,
-            `How does ${currentTool.name} compare to alternatives?`,
-          ]);
-        }
-      }
+      setSuggestions(generatedSuggestions.slice(0, 4)); // Limit to 4 suggestions
     } catch (error) {
       console.error('Error generating suggestions:', error);
       // Fallback to default suggestions if API call fails
+      if (isComparisonMode) {
+        setSuggestions([
+          `Which tool has the best features?`,
+          `How do the pricing plans compare?`,
+          `Which is more suitable for beginners?`,
+          `What are the main differences between them?`,
+        ]);
+      } else {
+        setSuggestions([
+          `What can I do with ${currentTool.name}?`,
+          `How much does ${currentTool.name} cost?`,
+          `What are the main features of ${currentTool.name}?`,
+          `How does ${currentTool.name} compare to alternatives?`,
+        ]);
+      }
       if (isComparisonMode) {
         setSuggestions([
           `Which tool has the best features?`,
@@ -405,79 +362,34 @@ export function SharedChatProvider({
     trackChatEvent(currentTool.id, 'message_sent');
 
     try {
-      // Call OpenRouter API
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-            messages: [
-              {
-                role: 'system',
-                content: isComparisonMode
-                  ? `You are an AI assistant helping users compare multiple AI tools. You MUST follow these strict guidelines:
-                  1. Be extremely concise and direct - no fluff or unnecessary text
-                  2. Provide factual, accurate information only
-                  3. Focus on key differences between tools
-                  4. Use bullet points for feature comparisons
-                  5. Structure your response with clear sections
-                  6. Directly address the specific question asked
-                  7. If you don't know something specific, say so clearly
-                  8. Avoid vague generalizations
-                  9. Provide pricing information when asked
-                  10. Compare use cases when relevant
-                  
-                  IMPORTANT: Your response should be brief, informative, and directly answer what was asked.`
-                  : `You are an AI assistant helping users learn about ${currentTool.name}. You MUST follow these strict guidelines:
-                  1. Answer ONLY what was specifically asked - nothing more
-                  2. Be extremely concise - no introductions, conclusions, or unnecessary explanations
-                  3. Use bullet points for features and capabilities
-                  4. Structure information with clear headings when providing multiple pieces of information
-                  5. For pricing questions, list pricing tiers clearly
-                  6. For feature questions, be specific about what the tool can and cannot do
-                  7. For comparison questions, focus on concrete differences
-                  8. For "how to" questions, provide step-by-step instructions
-                  9. If you don't know something specific, say so clearly rather than guessing
-                  10. Avoid marketing language and focus on factual information
-                  
-                  IMPORTANT: 
-                  - Your response should be brief, informative, and directly answer what was asked
-                  - Avoid any text that doesn't directly contribute to answering the question
-                  - Never start with phrases like "${currentTool.name} is..." or "Sure, I can tell you about..."
-                  - Get straight to the answer immediately`,
-              },
-              // Include all previous messages plus the current user message
-              ...messages.map((msg) => ({
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-              })),
-              // Add the current user message to ensure it's included in the API call
-              {
-                role: 'user',
-                content: userMessage.content,
-              },
-            ],
-            temperature: 0.4, // Lower temperature for more focused, deterministic responses
-            max_tokens: 1000,
-          }),
-        }
-      );
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from OpenRouter');
-      }
+      // Prepare conversation history
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-10) // Keep last 10 messages for context
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
 
-      const data = await response.json();
-      const assistantResponse = cleanAIResponse(
-        data.choices[0]?.message?.content || ''
-      );
+      // Determine the appropriate system prompt and tool prompt
+      const toolPrompt = isComparisonMode
+        ? `You are an AI assistant helping users compare multiple AI tools. Be extremely concise and direct, focusing on key differences, factual information, and structured comparisons.`
+        : `You are an AI assistant helping users learn about ${currentTool.name}. Answer only what was specifically asked, be extremely concise, use bullet points for features, and avoid marketing language.`;
+
+      // Call the professional AI service
+      const response = await aiService.chat(userMessage.content, {
+        toolName: currentTool.name,
+        toolPrompt,
+        conversationHistory,
+        maxRetries: 2,
+        timeout: 25000,
+      });
+
+      const assistantResponse = cleanAIResponse(response.content);
 
       // Create a new message with the response
       const newAssistantMessage: Message = {
@@ -504,15 +416,45 @@ export function SharedChatProvider({
         generateSuggestions();
       }, 1000);
     } catch (error) {
+      // Handle specific AI service errors
+      let userMessage =
+        "Sorry, I'm having trouble responding right now. Please try again in a moment.";
+      let duration = 4000;
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              "I'm receiving too many requests right now. Please wait a moment and try again.";
+            duration = 6000;
+            break;
+          case 'INPUT_TOO_LONG':
+            userMessage =
+              'Your message is too long. Please try with a shorter message.';
+            break;
+          case 'TIMEOUT':
+            userMessage =
+              'The request took too long. Please try again with a simpler question.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            // Use default message
+            break;
+        }
+      }
+
       console.error('Error sending message:', error);
-      toast('Failed to get a response. Please try again.');
+      toast(userMessage, { duration });
     } finally {
       setIsLoading(false);
       setTypingIndicator(false);
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = async (suggestion: string) => {
     if (isLoading || !currentTool) return;
 
     // Instead of setting input and then sending, directly create a message with the suggestion
@@ -532,110 +474,101 @@ export function SharedChatProvider({
     // Track suggestion usage
     trackChatEvent(currentTool.id, 'message_sent');
 
-    // Call OpenRouter API directly
-    fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'DeepList AI',
-      },
-      body: JSON.stringify({
-        model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-        messages: [
-          {
-            role: 'system',
-            content:
-              comparisonTools !== null && comparisonTools.length > 1
-                ? `You are an AI assistant helping users compare multiple AI tools. You MUST follow these strict guidelines:
-                1. Be extremely concise and direct - no fluff or unnecessary text
-                2. Provide factual, accurate information only
-                3. Focus on key differences between tools
-                4. Use bullet points for feature comparisons
-                5. Structure your response with clear sections
-                6. Directly address the specific question asked
-                7. If you don't know something specific, say so clearly
-                8. Avoid vague generalizations
-                9. Provide pricing information when asked
-                10. Compare use cases when relevant
-                
-                IMPORTANT: Your response should be brief, informative, and directly answer what was asked.`
-                : `You are an AI assistant helping users learn about ${currentTool.name}. You MUST follow these strict guidelines:
-                1. Answer ONLY what was specifically asked - nothing more
-                2. Be extremely concise - no introductions, conclusions, or unnecessary explanations
-                3. Use bullet points for features and capabilities
-                4. Structure information with clear headings when providing multiple pieces of information
-                5. For pricing questions, list pricing tiers clearly
-                6. For feature questions, be specific about what the tool can and cannot do
-                7. For comparison questions, focus on concrete differences
-                8. For "how to" questions, provide step-by-step instructions
-                9. If you don't know something specific, say so clearly rather than guessing
-                10. Avoid marketing language and focus on factual information
-                
-                IMPORTANT: 
-                - Your response should be brief, informative, and directly answer what was asked
-                - Avoid any text that doesn't directly contribute to answering the question
-                - Never start with phrases like "${currentTool.name} is..." or "Sure, I can tell you about..."
-                - Get straight to the answer immediately`,
-          },
-          ...messages.map((msg) => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content,
-          })),
-          {
-            role: 'user',
-            content: suggestion,
-          },
-        ],
-        temperature: 0.4,
-        max_tokens: 1000,
-      }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to get response from OpenRouter');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        const assistantResponse = cleanAIResponse(
-          data.choices[0]?.message?.content || ''
-        );
+    try {
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-        // Create a new message with the response
-        const newAssistantMessage: Message = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: assistantResponse,
-          isTyping: true,
-          displayContent: '',
-          toolId: currentTool.id,
-          toolName: currentTool.name,
-          toolCard:
-            messages.length <= 2 ||
-            suggestion.toLowerCase().includes('feature') ||
-            suggestion.toLowerCase().includes('what can') ||
-            suggestion.toLowerCase().includes('how to use')
-              ? currentTool
-              : undefined,
-        };
+      // Prepare conversation history
+      const conversationHistory = messages
+        .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+        .filter((msg) => msg.content.trim() !== '')
+        .slice(-10) // Keep last 10 messages for context
+        .map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
 
-        setMessages((prev) => [...prev, newAssistantMessage]);
-        animateTyping(newAssistantMessage.id, assistantResponse);
+      // Determine if we're in comparison mode
+      const isComparisonMode =
+        comparisonTools !== null && comparisonTools.length > 1;
 
-        setTimeout(() => {
-          generateSuggestions();
-        }, 1000);
-      })
-      .catch((error) => {
-        console.error('Error sending message:', error);
-        toast('Failed to get a response. Please try again.');
-      })
-      .finally(() => {
-        setIsLoading(false);
-        setTypingIndicator(false);
+      // Determine the appropriate tool prompt
+      const toolPrompt = isComparisonMode
+        ? `You are an AI assistant helping users compare multiple AI tools. Be extremely concise and direct, focusing on key differences, factual information, and structured comparisons.`
+        : `You are an AI assistant helping users learn about ${currentTool.name}. Answer only what was specifically asked, be extremely concise, use bullet points for features, and avoid marketing language.`;
+
+      // Call the professional AI service
+      const response = await aiService.chat(suggestion, {
+        toolName: currentTool.name,
+        toolPrompt,
+        conversationHistory,
+        maxRetries: 2,
+        timeout: 25000,
       });
+
+      const assistantResponse = cleanAIResponse(response.content);
+
+      // Create a new message with the response
+      const newAssistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: assistantResponse,
+        isTyping: true,
+        displayContent: '',
+        toolId: currentTool.id,
+        toolName: currentTool.name,
+        toolCard:
+          messages.length <= 2 ||
+          suggestion.toLowerCase().includes('feature') ||
+          suggestion.toLowerCase().includes('what can') ||
+          suggestion.toLowerCase().includes('how to use')
+            ? currentTool
+            : undefined,
+      };
+
+      setMessages((prev) => [...prev, newAssistantMessage]);
+      animateTyping(newAssistantMessage.id, assistantResponse);
+
+      setTimeout(() => {
+        generateSuggestions();
+      }, 1000);
+    } catch (error) {
+      // Handle specific AI service errors
+      let userMessage =
+        "Sorry, I'm having trouble responding right now. Please try again in a moment.";
+      let duration = 4000;
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              "I'm receiving too many requests right now. Please wait a moment and try again.";
+            duration = 6000;
+            break;
+          case 'INPUT_TOO_LONG':
+            userMessage =
+              'Your message is too long. Please try with a shorter message.';
+            break;
+          case 'TIMEOUT':
+            userMessage =
+              'The request took too long. Please try again with a simpler question.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            // Use default message
+            break;
+        }
+      }
+
+      console.error('Error sending message:', error);
+      toast(userMessage, { duration });
+    } finally {
+      setIsLoading(false);
+      setTypingIndicator(false);
+    }
   };
 
   // Generate initial suggestions when chat opens with a tool

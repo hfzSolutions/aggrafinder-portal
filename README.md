@@ -15,9 +15,10 @@ This application uses environment variables for configuration. Follow these step
 ### Required Environment Variables
 
 - `VITE_OPENROUTER_API_KEY`: Your OpenRouter API key for the chat functionality
-- `VITE_OPENROUTER_MODEL_NAME`: The model name to use with OpenRouter (e.g., "anthropic/claude-3-sonnet" or other supported models)
+- `VITE_OPENROUTER_MODEL_NAME`: The primary model name to use with OpenRouter for main chat functionality (e.g., "deepseek/deepseek-r1-0528-qwen3-8b:free")
+- `VITE_OPENROUTER_MODEL_NAME_2`: The secondary model name used for suggestions generation (e.g., "meta-llama/llama-3.3-8b-instruct:free")
 
-The application uses a centralized API key stored in environment variables instead of requiring users to input their own keys.
+The application uses a centralized API key stored in environment variables instead of requiring users to input their own keys. The system uses a fallback chain where suggestions first try `VITE_OPENROUTER_MODEL_NAME_2`, then fall back to `VITE_OPENROUTER_MODEL_NAME`, and finally to a default free model.
 
 ### Other Environment Variables
 
