@@ -1,5 +1,5 @@
 // Simple test page to verify the dynamic manifest API
-export default function handler(req, res) {
+module.exports = (req, res) => {
   const { toolId } = req.query;
 
   // Generate HTML page to test the manifest
@@ -35,4 +35,4 @@ export default function handler(req, res) {
 
   res.setHeader('Content-Type', 'text/html');
   return res.status(200).send(html);
-}
+};

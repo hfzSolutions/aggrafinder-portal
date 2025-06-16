@@ -1,12 +1,4 @@
 {
-  "functions": {
-    "api/manifest.js": {
-      "runtime": "nodejs18.x"
-    },
-    "api/test/[toolId].js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     { "source": "/api/manifest/(.*)", "destination": "/api/manifest" },
     { "source": "/api/test/(.*)", "destination": "/api/test/[toolId]" },
