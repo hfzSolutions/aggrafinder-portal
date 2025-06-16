@@ -748,7 +748,7 @@ const QuickToolDetails = () => {
                       toolPrompt={tool.prompt}
                       imageUrl={tool.image_url}
                       initialMessage={tool.initial_message}
-                      suggested_replies={tool.suggested_replies}
+                      suggested_replies={tool.suggested_replies || false}
                     />
                   </div>
                 </div>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Manifest Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .result {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button {
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #3f37d1;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dynamic PWA Manifest Test</h1>
+        <p>This page tests the dynamic manifest functionality for DeepListAI quick tools.</p>
+
+        <div class="test-section">
+            <h3>1. Test Manifest API Endpoint</h3>
+            <div>
+                <label for="toolId">Tool ID:</label>
+                <input type="text" id="toolId" placeholder="Enter tool ID" value="54705591-6dcf-4edd-bf88-420051fa3603">
+                <button onclick="testManifestAPI()">Test API</button>
+            </div>
+            <div id="api-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Current Manifest Link</h3>
+            <button onclick="checkCurrentManifest()">Check Current Manifest</button>
+            <div id="manifest-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Update Manifest Dynamically</h3>
+            <div>
+                <input type="text" id="newToolId" placeholder="New tool ID" value="test-tool-123">
+                <button onclick="updateManifest()">Update Manifest</button>
+            </div>
+            <button onclick="resetManifest()">Reset to Default</button>
+            <div id="update-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Service Worker Status</h3>
+            <button onclick="checkServiceWorker()">Check Service Worker</button>
+            <div id="sw-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testManifestAPI() {
+            const toolId = document.getElementById('toolId').value;
+            const resultDiv = document.getElementById('api-result');
+            
+            if (!toolId) {
+                resultDiv.textContent = 'Please enter a tool ID';
+                resultDiv.className = 'result error';
+                return;
+            }
+
+            try {
+                // Try the API endpoint first
+                let response = await fetch(`/api/manifest/${toolId}`);
+                
+                if (!response.ok) {
+                    // Fallback: try to generate client-side manifest
+                    const manifest = {
+                        name: "DeepListAI",
+                        short_name: "DeepListAI",
+                        description: "Find the Best AI Tools for Your Needs",
+                        start_url: `/quick-tools/${toolId}`,
+                        scope: "/",
+                        display: "standalone",
+                        background_color: "#ffffff",
+                        theme_color: "#4f46e5",
+                        icons: [
+                            {
+                                src: "/images/web-logo.png",
+                                sizes: "192x192",
+                                type: "image/png"
+                            },
+                            {
+                                src: "/images/web-logo.png",
+                                sizes: "512x512",
+                                type: "image/png"
+                            }
+                        ]
+                    };
+                    
+                    resultDiv.textContent = 'API not available - Client-side generated manifest:\n' + JSON.stringify(manifest, null, 2);
+                    resultDiv.className = 'result success';
+                    return;
+                }
+
+                const data = await response.json();
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = `Network error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        function checkCurrentManifest() {
+            const resultDiv = document.getElementById('manifest-result');
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            
+            if (manifestLink) {
+                const href = manifestLink.href;
+                resultDiv.textContent = `Current manifest: ${href}`;
+                resultDiv.className = 'result success';
+                
+                // Try to fetch and display the manifest content
+                fetch(href)
+                    .then(response => response.json())
+                    .then(data => {
+                        resultDiv.textContent += '\n\nManifest content:\n' + JSON.stringify(data, null, 2);
+                    })
+                    .catch(error => {
+                        resultDiv.textContent += '\n\nError fetching manifest: ' + error.message;
+                    });
+            } else {
+                resultDiv.textContent = 'No manifest link found';
+                resultDiv.className = 'result error';
+            }
+        }
+
+        function updateManifest() {
+            const newToolId = document.getElementById('newToolId').value;
+            const resultDiv = document.getElementById('update-result');
+            
+            if (!newToolId) {
+                resultDiv.textContent = 'Please enter a tool ID';
+                resultDiv.className = 'result error';
+                return;
+            }
+
+            // Remove existing manifest link
+            const existingManifest = document.querySelector('link[rel="manifest"]');
+            if (existingManifest) {
+                existingManifest.remove();
+            }
+
+            // Try API first, fallback to blob URL
+            fetch(`/api/manifest/${newToolId}`)
+                .then(response => {
+                    if (response.ok) {
+                        // Use API endpoint
+                        const manifestLink = document.createElement('link');
+                        manifestLink.rel = 'manifest';
+                        manifestLink.href = `/api/manifest/${newToolId}`;
+                        document.head.appendChild(manifestLink);
+                        
+                        resultDiv.textContent = `Manifest updated to API: /api/manifest/${newToolId}`;
+                        resultDiv.className = 'result success';
+                    } else {
+                        throw new Error('API not available');
+                    }
+                })
+                .catch(() => {
+                    // Fallback to client-side blob
+                    const manifest = {
+                        name: "DeepListAI",
+                        short_name: "DeepListAI",
+                        description: "Find the Best AI Tools for Your Needs",
+                        start_url: `/quick-tools/${newToolId}`,
+                        scope: "/",
+                        display: "standalone",
+                        background_color: "#ffffff",
+                        theme_color: "#4f46e5",
+                        icons: [
+                            {
+                                src: "/images/web-logo.png",
+                                sizes: "192x192",
+                                type: "image/png"
+                            },
+                            {
+                                src: "/images/web-logo.png",
+                                sizes: "512x512",
+                                type: "image/png"
+                            }
+                        ]
+                    };
+                    
+                    const manifestJson = JSON.stringify(manifest, null, 2);
+                    const blob = new Blob([manifestJson], { type: 'application/manifest+json' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    
+                    const manifestLink = document.createElement('link');
+                    manifestLink.rel = 'manifest';
+                    manifestLink.href = blobUrl;
+                    document.head.appendChild(manifestLink);
+                    
+                    resultDiv.textContent = `Manifest updated to client-side blob for tool: ${newToolId}`;
+                    resultDiv.className = 'result success';
+                });
+        }
+
+        function resetManifest() {
+            const resultDiv = document.getElementById('update-result');
+            
+            // Remove existing manifest link
+            const existingManifest = document.querySelector('link[rel="manifest"]');
+            if (existingManifest) {
+                existingManifest.remove();
+            }
+
+            // Create default manifest link
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = '/manifest.json';
+            document.head.appendChild(manifestLink);
+
+            resultDiv.textContent = 'Manifest reset to default: /manifest.json';
+            resultDiv.className = 'result success';
+        }
+
+        function checkServiceWorker() {
+            const resultDiv = document.getElementById('sw-result');
+            
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration()
+                    .then(registration => {
+                        if (registration) {
+                            resultDiv.textContent = `Service Worker registered: ${registration.scope}\nState: ${registration.active ? registration.active.state : 'not active'}`;
+                            resultDiv.className = 'result success';
+                        } else {
+                            resultDiv.textContent = 'Service Worker not registered';
+                            resultDiv.className = 'result error';
+                        }
+                    })
+                    .catch(error => {
+                        resultDiv.textContent = `Error checking Service Worker: ${error.message}`;
+                        resultDiv.className = 'result error';
+                    });
+            } else {
+                resultDiv.textContent = 'Service Worker not supported';
+                resultDiv.className = 'result error';
+            }
+        }
+
+        // Initialize with current manifest check
+        window.addEventListener('load', () => {
+            checkCurrentManifest();
+            checkServiceWorker();
+        });
+    </script>
+</body>
+</html>
