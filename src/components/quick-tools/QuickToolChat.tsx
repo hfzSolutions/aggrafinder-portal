@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { PWAInstallPrompt } from '@/components/ui/PWAInstallPrompt';
 import { toast } from 'sonner';
 import {
   Send,
@@ -23,11 +22,11 @@ import { containsMarkdown, processText } from '@/lib/markdown';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useQuickToolUsage } from '@/hooks/useQuickToolUsage';
-import { useDynamicManifest } from '@/hooks/useDynamicManifest';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { AddToDesktopButton } from '@/components/ui/add-to-desktop-button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -83,12 +82,6 @@ export const QuickToolChat = ({
   const location = useLocation();
 
   const { trackEvent } = useAnalytics();
-
-  // Use dynamic manifest hook
-  const { updateManifest, resetToDefaultManifest } = useDynamicManifest(
-    toolId,
-    toolName
-  );
 
   // Move checkForSponsorAds function inside QuickToolChat
   const checkForSponsorAds = async () => {
@@ -333,10 +326,6 @@ export const QuickToolChat = ({
   const [shouldShowExpandButton, setShouldShowExpandButton] = useState(false);
   // Add state for suggested replies
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
-
-  // Add state for PWA install prompt
-  const [showPWAPrompt, setShowPWAPrompt] = useState(false);
-  const [pwaPromptDismissed, setPWAPromptDismissed] = useState(false);
 
   const { trackChatEvent } = useAIChatAnalytics();
   const { incrementUsageCount } = useQuickToolUsage();
@@ -767,13 +756,11 @@ export const QuickToolChat = ({
     trackChatEvent(toolId, 'open');
     // Increment usage count when a conversation starts
     incrementUsageCount(toolId);
-    // Manifest is automatically updated by the useDynamicManifest hook
     // No auto-focus on input
 
     return () => {
       // Track when chat is closed with message count
       trackChatEvent(toolId, 'close', messages.length);
-      // Manifest is automatically reset by the useDynamicManifest hook
     };
   }, [toolId, trackChatEvent, incrementUsageCount, messages.length]);
 
@@ -798,18 +785,6 @@ export const QuickToolChat = ({
 
     checkAdAvailability();
   }, []);
-
-  // Show PWA install prompt after user engagement
-  useEffect(() => {
-    if (messages.length >= 3 && !pwaPromptDismissed && !showPWAPrompt) {
-      // Show PWA prompt after some interaction
-      const timer = setTimeout(() => {
-        setShowPWAPrompt(true);
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [messages.length, pwaPromptDismissed, showPWAPrompt]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading || isMessageTooLong) return;
@@ -1489,18 +1464,6 @@ export const QuickToolChat = ({
           )}
         </div>
       </div>
-
-      {/* PWA Install Prompt */}
-      {showPWAPrompt && (
-        <PWAInstallPrompt
-          toolId={toolId}
-          toolName={toolName}
-          onClose={() => {
-            setShowPWAPrompt(false);
-            setPWAPromptDismissed(true);
-          }}
-        />
-      )}
     </div>
   );
 };

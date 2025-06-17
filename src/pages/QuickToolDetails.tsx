@@ -198,6 +198,88 @@ const QuickToolDetails = () => {
     window.open(`/quick-tools/${toolId}`, '_blank');
   };
 
+  useEffect(() => {
+    const updateManifest = () => {
+      console.log('Setting PWA manifest for Quick Tool:', tool);
+      const manifestElement = document.getElementById('manifest');
+
+      if (!manifestElement) {
+        console.warn('Manifest element not found');
+        return;
+      }
+
+      // Get the base URL for absolute URLs
+      const baseUrl = window.location.origin;
+
+      // Use tool image if available, otherwise fallback to default logo
+      const iconUrl = tool?.image_url || `${baseUrl}/images/web-logo.png`;
+
+      const manifestData = {
+        id: tool ? `/quick-tools/${tool.id}` : '/quick-tools',
+        name: tool ? `${tool.name} - DeepListAI` : 'DeepListAI',
+        short_name: tool ? tool.name : 'Quick Tools',
+        description: tool ? tool.description : 'Explore AI tools and resources',
+        start_url: tool
+          ? `${baseUrl}/quick-tools/${tool.id}`
+          : `${baseUrl}/quick-tools`,
+        scope: `${baseUrl}/`,
+        display: 'standalone',
+        background_color: '#ffffff',
+        theme_color: '#4f46e5',
+        icons: [
+          {
+            src: iconUrl,
+            sizes: '1024x1024',
+            type: 'image/png',
+          },
+          {
+            src: iconUrl,
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: iconUrl,
+            sizes: '192x192',
+            type: 'image/png',
+          },
+        ],
+        screenshots: [
+          {
+            src: iconUrl,
+            sizes: '1024x1024',
+            type: 'image/png',
+            form_factor: 'wide',
+          },
+          {
+            src: iconUrl,
+            sizes: '1024x1024',
+            type: 'image/png',
+          },
+        ],
+      };
+
+      const manifestString = JSON.stringify(manifestData);
+      const manifestUrl =
+        'data:application/json;charset=utf-8,' +
+        encodeURIComponent(manifestString);
+
+      manifestElement.setAttribute('href', manifestUrl);
+
+      // Add mobile-web-app-capable meta tag if it doesn't exist
+      if (!document.querySelector('meta[name="mobile-web-app-capable"]')) {
+        const mobileCapableMeta = document.createElement('meta');
+        mobileCapableMeta.name = 'mobile-web-app-capable';
+        mobileCapableMeta.content = 'yes';
+        document.head.appendChild(mobileCapableMeta);
+      }
+
+      console.log('Manifest updated successfully');
+    };
+
+    // Always update manifest, but with different content based on tool availability
+    updateManifest();
+  }, [tool]); // This will run whenever tool changes (including from null to actual data)
+
   // Fetch related tools when the current tool is loaded
   useEffect(() => {
     const fetchRelatedTools = async () => {
