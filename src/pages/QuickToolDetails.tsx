@@ -356,36 +356,36 @@ const QuickToolDetails = () => {
       manifestElement.setAttribute('href', manifestUrl);
 
       // // Enhanced mobile meta tags
-      // const updateOrCreateMeta = (
-      //   name: string,
-      //   content: string,
-      //   property?: string
-      // ) => {
-      //   const selector = property
-      //     ? `meta[property="${property}"]`
-      //     : `meta[name="${name}"]`;
-      //   let meta = document.querySelector(selector) as HTMLMetaElement;
-      //   if (!meta) {
-      //     meta = document.createElement('meta');
-      //     if (property) {
-      //       meta.setAttribute('property', property);
-      //     } else {
-      //       meta.setAttribute('name', name);
-      //     }
-      //     document.head.appendChild(meta);
-      //   }
-      //   meta.setAttribute('content', content);
-      // };
+      const updateOrCreateMeta = (
+        name: string,
+        content: string,
+        property?: string
+      ) => {
+        const selector = property
+          ? `meta[property="${property}"]`
+          : `meta[name="${name}"]`;
+        let meta = document.querySelector(selector) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement('meta');
+          if (property) {
+            meta.setAttribute('property', property);
+          } else {
+            meta.setAttribute('name', name);
+          }
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+      };
 
       // // Mobile-specific meta tags
       // updateOrCreateMeta('mobile-web-app-capable', 'yes');
       // updateOrCreateMeta('apple-mobile-web-app-capable', 'yes');
       // updateOrCreateMeta('apple-mobile-web-app-status-bar-style', 'default');
-      // updateOrCreateMeta(
-      //   'apple-mobile-web-app-title',
-      //   tool?.name || 'DeepList AI'
-      // );
-      // updateOrCreateMeta('application-name', tool?.name || 'DeepList AI');
+      updateOrCreateMeta(
+        'apple-mobile-web-app-title',
+        tool?.name || 'DeepList AI'
+      );
+      updateOrCreateMeta('application-name', tool?.name || 'DeepList AI');
       // updateOrCreateMeta('msapplication-TileColor', '#4f46e5');
       // updateOrCreateMeta('theme-color', '#4f46e5');
 
