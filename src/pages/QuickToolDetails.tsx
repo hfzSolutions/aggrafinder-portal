@@ -216,44 +216,24 @@ const QuickToolDetails = () => {
 
       const manifestData = {
         id: tool ? `/quick-tools/${tool.id}` : '/quick-tools',
-        name: tool ? `${tool.name} - DeepListAI` : 'DeepListAI',
-        short_name: tool ? tool.name : 'Quick Tools',
+        name: tool ? `${tool.name}` : 'DeepListAI',
+        short_name: tool ? tool.name.substring(0, 12) : 'Quick Tools',
         description: tool ? tool.description : 'Explore AI tools and resources',
         start_url: tool
           ? `${baseUrl}/quick-tools/${tool.id}`
           : `${baseUrl}/quick-tools`,
-        scope: `${baseUrl}/`,
+        scope: tool
+          ? `${baseUrl}/quick-tools/${tool.id}`
+          : `${baseUrl}/quick-tools`,
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#4f46e5',
         icons: [
           {
             src: iconUrl,
-            sizes: '1024x1024',
+            sizes: '416x416',
             type: 'image/png',
-          },
-          {
-            src: iconUrl,
-            sizes: '512x512',
-            type: 'image/png',
-          },
-          {
-            src: iconUrl,
-            sizes: '192x192',
-            type: 'image/png',
-          },
-        ],
-        screenshots: [
-          {
-            src: iconUrl,
-            sizes: '1024x1024',
-            type: 'image/png',
-            form_factor: 'wide',
-          },
-          {
-            src: iconUrl,
-            sizes: '1024x1024',
-            type: 'image/png',
+            purpose: 'any maskable',
           },
         ],
       };
@@ -271,6 +251,20 @@ const QuickToolDetails = () => {
         mobileCapableMeta.name = 'mobile-web-app-capable';
         mobileCapableMeta.content = 'yes';
         document.head.appendChild(mobileCapableMeta);
+      }
+
+      // Add apple-touch-icon for iOS
+      const existingAppleIcon = document.querySelector(
+        'link[rel="apple-touch-icon"]'
+      );
+      if (!existingAppleIcon) {
+        const appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        appleIcon.href = iconUrl;
+        appleIcon.sizes = '180x180';
+        document.head.appendChild(appleIcon);
+      } else {
+        existingAppleIcon.setAttribute('href', iconUrl);
       }
 
       console.log('Manifest updated successfully');
