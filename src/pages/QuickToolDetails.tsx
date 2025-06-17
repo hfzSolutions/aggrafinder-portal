@@ -378,16 +378,16 @@ const QuickToolDetails = () => {
       };
 
       // // Mobile-specific meta tags
-      // updateOrCreateMeta('mobile-web-app-capable', 'yes');
-      // updateOrCreateMeta('apple-mobile-web-app-capable', 'yes');
-      // updateOrCreateMeta('apple-mobile-web-app-status-bar-style', 'default');
+      updateOrCreateMeta('mobile-web-app-capable', 'yes');
+      updateOrCreateMeta('apple-mobile-web-app-capable', 'yes');
+      updateOrCreateMeta('apple-mobile-web-app-status-bar-style', 'default');
       updateOrCreateMeta(
         'apple-mobile-web-app-title',
         tool?.name || 'DeepList AI'
       );
       updateOrCreateMeta('application-name', tool?.name || 'DeepList AI');
-      // updateOrCreateMeta('msapplication-TileColor', '#4f46e5');
-      // updateOrCreateMeta('theme-color', '#4f46e5');
+      updateOrCreateMeta('msapplication-TileColor', '#4f46e5');
+      updateOrCreateMeta('theme-color', '#4f46e5');
 
       // Apple touch icons
       const updateOrCreateLink = (
