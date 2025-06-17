@@ -18,6 +18,8 @@ import {
   Zap,
   MoreVertical,
   Share2,
+  Download,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -103,6 +105,9 @@ const QuickToolDetails = () => {
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [relatedTools, setRelatedTools] = useState<QuickTool[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -198,6 +203,68 @@ const QuickToolDetails = () => {
     window.open(`/quick-tools/${toolId}`, '_blank');
   };
 
+  // Handle PWA installation
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // Show install prompt on mobile after tool loads
+      if (isMobile && tool) {
+        setShowInstallPrompt(true);
+      }
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setShowInstallPrompt(false);
+      setDeferredPrompt(null);
+      toast.success('Tool added to home screen!');
+    };
+
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt
+      );
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [isMobile, tool]);
+
+  // Handle manual install prompt
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      // Fallback for iOS Safari
+      if (
+        navigator.userAgent.includes('Safari') &&
+        !navigator.userAgent.includes('Chrome')
+      ) {
+        toast.info('Tap the Share button and select "Add to Home Screen"');
+        return;
+      }
+      toast.info('Installation not available on this device');
+      return;
+    }
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      toast.success('Tool will be added to your home screen!');
+    }
+
+    setDeferredPrompt(null);
+    setShowInstallPrompt(false);
+  };
+
+  // Enhanced manifest update for better mobile support
   useEffect(() => {
     const updateManifest = () => {
       console.log('Setting PWA manifest for Quick Tool:', tool);
@@ -208,15 +275,12 @@ const QuickToolDetails = () => {
         return;
       }
 
-      // Get the base URL for absolute URLs
       const baseUrl = window.location.origin;
-
-      // Use tool image if available, otherwise fallback to default logo
       const iconUrl = tool?.image_url || `${baseUrl}/images/web-logo.png`;
 
       const manifestData = {
         id: tool ? `/quick-tools/${tool.id}` : '/quick-tools',
-        name: tool ? `${tool.name}` : 'DeepListAI',
+        name: tool ? `${tool.name}` : 'DeepList AI',
         short_name: tool ? tool.name.substring(0, 12) : 'Quick Tools',
         description: tool ? tool.description : 'Explore AI tools and resources',
         start_url: tool
@@ -226,12 +290,58 @@ const QuickToolDetails = () => {
           ? `${baseUrl}/quick-tools/${tool.id}`
           : `${baseUrl}/quick-tools`,
         display: 'standalone',
+        orientation: 'portrait-primary',
         background_color: '#ffffff',
         theme_color: '#4f46e5',
+        categories: ['productivity', 'utilities', 'tools'],
+        lang: 'en',
+        dir: 'ltr',
         icons: [
           {
             src: iconUrl,
-            sizes: '416x416',
+            sizes: '72x72',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: iconUrl,
+            sizes: '96x96',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: iconUrl,
+            sizes: '128x128',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: iconUrl,
+            sizes: '144x144',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: iconUrl,
+            sizes: '152x152',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: iconUrl,
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+          {
+            src: iconUrl,
+            sizes: '384x384',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: iconUrl,
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
           },
@@ -245,34 +355,70 @@ const QuickToolDetails = () => {
 
       manifestElement.setAttribute('href', manifestUrl);
 
-      // Add mobile-web-app-capable meta tag if it doesn't exist
-      if (!document.querySelector('meta[name="mobile-web-app-capable"]')) {
-        const mobileCapableMeta = document.createElement('meta');
-        mobileCapableMeta.name = 'mobile-web-app-capable';
-        mobileCapableMeta.content = 'yes';
-        document.head.appendChild(mobileCapableMeta);
-      }
+      // Enhanced mobile meta tags
+      const updateOrCreateMeta = (
+        name: string,
+        content: string,
+        property?: string
+      ) => {
+        const selector = property
+          ? `meta[property="${property}"]`
+          : `meta[name="${name}"]`;
+        let meta = document.querySelector(selector) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement('meta');
+          if (property) {
+            meta.setAttribute('property', property);
+          } else {
+            meta.setAttribute('name', name);
+          }
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+      };
 
-      // Add apple-touch-icon for iOS
-      const existingAppleIcon = document.querySelector(
-        'link[rel="apple-touch-icon"]'
+      // Mobile-specific meta tags
+      updateOrCreateMeta('mobile-web-app-capable', 'yes');
+      updateOrCreateMeta('apple-mobile-web-app-capable', 'yes');
+      updateOrCreateMeta('apple-mobile-web-app-status-bar-style', 'default');
+      updateOrCreateMeta(
+        'apple-mobile-web-app-title',
+        tool?.name || 'DeepList AI'
       );
-      if (!existingAppleIcon) {
-        const appleIcon = document.createElement('link');
-        appleIcon.rel = 'apple-touch-icon';
-        appleIcon.href = iconUrl;
-        appleIcon.sizes = '180x180';
-        document.head.appendChild(appleIcon);
-      } else {
-        existingAppleIcon.setAttribute('href', iconUrl);
-      }
+      updateOrCreateMeta('application-name', tool?.name || 'DeepList AI');
+      updateOrCreateMeta('msapplication-TileColor', '#4f46e5');
+      updateOrCreateMeta('theme-color', '#4f46e5');
 
-      console.log('Manifest updated successfully');
+      // Apple touch icons
+      const updateOrCreateLink = (
+        rel: string,
+        href: string,
+        sizes?: string
+      ) => {
+        let link = document.querySelector(
+          `link[rel="${rel}"]`
+        ) as HTMLLinkElement;
+        if (!link) {
+          link = document.createElement('link');
+          link.setAttribute('rel', rel);
+          document.head.appendChild(link);
+        }
+        link.setAttribute('href', href);
+        if (sizes) {
+          link.setAttribute('sizes', sizes);
+        }
+      };
+
+      updateOrCreateLink('apple-touch-icon', iconUrl);
+      updateOrCreateLink('apple-touch-icon', iconUrl, '180x180');
+      updateOrCreateLink('icon', iconUrl, '32x32');
+      updateOrCreateLink('icon', iconUrl, '16x16');
+
+      console.log('Enhanced manifest updated successfully');
     };
 
-    // Always update manifest, but with different content based on tool availability
     updateManifest();
-  }, [tool]); // This will run whenever tool changes (including from null to actual data)
+  }, [tool]);
 
   // Fetch related tools when the current tool is loaded
   useEffect(() => {
@@ -335,7 +481,44 @@ const QuickToolDetails = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
 
-        <main className="flex-grow pt-20 bg-gradient-to-b from-background via-background/95 to-muted/5">
+        {/* Install Prompt Banner - Mobile Only */}
+        {isMobile && showInstallPrompt && !isInstalled && tool && (
+          <div className="fixed top-[60px] left-0 right-0 z-50 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground px-4 py-2 shadow-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Plus className="h-4 w-4 shrink-0" />
+                <p className="text-sm font-medium truncate">
+                  Add {tool.name} to home screen
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 px-3 text-xs bg-white/20 hover:bg-white/30 text-white border-white/20"
+                  onClick={handleInstallClick}
+                >
+                  Install
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-white hover:bg-white/20"
+                  onClick={() => setShowInstallPrompt(false)}
+                >
+                  ×
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <main
+          className={cn(
+            'flex-grow pt-20 bg-gradient-to-b from-background via-background/95 to-muted/5',
+            isMobile && showInstallPrompt && !isInstalled && 'pt-28'
+          )}
+        >
           <div className="container px-4 md:px-8 mx-auto py-8">
             <Button
               variant="ghost"
@@ -392,12 +575,30 @@ const QuickToolDetails = () => {
                             </Badge>
                           </div>
                         </div>
-                        <div className="h-7 w-7 rounded-md p-0 shrink-0 flex items-center justify-center">
-                          {showInfo ? (
-                            <ChevronUp className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          )}
+                        <div className="flex items-center gap-1">
+                          {/* Add to Home Screen Button */}
+                          {!isInstalled &&
+                            (deferredPrompt ||
+                              navigator.userAgent.includes('Safari')) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleInstallClick();
+                                }}
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          <div className="h-7 w-7 rounded-md p-0 shrink-0 flex items-center justify-center">
+                            {showInfo ? (
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </Button>
@@ -559,7 +760,7 @@ const QuickToolDetails = () => {
                                   <MoreVertical className="h-3 w-3" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem
                                   onClick={() => {
                                     const url = window.location.href;
@@ -573,6 +774,17 @@ const QuickToolDetails = () => {
                                   <Share2 className="h-3.5 w-3.5 mr-2" />
                                   Share Tool
                                 </DropdownMenuItem>
+                                {!isInstalled &&
+                                  (deferredPrompt ||
+                                    navigator.userAgent.includes('Safari')) && (
+                                    <DropdownMenuItem
+                                      onClick={handleInstallClick}
+                                      className="cursor-pointer"
+                                    >
+                                      <Download className="h-3.5 w-3.5 mr-2" />
+                                      Add to Home Screen
+                                    </DropdownMenuItem>
+                                  )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>

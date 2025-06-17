@@ -19,7 +19,7 @@ interface SEOProps {
  * This component should be included in all pages to ensure proper meta tags
  */
 export const SEO = ({
-  title = 'DeepListAI | Find the Best AI Tools for Your Needs',
+  title = 'DeepList AI | Find the Best AI Tools for Your Needs',
   description = 'Discover the most powerful and innovative AI tools to enhance your productivity, creativity, and workflow. Find the perfect AI solution for your specific needs.',
   keywords = 'AI tools, artificial intelligence, machine learning, productivity tools, AI software, AI solutions',
   image = '/images/web-logo.png',
@@ -106,7 +106,7 @@ export const generateHomeStructuredData = (featuredTools: any[] = []) => {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'DeepListAI',
+    name: 'DeepList AI',
     url: getSiteUrl(),
     description:
       'Discover the most powerful and innovative AI tools to enhance your productivity, creativity, and workflow.',

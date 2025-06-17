@@ -26,7 +26,7 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>DeepListAI | Find the Best AI Tools for Your Needs</title>
+        <title>DeepList AI | Find the Best AI Tools for Your Needs</title>
         <meta
           name="description"
           content="Discover the most powerful and innovative AI tools to enhance your productivity, creativity, and workflow. Find the perfect AI solution for your specific needs."
