@@ -22,7 +22,7 @@ self.addEventListener('activate', (event) => {
             }
           })
         );
-      })
+      }),
     ])
   );
 });
@@ -30,26 +30,28 @@ self.addEventListener('activate', (event) => {
 // Enhanced fetch handler for dynamic manifests
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  
+
   // Handle dynamic manifest requests
   if (url.pathname.startsWith('/api/manifest/')) {
     event.respondWith(
       caches.open(MANIFEST_CACHE).then((cache) => {
-        return fetch(event.request).then((response) => {
-          // Cache the manifest for quick access
-          if (response.ok) {
-            cache.put(event.request, response.clone());
-          }
-          return response;
-        }).catch(() => {
-          // Return cached version if network fails
-          return cache.match(event.request);
-        });
+        return fetch(event.request)
+          .then((response) => {
+            // Cache the manifest for quick access
+            if (response.ok) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          })
+          .catch(() => {
+            // Return cached version if network fails
+            return cache.match(event.request);
+          });
       })
     );
     return;
   }
-  
+
   // Let the browser handle all other fetch requests normally
   return;
 });

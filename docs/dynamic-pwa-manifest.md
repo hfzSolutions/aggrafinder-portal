@@ -36,10 +36,14 @@ This Vercel serverless function generates a dynamic manifest.json based on the `
 A React hook that manages manifest updates automatically:
 
 ```typescript
-const { updateManifest, resetToDefaultManifest } = useDynamicManifest(toolId, toolName);
+const { updateManifest, resetToDefaultManifest } = useDynamicManifest(
+  toolId,
+  toolName
+);
 ```
 
 **Features**:
+
 - Automatically updates manifest when `toolId` changes
 - Handles browser navigation events (back/forward)
 - Manages tab visibility changes
@@ -51,6 +55,7 @@ const { updateManifest, resetToDefaultManifest } = useDynamicManifest(toolId, to
 **Location**: `public/service-worker.js`
 
 The service worker caches dynamic manifests for offline access:
+
 - Uses separate cache (`deeplistai-manifests-v1`) for manifest files
 - Provides network-first strategy with cache fallback
 - Cleans up old caches automatically
@@ -60,6 +65,7 @@ The service worker caches dynamic manifests for offline access:
 **Location**: `src/components/ui/PWAInstallPrompt.tsx`
 
 Updated to work with dynamic manifests:
+
 - Updates manifest link before showing install prompt
 - Sets appropriate meta tags for better PWA experience
 - Handles platform-specific install instructions
@@ -67,6 +73,7 @@ Updated to work with dynamic manifests:
 ## How It Works
 
 ### 1. Tool Page Load
+
 When a user navigates to `/quick-tools/[toolId]`:
 
 1. `QuickToolChat` component mounts
@@ -76,20 +83,26 @@ When a user navigates to `/quick-tools/[toolId]`:
    - Updates Apple mobile web app title
 
 ### 2. Browser Events
+
 The hook listens for:
+
 - **`beforeunload`**: Resets manifest when navigating away
 - **`visibilitychange`**: Updates/resets manifest based on tab visibility
 - **`popstate`**: Handles browser back/forward navigation
 
 ### 3. API Response
+
 When browser requests `/api/manifest/[toolId]`:
+
 - Vercel function validates `toolId` parameter
 - Generates manifest with dynamic `start_url`
 - Returns JSON with appropriate headers
 - Service worker caches response
 
 ### 4. PWA Installation
+
 When user installs PWA:
+
 - Current manifest (with specific tool URL) is used
 - App will launch directly to that tool
 - Icon and app name remain consistent
@@ -97,15 +110,18 @@ When user installs PWA:
 ## Testing
 
 ### Manual Testing
+
 1. Navigate to any quick tool page
 2. Check developer tools > Application > Manifest
 3. Verify `start_url` matches current tool ID
 4. Test PWA install and launch behavior
 
 ### API Testing
+
 Visit `/api/test/[toolId]` to see manifest data and test API functionality.
 
 ### Browser Events Testing
+
 1. Open quick tool in one tab
 2. Switch tabs or minimize browser
 3. Return to tab - manifest should re-update
@@ -115,7 +131,9 @@ Visit `/api/test/[toolId]` to see manifest data and test API functionality.
 ## Configuration
 
 ### Vercel Configuration
+
 `vercel.json` includes:
+
 ```json
 {
   "functions": {
@@ -124,12 +142,16 @@ Visit `/api/test/[toolId]` to see manifest data and test API functionality.
     }
   },
   "rewrites": [
-    { "source": "/api/manifest/(.*)", "destination": "/api/manifest/[toolId].js" }
+    {
+      "source": "/api/manifest/(.*)",
+      "destination": "/api/manifest/[toolId].js"
+    }
   ]
 }
 ```
 
 ### Cache Settings
+
 - Manifest API responses cached for 1 hour
 - Service worker caches manifests indefinitely with network-first strategy
 - Cache name: `deeplistai-manifests-v1`

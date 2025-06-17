@@ -47,10 +47,10 @@ export const updateManifestLink = (toolId: string): void => {
   const manifestLink = document.createElement('link');
   manifestLink.rel = 'manifest';
   manifestLink.href = manifestBlob;
-  
+
   // Add to document head
   document.head.appendChild(manifestLink);
-  
+
   console.log(`Updated manifest for tool: ${toolId}`);
 };
 
@@ -65,9 +65,9 @@ export const resetToDefaultManifest = (): void => {
   const manifestLink = document.createElement('link');
   manifestLink.rel = 'manifest';
   manifestLink.href = '/manifest.json';
-  
+
   // Add to document head
   document.head.appendChild(manifestLink);
-  
+
   console.log('Reset to default manifest');
 };

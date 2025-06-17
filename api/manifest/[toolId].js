@@ -6,9 +6,9 @@ module.exports = (req, res) => {
   if (!toolId || typeof toolId !== 'string') {
     return res.status(400).json({ error: 'Invalid toolId parameter' });
   }
-  
+
   console.log(`Generating manifest for toolId: ${toolId}`);
-  
+
   // Create dynamic manifest based on toolId
   const manifest = {
     name: 'DeepListAI',

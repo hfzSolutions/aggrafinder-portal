@@ -2,19 +2,19 @@
   "name": "DeepListAI",
   "short_name": "DeepListAI",
   "description": "Find the Best AI Tools for Your Needs",
-  "start_url": "/quick-tools/54705591-6dcf-4edd-bf88-420051fa3603",
+  "start_url": "https://deeplistai.com/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4f46e5",
   "icons": [
     {
-      "src": "/images/web-logo.png",
+      "src": "https://deeplistai.com/images/web-logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/images/web-logo.png",
+      "src": "https://deeplistai.com/images/web-logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
