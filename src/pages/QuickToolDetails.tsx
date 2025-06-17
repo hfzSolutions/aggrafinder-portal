@@ -389,30 +389,30 @@ const QuickToolDetails = () => {
       // updateOrCreateMeta('msapplication-TileColor', '#4f46e5');
       // updateOrCreateMeta('theme-color', '#4f46e5');
 
-      // // Apple touch icons
-      // const updateOrCreateLink = (
-      //   rel: string,
-      //   href: string,
-      //   sizes?: string
-      // ) => {
-      //   let link = document.querySelector(
-      //     `link[rel="${rel}"]`
-      //   ) as HTMLLinkElement;
-      //   if (!link) {
-      //     link = document.createElement('link');
-      //     link.setAttribute('rel', rel);
-      //     document.head.appendChild(link);
-      //   }
-      //   link.setAttribute('href', href);
-      //   if (sizes) {
-      //     link.setAttribute('sizes', sizes);
-      //   }
-      // };
+      // Apple touch icons
+      const updateOrCreateLink = (
+        rel: string,
+        href: string,
+        sizes?: string
+      ) => {
+        let link = document.querySelector(
+          `link[rel="${rel}"]`
+        ) as HTMLLinkElement;
+        if (!link) {
+          link = document.createElement('link');
+          link.setAttribute('rel', rel);
+          document.head.appendChild(link);
+        }
+        link.setAttribute('href', href);
+        if (sizes) {
+          link.setAttribute('sizes', sizes);
+        }
+      };
 
-      // updateOrCreateLink('apple-touch-icon', iconUrl);
-      // updateOrCreateLink('apple-touch-icon', iconUrl, '180x180');
-      // updateOrCreateLink('icon', iconUrl, '32x32');
-      // updateOrCreateLink('icon', iconUrl, '16x16');
+      updateOrCreateLink('apple-touch-icon', iconUrl);
+      updateOrCreateLink('apple-touch-icon', iconUrl, '180x180');
+      updateOrCreateLink('icon', iconUrl, '32x32');
+      updateOrCreateLink('icon', iconUrl, '16x16');
 
       console.log('Enhanced manifest updated successfully');
     };
