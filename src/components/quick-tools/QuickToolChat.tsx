@@ -85,7 +85,10 @@ export const QuickToolChat = ({
   const { trackEvent } = useAnalytics();
 
   // Use dynamic manifest hook
-  const { updateManifest, resetToDefaultManifest } = useDynamicManifest(toolId, toolName);
+  const { updateManifest, resetToDefaultManifest } = useDynamicManifest(
+    toolId,
+    toolName
+  );
 
   // Move checkForSponsorAds function inside QuickToolChat
   const checkForSponsorAds = async () => {

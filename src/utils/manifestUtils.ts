@@ -13,7 +13,7 @@ export const updateManifestForTool = (toolId: string) => {
   const manifestLink = document.createElement('link');
   manifestLink.rel = 'manifest';
   manifestLink.href = `/api/manifest/${toolId}`;
-  
+
   // Add to document head
   document.head.appendChild(manifestLink);
 };
@@ -29,7 +29,7 @@ export const resetToDefaultManifest = () => {
   const manifestLink = document.createElement('link');
   manifestLink.rel = 'manifest';
   manifestLink.href = '/manifest.json';
-  
+
   // Add to document head
   document.head.appendChild(manifestLink);
 };
@@ -39,25 +39,25 @@ export const resetToDefaultManifest = () => {
  */
 export const generateManifestForTool = (toolId: string) => {
   return {
-    name: "DeepListAI",
-    short_name: "DeepListAI",
-    description: "Find the Best AI Tools for Your Needs", 
+    name: 'DeepListAI',
+    short_name: 'DeepListAI',
+    description: 'Find the Best AI Tools for Your Needs',
     start_url: `/quick-tools/${toolId}`,
-    scope: "/",
-    display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#4f46e5",
+    scope: '/',
+    display: 'standalone',
+    background_color: '#ffffff',
+    theme_color: '#4f46e5',
     icons: [
       {
-        src: "/images/web-logo.png",
-        sizes: "192x192",
-        type: "image/png"
+        src: '/images/web-logo.png',
+        sizes: '192x192',
+        type: 'image/png',
       },
       {
-        src: "/images/web-logo.png",
-        sizes: "512x512", 
-        type: "image/png"
-      }
-    ]
+        src: '/images/web-logo.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
+    ],
   };
 };
