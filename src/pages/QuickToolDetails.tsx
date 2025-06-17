@@ -241,42 +241,23 @@ const QuickToolDetails = () => {
   // Handle manual install prompt
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      // Enhanced fallback for iOS Safari with better instructions
+      // Fallback for iOS Safari
       if (
         navigator.userAgent.includes('Safari') &&
         !navigator.userAgent.includes('Chrome')
       ) {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        if (isIOS) {
-          toast.info(
-            'To install: Tap the Share button (⬆️) at the bottom, then select "Add to Home Screen"',
-            {
-              duration: 6000,
-            }
-          );
-        } else {
-          toast.info('Tap the Share button and select "Add to Home Screen"');
-        }
+        toast.info('Tap the Share button and select "Add to Home Screen"');
         return;
       }
       toast.info('Installation not available on this device');
       return;
     }
 
-    try {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
 
-      if (outcome === 'accepted') {
-        toast.success('Tool will be added to your home screen!');
-        // Track successful installation
-        console.log('PWA installed successfully');
-      } else {
-        console.log('PWA installation declined');
-      }
-    } catch (error) {
-      console.error('Error during PWA installation:', error);
-      toast.error('Installation failed. Please try again.');
+    if (outcome === 'accepted') {
+      toast.success('Tool will be added to your home screen!');
     }
 
     setDeferredPrompt(null);
@@ -308,20 +289,13 @@ const QuickToolDetails = () => {
         scope: tool
           ? `${baseUrl}/quick-tools/${tool.id}`
           : `${baseUrl}/quick-tools`,
-        display: 'standalone', // This ensures no browser UI
+        display: 'standalone',
         orientation: 'portrait-primary',
         background_color: '#ffffff',
         theme_color: '#4f46e5',
         categories: ['productivity', 'utilities', 'tools'],
         lang: 'en',
         dir: 'ltr',
-        // Enhanced for better mobile installation
-        prefer_related_applications: false,
-        display_override: [
-          'window-controls-overlay',
-          'standalone',
-          'minimal-ui',
-        ],
         icons: [
           {
             src: iconUrl,
@@ -372,24 +346,6 @@ const QuickToolDetails = () => {
             purpose: 'any maskable',
           },
         ],
-        // Add shortcuts for quick access
-        shortcuts: tool
-          ? [
-              {
-                name: `Chat with ${tool.name}`,
-                short_name: 'Chat',
-                description: `Start a conversation with ${tool.name}`,
-                url: `/quick-tools/${tool.id}`,
-                icons: [
-                  {
-                    src: iconUrl,
-                    sizes: '192x192',
-                    type: 'image/png',
-                  },
-                ],
-              },
-            ]
-          : [],
       };
 
       const manifestString = JSON.stringify(manifestData);
@@ -399,90 +355,66 @@ const QuickToolDetails = () => {
 
       manifestElement.setAttribute('href', manifestUrl);
 
-      // Enhanced mobile meta tags for better PWA support
-      const updateOrCreateMeta = (
-        name: string,
-        content: string,
-        property?: string
-      ) => {
-        const selector = property
-          ? `meta[property="${property}"]`
-          : `meta[name="${name}"]`;
-        let meta = document.querySelector(selector) as HTMLMetaElement;
-        if (!meta) {
-          meta = document.createElement('meta');
-          if (property) {
-            meta.setAttribute('property', property);
-          } else {
-            meta.setAttribute('name', name);
-          }
-          document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', content);
-      };
+      // // Enhanced mobile meta tags
+      // const updateOrCreateMeta = (
+      //   name: string,
+      //   content: string,
+      //   property?: string
+      // ) => {
+      //   const selector = property
+      //     ? `meta[property="${property}"]`
+      //     : `meta[name="${name}"]`;
+      //   let meta = document.querySelector(selector) as HTMLMetaElement;
+      //   if (!meta) {
+      //     meta = document.createElement('meta');
+      //     if (property) {
+      //       meta.setAttribute('property', property);
+      //     } else {
+      //       meta.setAttribute('name', name);
+      //     }
+      //     document.head.appendChild(meta);
+      //   }
+      //   meta.setAttribute('content', content);
+      // };
 
-      // Critical PWA meta tags
-      updateOrCreateMeta('mobile-web-app-capable', 'yes');
-      updateOrCreateMeta('apple-mobile-web-app-capable', 'yes');
-      updateOrCreateMeta(
-        'apple-mobile-web-app-status-bar-style',
-        'black-translucent'
-      );
-      updateOrCreateMeta(
-        'apple-mobile-web-app-title',
-        tool?.name || 'DeepList AI'
-      );
-      updateOrCreateMeta('application-name', tool?.name || 'DeepList AI');
-      updateOrCreateMeta('msapplication-TileColor', '#4f46e5');
-      updateOrCreateMeta('theme-color', '#4f46e5');
-      updateOrCreateMeta('msapplication-navbutton-color', '#4f46e5');
+      // // Mobile-specific meta tags
+      // updateOrCreateMeta('mobile-web-app-capable', 'yes');
+      // updateOrCreateMeta('apple-mobile-web-app-capable', 'yes');
+      // updateOrCreateMeta('apple-mobile-web-app-status-bar-style', 'default');
+      // updateOrCreateMeta(
+      //   'apple-mobile-web-app-title',
+      //   tool?.name || 'DeepList AI'
+      // );
+      // updateOrCreateMeta('application-name', tool?.name || 'DeepList AI');
+      // updateOrCreateMeta('msapplication-TileColor', '#4f46e5');
+      // updateOrCreateMeta('theme-color', '#4f46e5');
 
-      // Viewport meta for proper mobile display
-      updateOrCreateMeta(
-        'viewport',
-        'width=device-width, initial-scale=1.0, viewport-fit=cover'
-      );
+      // // Apple touch icons
+      // const updateOrCreateLink = (
+      //   rel: string,
+      //   href: string,
+      //   sizes?: string
+      // ) => {
+      //   let link = document.querySelector(
+      //     `link[rel="${rel}"]`
+      //   ) as HTMLLinkElement;
+      //   if (!link) {
+      //     link = document.createElement('link');
+      //     link.setAttribute('rel', rel);
+      //     document.head.appendChild(link);
+      //   }
+      //   link.setAttribute('href', href);
+      //   if (sizes) {
+      //     link.setAttribute('sizes', sizes);
+      //   }
+      // };
 
-      // Apple touch icons with multiple sizes
-      const updateOrCreateLink = (
-        rel: string,
-        href: string,
-        sizes?: string
-      ) => {
-        let link = document.querySelector(
-          `link[rel="${rel}"]${sizes ? `[sizes="${sizes}"]` : ''}`
-        ) as HTMLLinkElement;
-        if (!link) {
-          link = document.createElement('link');
-          link.setAttribute('rel', rel);
-          document.head.appendChild(link);
-        }
-        link.setAttribute('href', href);
-        if (sizes) {
-          link.setAttribute('sizes', sizes);
-        }
-      };
+      // updateOrCreateLink('apple-touch-icon', iconUrl);
+      // updateOrCreateLink('apple-touch-icon', iconUrl, '180x180');
+      // updateOrCreateLink('icon', iconUrl, '32x32');
+      // updateOrCreateLink('icon', iconUrl, '16x16');
 
-      // Apple touch icons for various sizes
-      updateOrCreateLink('apple-touch-icon', iconUrl);
-      updateOrCreateLink('apple-touch-icon', iconUrl, '57x57');
-      updateOrCreateLink('apple-touch-icon', iconUrl, '60x60');
-      updateOrCreateLink('apple-touch-icon', iconUrl, '72x72');
-      updateOrCreateLink('apple-touch-icon', iconUrl, '76x76');
-      updateOrCreateLink('apple-touch-icon', iconUrl, '114x114');
-      updateOrCreateLink('apple-touch-icon', iconUrl, '120x120');
-      updateOrCreateLink('apple-touch-icon', iconUrl, '144x144');
-      updateOrCreateLink('apple-touch-icon', iconUrl, '152x152');
-      updateOrCreateLink('apple-touch-icon', iconUrl, '180x180');
-
-      // Standard favicon
-      updateOrCreateLink('icon', iconUrl, '32x32');
-      updateOrCreateLink('icon', iconUrl, '16x16');
-
-      // Safari pinned tab
-      updateOrCreateLink('mask-icon', iconUrl);
-
-      console.log('Enhanced PWA manifest updated successfully for mobile');
+      console.log('Enhanced manifest updated successfully');
     };
 
     updateManifest();
@@ -549,21 +481,21 @@ const QuickToolDetails = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
 
-        {/* Install Prompt Banner - Mobile Only with enhanced messaging */}
+        {/* Install Prompt Banner - Mobile Only */}
         {isMobile && showInstallPrompt && !isInstalled && tool && (
-          <div className="fixed top-[60px] left-0 right-0 z-50 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground px-4 py-2 shadow-lg animate-in slide-in-from-top duration-300">
+          <div className="fixed top-[60px] left-0 right-0 z-50 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground px-4 py-2 shadow-lg">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
                 <Plus className="h-4 w-4 shrink-0" />
                 <p className="text-sm font-medium truncate">
-                  Install {tool.name} as an app
+                  Add {tool.name} to home screen
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-7 px-3 text-xs bg-white/20 hover:bg-white/30 text-white border-white/20 font-medium"
+                  className="h-7 px-3 text-xs bg-white/20 hover:bg-white/30 text-white border-white/20"
                   onClick={handleInstallClick}
                 >
                   Install
