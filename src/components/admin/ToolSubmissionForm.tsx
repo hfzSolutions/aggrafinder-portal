@@ -39,6 +39,7 @@ import { toast } from 'sonner';
 import { AITool } from '@/types/tools';
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/utils/imageCompression';
+import { detectUserCountryWithFallback } from '@/utils/countryDetection';
 
 const formSchema = z.object({
   name: z
@@ -108,6 +109,7 @@ export function ToolSubmissionForm({
     id: string;
     name: string;
   }>(null);
+  const [detectedCountry, setDetectedCountry] = useState<string>('Global'); // Add country state
   const {
     submitTool,
     updateTool,
@@ -136,6 +138,27 @@ export function ToolSubmissionForm({
     }
   }, [propCategories]);
 
+  // Effect to detect user's country automatically when component mounts
+  useEffect(() => {
+    // Only detect country for new tools, not when editing
+    if (!editMode) {
+      const detectCountry = async () => {
+        try {
+          const country = await detectUserCountryWithFallback();
+          setDetectedCountry(country);
+        } catch (error) {
+          console.error('Failed to detect country:', error);
+          setDetectedCountry('Global');
+        }
+      };
+
+      detectCountry();
+    } else if (toolToEdit?.country) {
+      // If editing and tool has a country, use that
+      setDetectedCountry(toolToEdit.country);
+    }
+  }, [editMode, toolToEdit]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -149,7 +172,7 @@ export function ToolSubmissionForm({
       pricing: editMode && toolToEdit ? toolToEdit.pricing : 'Free',
       featured: editMode && toolToEdit ? toolToEdit.featured : false,
       tags: editMode && toolToEdit ? toolToEdit.tags : [],
-      isPublic: editMode && toolToEdit ? toolToEdit.isPublic !== false : true,
+      isPublic: editMode && toolToEdit ? toolToEdit.is_public !== false : true,
     },
   });
 
@@ -256,6 +279,7 @@ export function ToolSubmissionForm({
         pricing: values.pricing,
         featured: values.featured,
         tags: values.tags,
+        country: detectedCountry, // Add automatically detected country
         user_id: userId,
         is_admin_added: false,
         tool_type: 'external',

@@ -217,7 +217,7 @@ export function getModelConfig(
   return {
     model:
       import.meta.env.VITE_OPENROUTER_MODEL_NAME ||
-      'meta-llama/llama-3.3-8b-instruct:free',
+      'meta-llama/llama-4-maverick:free',
     ...baseConfig,
     ...customOverrides,
   };

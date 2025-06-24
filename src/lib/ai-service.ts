@@ -210,7 +210,7 @@ Generate exactly ${
       model:
         import.meta.env.VITE_OPENROUTER_MODEL_NAME_2 ||
         import.meta.env.VITE_OPENROUTER_MODEL_NAME ||
-        'meta-llama/llama-3.3-8b-instruct:free',
+        'meta-llama/llama-4-maverick:free',
     });
 
     const requestPayload = buildAPIRequest(
@@ -499,6 +499,356 @@ Generate exactly ${
       default:
         return 'UNKNOWN_ERROR';
     }
+  }
+
+  /**
+   * Generate tool descriptions
+   */
+  async generateToolDescription(options: {
+    toolName: string;
+    existingDescription?: string;
+  }): Promise<string> {
+    if (!options.toolName?.trim()) {
+      throw new AIServiceError(
+        'Tool name is required for description generation',
+        'INVALID_INPUT',
+        400,
+        false
+      );
+    }
+
+    // Check rate limiting
+    if (!this.rateLimiter.canMakeRequest()) {
+      throw new AIServiceError(
+        'Rate limit exceeded for description generation',
+        'RATE_LIMIT_EXCEEDED',
+        429,
+        true
+      );
+    }
+
+    const existingContent = options.existingDescription?.trim();
+    let prompt;
+
+    if (existingContent) {
+      prompt = `You are enhancing a short description for an AI tool called "${options.toolName}". 
+      
+      The current description is: "${existingContent}"
+      
+      Improve this description while keeping its core meaning. The description should:
+      1. Be concise (1-2 sentences maximum)
+      2. Clearly explain what the tool does and its main benefit
+      3. Be compelling and user-focused
+      4. Use simple, direct language
+      5. No markdown formatting
+      6. Return ONLY ONE description, not multiple options
+      7. Do not include option numbers, bullet points, or "Option X:" prefixes
+      
+      Return ONLY the improved description with no additional commentary or formatting.`;
+    } else {
+      prompt = `You are creating a short description for an AI tool called "${options.toolName}". 
+      
+      Create a brief, compelling description that explains what the tool does. The description should:
+      1. Be concise (1-2 sentences maximum)
+      2. Clearly explain what the tool does and its main benefit
+      3. Be compelling and user-focused
+      4. Use simple, direct language
+      5. No markdown formatting
+      6. Return ONLY ONE description, not multiple options
+      7. Do not include option numbers, bullet points, or "Option X:" prefixes
+      8. Do not use word 'AI' or 'AI assistant'
+      
+      Return ONLY the description with no additional commentary or formatting.`;
+    }
+
+    const config = getModelConfig('CREATIVE', {
+      model:
+        import.meta.env.VITE_OPENROUTER_MODEL_NAME_2 ||
+        import.meta.env.VITE_OPENROUTER_MODEL_NAME ||
+        'meta-llama/llama-4-maverick:free',
+    });
+
+    const requestPayload = buildAPIRequest(
+      'You are a helpful assistant that generates tool descriptions.',
+      [],
+      prompt,
+      config
+    );
+
+    const response = await this.makeRequest(requestPayload, 2, 15000);
+
+    // Clean up any markdown formatting or option prefixes
+    let generatedDescription = response.content.trim();
+
+    // Remove any "Option X:" prefixes
+    generatedDescription = generatedDescription.replace(
+      /^\s*\*\*Option \d+:\*\*\s*/i,
+      ''
+    );
+    generatedDescription = generatedDescription.replace(
+      /^\s*Option \d+:\s*/i,
+      ''
+    );
+
+    // Remove any markdown formatting
+    generatedDescription = generatedDescription.replace(/\*\*/g, '');
+
+    return generatedDescription;
+  }
+
+  /**
+   * Generate tool prompts/instructions
+   */
+  async generateToolPrompt(options: {
+    toolName: string;
+    existingPrompt?: string;
+  }): Promise<string> {
+    if (!options.toolName?.trim()) {
+      throw new AIServiceError(
+        'Tool name is required for prompt generation',
+        'INVALID_INPUT',
+        400,
+        false
+      );
+    }
+
+    // Check rate limiting
+    if (!this.rateLimiter.canMakeRequest()) {
+      throw new AIServiceError(
+        'Rate limit exceeded for prompt generation',
+        'RATE_LIMIT_EXCEEDED',
+        429,
+        true
+      );
+    }
+
+    const existingContent = options.existingPrompt?.trim();
+    let prompt;
+
+    if (existingContent) {
+      prompt = `You are enhancing AI instructions for a tool called "${options.toolName}". 
+      
+      The current AI instructions are: "${existingContent}"
+      
+      Improve these instructions while keeping their core meaning. The result should be:
+      - A single paragraph that starts with "You are..."
+      - Focus only on the purpose of the AI
+      - Do not include separate sections for capabilities, tone, style, constraints, or scenarios
+      - Do not use word 'AI' or 'AI assistant'
+
+      Return ONLY the improved instructions with no additional commentary or formatting.`;
+    } else {
+      prompt = `You are creating AI instructions for a tool called "${options.toolName}". 
+      
+      Create a single paragraph of instructions that starts with "You are..." and focuses only on the purpose of the AI.
+      Do not include separate sections for capabilities, tone, style, constraints, or scenarios.
+      
+      Return ONLY the instructions with no additional commentary or formatting.`;
+    }
+
+    const config = getModelConfig('FACTUAL', {
+      model:
+        import.meta.env.VITE_OPENROUTER_MODEL_NAME ||
+        'meta-llama/llama-4-maverick:free',
+    });
+
+    const requestPayload = buildAPIRequest(
+      'You are a helpful assistant that generates AI tool instructions.',
+      [],
+      prompt,
+      config
+    );
+
+    const response = await this.makeRequest(requestPayload, 2, 15000);
+    return response.content.trim();
+  }
+
+  /**
+   * Generate tool names
+   */
+  async generateToolName(options: {
+    description?: string;
+    existingName?: string;
+  }): Promise<string> {
+    // Check rate limiting
+    if (!this.rateLimiter.canMakeRequest()) {
+      throw new AIServiceError(
+        'Rate limit exceeded for name generation',
+        'RATE_LIMIT_EXCEEDED',
+        429,
+        true
+      );
+    }
+
+    const hasDescription = options.description?.trim().length > 0;
+    const existingContent = options.existingName?.trim();
+    let prompt;
+
+    if (existingContent) {
+      prompt = `You are enhancing a name for an AI tool. 
+      
+      The current name is: "${existingContent}"
+      ${
+        hasDescription
+          ? `The tool's description is: "${options.description}"`
+          : ''
+      }
+      
+      Improve this name while keeping its core meaning. The name should:
+      1. Be concise and catchy (1-4 words maximum)
+      2. Clearly relate to the tool's purpose
+      3. Be memorable and easy to pronounce
+      4. Don't combine words, space each word
+      5. No markdown or special characters
+      6. One tool name only
+      
+      Return ONLY the improved name with no additional commentary or formatting.
+      
+      (IMPORTANT: 1-4 words maximum output words)`;
+    } else {
+      prompt = `You are creating a name for an AI tool. 
+      ${
+        hasDescription
+          ? `The tool's description is: "${options.description}"`
+          : 'This is a new AI tool being created.'
+      }
+      
+      Create a brief, compelling name for this AI tool. The name should:
+      1. Be concise and catchy (1-4 words maximum)
+      2. Clearly relate to the tool's purpose
+      3. Be memorable and easy to pronounce
+      4. Don't combine words, space each word
+      5. No markdown or special characters
+      6. One tool name only
+      7. Do not use word 'AI' or 'AI assistant'
+      
+      Return ONLY the name with no additional commentary or formatting.
+      
+      (IMPORTANT: 1-4 words maximum output words)`;
+    }
+
+    const config = getModelConfig('CREATIVE', {
+      model:
+        import.meta.env.VITE_OPENROUTER_MODEL_NAME_2 ||
+        import.meta.env.VITE_OPENROUTER_MODEL_NAME ||
+        'meta-llama/llama-4-maverick:free',
+      temperature: 0.8, // Slightly higher temperature for more creative names
+    });
+
+    const requestPayload = buildAPIRequest(
+      'You are a helpful assistant that generates creative tool names.',
+      [],
+      prompt,
+      config
+    );
+
+    const response = await this.makeRequest(requestPayload, 2, 15000);
+    return response.content.trim();
+  }
+
+  /**
+   * Generate initial welcome messages
+   */
+  async generateInitialMessage(options: {
+    toolName: string;
+    toolPrompt: string;
+    existingMessage?: string;
+  }): Promise<string> {
+    if (!options.toolName?.trim() || !options.toolPrompt?.trim()) {
+      throw new AIServiceError(
+        'Tool name and tool prompt are required for initial message generation',
+        'INVALID_INPUT',
+        400,
+        false
+      );
+    }
+
+    // Check rate limiting
+    if (!this.rateLimiter.canMakeRequest()) {
+      throw new AIServiceError(
+        'Rate limit exceeded for initial message generation',
+        'RATE_LIMIT_EXCEEDED',
+        429,
+        true
+      );
+    }
+
+    const existingContent = options.existingMessage?.trim();
+    let prompt;
+
+    if (existingContent) {
+      prompt = `You are enhancing an initial welcome message for an AI tool called "${options.toolName}". 
+      The AI's instructions are: ${options.toolPrompt}
+      
+      The current welcome message is: "${existingContent}"
+      
+      Improve this welcome message while keeping its core meaning. The message should:
+      1. Be concise (2-3 sentences maximum)
+      2. Explain what the tool does in simple terms
+      3. Invite the user to start interacting
+      4. Be conversational and engaging
+      
+      IMPORTANT: Return ONLY the welcome message itself with no prefixes, explanations, or formatting. Do not include phrases like "Here is the welcome message:" or any other commentary. Just return the message text directly.`;
+    } else {
+      prompt = `You are creating an initial welcome message for an AI tool called "${options.toolName}". 
+      The AI's instructions are: ${options.toolPrompt}
+      
+      Create a brief, friendly welcome message that introduces the AI tool to users. The message should:
+      1. Be concise (2-3 sentences maximum)
+      2. Explain what the tool does in simple terms
+      3. Invite the user to start interacting
+      4. Be conversational and engaging
+      5. Do not use word 'AI' or 'AI assistant'
+      
+      Return ONLY the welcome message itself with no prefixes, explanations, or formatting. Do not include phrases like "Here is the welcome message:" or any other commentary. Just return the message text directly.`;
+    }
+
+    const config = getModelConfig('CREATIVE', {
+      model:
+        import.meta.env.VITE_OPENROUTER_MODEL_NAME_2 ||
+        import.meta.env.VITE_OPENROUTER_MODEL_NAME ||
+        'meta-llama/llama-4-maverick:free',
+    });
+
+    const requestPayload = buildAPIRequest(
+      'You are a helpful assistant that generates welcome messages.',
+      [],
+      prompt,
+      config
+    );
+
+    const response = await this.makeRequest(requestPayload, 2, 15000);
+
+    // Clean up the generated message to remove any potential prefixes
+    let generatedMessage = response.content.trim();
+
+    // Remove common prefixes that might be in the response
+    const prefixesToRemove = [
+      'Here is the welcome message:',
+      "Here's the welcome message:",
+      'Okay, here is the welcome message:',
+      "Okay, here's the welcome message:",
+      'Welcome message:',
+      'The welcome message:',
+    ];
+
+    for (const prefix of prefixesToRemove) {
+      if (generatedMessage.startsWith(prefix)) {
+        generatedMessage = generatedMessage.substring(prefix.length).trim();
+      }
+    }
+
+    // Remove quotes if the message is wrapped in them
+    if (
+      (generatedMessage.startsWith('"') && generatedMessage.endsWith('"')) ||
+      (generatedMessage.startsWith("'") && generatedMessage.endsWith("'"))
+    ) {
+      generatedMessage = generatedMessage
+        .substring(1, generatedMessage.length - 1)
+        .trim();
+    }
+
+    return generatedMessage;
   }
 }
 

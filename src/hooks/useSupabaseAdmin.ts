@@ -370,7 +370,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
         if (emailError) {
           console.error('Error sending admin notification email:', emailError);
         } else {
-          console.log('Admin notification email sent successfully:', emailData);
+          // console.log('Admin notification email sent successfully:', emailData);
         }
       } catch (emailError) {
         console.error('Failed to send admin notification email:', emailError);

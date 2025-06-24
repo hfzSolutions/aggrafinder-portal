@@ -32,6 +32,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { compressImage } from '@/utils/imageCompression';
+import { detectUserCountryWithFallback } from '@/utils/countryDetection';
 import {
   Select,
   SelectContent,
@@ -57,6 +58,7 @@ interface QuickToolFormSimplifiedProps {
     suggested_replies?: boolean;
     imageUrl?: string;
     initial_message?: string;
+    country?: string; // Add country property
   };
 }
 
@@ -113,6 +115,7 @@ export const QuickToolFormSimplified = ({
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [isGeneratingName, setIsGeneratingName] = useState(false);
+  const [detectedCountry, setDetectedCountry] = useState<string>('Global'); // Add country state
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<FormData>({
@@ -168,6 +171,28 @@ export const QuickToolFormSimplified = ({
 
     fetchCategories();
   }, []);
+
+  // Effect to detect user's country automatically when component mounts
+  useEffect(() => {
+    // Only detect country for new tools, not when editing
+    if (!editMode) {
+      const detectCountry = async () => {
+        try {
+          const country = await detectUserCountryWithFallback();
+
+          setDetectedCountry(country);
+        } catch (error) {
+          console.error('Failed to detect country:', error);
+          setDetectedCountry('Global');
+        }
+      };
+
+      detectCountry();
+    } else if (toolToEdit?.country) {
+      // If editing and tool has a country, use that
+      setDetectedCountry(toolToEdit.country);
+    }
+  }, [editMode, toolToEdit]);
 
   // Function to animate typing effect for a message
   const animateTyping = useCallback((messageId: string, content: string) => {
@@ -510,6 +535,7 @@ export const QuickToolFormSimplified = ({
         pricing: 'Free', // Quick tools are always free
         featured: false,
         tags: [],
+        country: detectedCountry, // Add automatically detected country
         user_id: userId,
         is_admin_added: false,
       };
@@ -642,124 +668,49 @@ export const QuickToolFormSimplified = ({
 
     setIsGeneratingMessage(true);
     try {
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-      if (!apiKey) {
-        throw new Error(
-          'OpenRouter API key not found. Please set VITE_OPENROUTER_API_KEY in your environment variables.'
-        );
-      }
+      const generatedMessage = await aiService.generateInitialMessage({
+        toolName: formData.name,
+        toolPrompt: formData.prompt,
+        existingMessage: formData.initialMessage.trim() || undefined,
+      });
 
-      // Create a prompt for generating the initial message
-      // If there's existing content, ask AI to enhance it
-      const existingContent = formData.initialMessage.trim();
-      let prompt;
-
-      if (existingContent) {
-        prompt = `You are enhancing an initial welcome message for an AI tool called "${formData.name}". 
-      The AI's instructions are: ${formData.prompt}
-      
-      The current welcome message is: "${existingContent}"
-      
-      Improve this welcome message while keeping its core meaning. The message should:
-      1. Be concise (2-3 sentences maximum)
-      2. Explain what the tool does in simple terms
-      3. Invite the user to start interacting
-      4. Be conversational and engaging
-      
-      IMPORTANT: Return ONLY the welcome message itself with no prefixes, explanations, or formatting. Do not include phrases like "Here is the welcome message:" or any other commentary. Just return the message text directly.`;
-      } else {
-        prompt = `You are creating an initial welcome message for an AI tool called "${formData.name}". 
-      The AI's instructions are: ${formData.prompt}
-      
-      Create a brief, friendly welcome message that introduces the AI tool to users. The message should:
-      1. Be concise (2-3 sentences maximum)
-      2. Explain what the tool does in simple terms
-      3. Invite the user to start interacting
-      4. Be conversational and engaging
-      5. Do not use word 'AI' or 'AI assistant'
-      
-      Return ONLY the welcome message itself with no prefixes, explanations, or formatting. Do not include phrases like "Here is the welcome message:" or any other commentary. Just return the message text directly.`;
-      }
-
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME_2,
-            messages: [
-              {
-                role: 'user',
-                content: prompt,
-              },
-            ],
-            temperature: 0.7,
-            max_tokens: 2000,
-            top_p: 0.9,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-
-      const data = await response.json();
-
-      if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response');
-      }
-
-      // Clean up the generated message to remove any potential prefixes like "Okay, here is the welcome message:"
-      let generatedMessage = data.choices[0].message.content.trim();
-
-      // Remove common prefixes that might be in the response
-      const prefixesToRemove = [
-        'Here is the welcome message:',
-        "Here's the welcome message:",
-        'Okay, here is the welcome message:',
-        "Okay, here's the welcome message:",
-        'Welcome message:',
-        'The welcome message:',
-      ];
-
-      for (const prefix of prefixesToRemove) {
-        if (generatedMessage.startsWith(prefix)) {
-          generatedMessage = generatedMessage.substring(prefix.length).trim();
-        }
-      }
-
-      // Remove quotes if the message is wrapped in them
-      if (
-        (generatedMessage.startsWith('"') && generatedMessage.endsWith('"')) ||
-        (generatedMessage.startsWith("'") && generatedMessage.endsWith("'"))
-      ) {
-        generatedMessage = generatedMessage
-          .substring(1, generatedMessage.length - 1)
-          .trim();
-      }
-
-      // Update the form data with the cleaned generated message
+      // Update the form data with the generated message
       setFormData((prev) => ({
         ...prev,
         initialMessage: generatedMessage,
       }));
 
       toast.success(
-        existingContent
+        formData.initialMessage.trim()
           ? 'Initial message enhanced successfully!'
           : 'Initial message generated successfully!'
       );
     } catch (error) {
       console.error('Error generating initial message:', error);
-      toast.error(`Failed to generate initial message: ${error.message}`);
+
+      // Handle specific AI service errors
+      let userMessage = `Failed to generate initial message: ${error.message}`;
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              'Too many requests. Please wait a moment and try again.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            userMessage = `Failed to generate initial message: ${error.message}`;
+            break;
+        }
+      }
+
+      toast.error(userMessage);
     } finally {
       setIsGeneratingMessage(false);
     }
@@ -773,76 +724,13 @@ export const QuickToolFormSimplified = ({
 
     setIsGeneratingPrompt(true);
     try {
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-      if (!apiKey) {
-        throw new Error(
-          'OpenRouter API key not found. Please set VITE_OPENROUTER_API_KEY in your environment variables.'
-        );
-      }
-
-      // Create a prompt for generating the AI instructions
-      // If there's existing content, ask AI to enhance it
-      const existingContent = formData.prompt.trim();
-      let prompt;
-
-      if (existingContent) {
-        prompt = `You are enhancing AI instructions for a tool called "${formData.name}". 
-      
-      The current AI instructions are: "${existingContent}"
-      
-      Improve these instructions while keeping their core meaning. The result should be:
-      - A single paragraph that starts with "You are..."
-      - Focus only on the purpose of the AI
-      - Do not include separate sections for capabilities, tone, style, constraints, or scenarios
-      - Do not use word 'AI' or 'AI assistant'
-
-      Return ONLY the improved instructions with no additional commentary or formatting.`;
-      } else {
-        prompt = `You are creating AI instructions for a tool called "${formData.name}". 
-      
-      Create a single paragraph of instructions that starts with "You are..." and focuses only on the purpose of the AI.
-      Do not include separate sections for capabilities, tone, style, constraints, or scenarios.
-      
-      Return ONLY the instructions with no additional commentary or formatting.`;
-      }
-
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME,
-            messages: [
-              {
-                role: 'user',
-                content: prompt,
-              },
-            ],
-            temperature: 0.7,
-            max_tokens: 2000,
-            top_p: 0.9,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-
-      const data = await response.json();
-
-      if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response');
-      }
-
-      const generatedPrompt = data.choices[0].message.content.trim();
+      const generatedPrompt = await aiService.generateToolPrompt({
+        toolName: formData.name,
+        existingPrompt: formData.prompt.trim() || undefined,
+      });
 
       // Update the form data with the generated instructions
       setFormData((prev) => ({
@@ -851,13 +739,33 @@ export const QuickToolFormSimplified = ({
       }));
 
       toast.success(
-        existingContent
+        formData.prompt.trim()
           ? 'AI instructions enhanced successfully!'
           : 'AI instructions generated successfully!'
       );
     } catch (error) {
       console.error('Error generating AI instructions:', error);
-      toast.error(`Failed to generate AI instructions: ${error.message}`);
+
+      // Handle specific AI service errors
+      let userMessage = `Failed to generate AI instructions: ${error.message}`;
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              'Too many requests. Please wait a moment and try again.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            userMessage = `Failed to generate AI instructions: ${error.message}`;
+            break;
+        }
+      }
+
+      toast.error(userMessage);
     } finally {
       setIsGeneratingPrompt(false);
     }
@@ -871,115 +779,48 @@ export const QuickToolFormSimplified = ({
 
     setIsGeneratingDescription(true);
     try {
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-      if (!apiKey) {
-        throw new Error(
-          'OpenRouter API key not found. Please set VITE_OPENROUTER_API_KEY in your environment variables.'
-        );
-      }
+      const generatedDescription = await aiService.generateToolDescription({
+        toolName: formData.name,
+        existingDescription: formData.description.trim() || undefined,
+      });
 
-      // Create a prompt for generating the description
-      // If there's existing content, ask AI to enhance it
-      const existingContent = formData.description.trim();
-      let prompt;
-
-      if (existingContent) {
-        prompt = `You are enhancing a short description for an AI tool called "${formData.name}". 
-      
-      The current description is: "${existingContent}"
-      
-      Improve this description while keeping its core meaning. The description should:
-      1. Be concise (1-2 sentences maximum)
-      2. Clearly explain what the tool does and its main benefit
-      3. Be compelling and user-focused
-      4. Use simple, direct language
-      5. No markdown formatting
-      6. Return ONLY ONE description, not multiple options
-      7. Do not include option numbers, bullet points, or "Option X:" prefixes
-      
-      Return ONLY the improved description with no additional commentary or formatting.`;
-      } else {
-        prompt = `You are creating a short description for an AI tool called "${formData.name}". 
-      
-      Create a brief, compelling description that explains what the tool does. The description should:
-      1. Be concise (1-2 sentences maximum)
-      2. Clearly explain what the tool does and its main benefit
-      3. Be compelling and user-focused
-      4. Use simple, direct language
-      5. No markdown formatting
-      6. Return ONLY ONE description, not multiple options
-      7. Do not include option numbers, bullet points, or "Option X:" prefixes
-      8. Do not use word 'AI' or 'AI assistant'
-      
-      Return ONLY the description with no additional commentary or formatting.`;
-      }
-
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME_2,
-            messages: [
-              {
-                role: 'user',
-                content: prompt,
-              },
-            ],
-            temperature: 0.7,
-            max_tokens: 2000,
-            top_p: 0.9,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-
-      const data = await response.json();
-
-      if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response');
-      }
-
-      // Clean up any markdown formatting or option prefixes that might still be present
-      let generatedDescription = data.choices[0].message.content.trim();
-
-      // Remove any "Option X:" prefixes
-      generatedDescription = generatedDescription.replace(
-        /^\s*\*\*Option \d+:\*\*\s*/i,
-        ''
-      );
-      generatedDescription = generatedDescription.replace(
-        /^\s*Option \d+:\s*/i,
-        ''
-      );
-
-      // Remove any markdown formatting
-      generatedDescription = generatedDescription.replace(/\*\*/g, '');
-
-      // Update the form data with the cleaned generated description
+      // Update the form data with the generated description
       setFormData((prev) => ({
         ...prev,
         description: generatedDescription,
       }));
 
       toast.success(
-        existingContent
+        formData.description.trim()
           ? 'Description enhanced successfully!'
           : 'Description generated successfully!'
       );
     } catch (error) {
       console.error('Error generating description:', error);
-      toast.error(`Failed to generate description: ${error.message}`);
+
+      // Handle specific AI service errors
+      let userMessage = `Failed to generate description: ${error.message}`;
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              'Too many requests. Please wait a moment and try again.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            userMessage = `Failed to generate description: ${error.message}`;
+            break;
+        }
+      }
+
+      toast.error(userMessage);
     } finally {
       setIsGeneratingDescription(false);
     }
@@ -991,100 +832,13 @@ export const QuickToolFormSimplified = ({
 
     setIsGeneratingName(true);
     try {
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      // Import AI service dynamically
+      const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-      if (!apiKey) {
-        throw new Error(
-          'OpenRouter API key not found. Please set VITE_OPENROUTER_API_KEY in your environment variables.'
-        );
-      }
-
-      // Create a prompt for generating the name
-      // If there's existing content, ask AI to enhance it
-      const existingContent = formData.name.trim();
-      let prompt;
-
-      if (existingContent) {
-        prompt = `You are enhancing a name for an AI tool. 
-      
-      The current name is: "${existingContent}"
-      ${
-        hasDescription
-          ? `The tool's description is: "${formData.description}"`
-          : ''
-      }
-      
-      Improve this name while keeping its core meaning. The name should:
-      1. Be concise and catchy (1-4 words maximum)
-      2. Clearly relate to the tool's purpose
-      3. Be memorable and easy to pronounce
-      4. Don't combine words, space each word
-      5. No markdown or special characters
-      6. One tool name only
-      
-      Return ONLY the improved name with no additional commentary or formatting.
-      
-      (IMPORTANT: 1-4 words maximum output words)
-      `;
-      } else {
-        prompt = `You are creating a name for an AI tool. 
-      ${
-        hasDescription
-          ? `The tool's description is: "${formData.description}"`
-          : 'This is a new AI tool being created.'
-      }
-      
-      Create a brief, compelling name for this AI tool. The name should:
-      1. Be concise and catchy (1-4 words maximum)
-      2. Clearly relate to the tool's purpose
-      3. Be memorable and easy to pronounce
-      4. Don't combine words, space each word
-      5. No markdown or special characters
-      6. One tool name only
-      7. Do not use word 'AI' or 'AI assistant'
-      
-      Return ONLY the name with no additional commentary or formatting.
-      
-      (IMPORTANT: 1-4 words maximum output words)
-      `;
-      }
-
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'DeepList AI',
-          },
-          body: JSON.stringify({
-            model: import.meta.env.VITE_OPENROUTER_MODEL_NAME_2,
-            messages: [
-              {
-                role: 'user',
-                content: prompt,
-              },
-            ],
-            temperature: 0.8, // Slightly higher temperature for more creative names
-            max_tokens: 2000, // Names are short, so we don't need many tokens
-            top_p: 0.9,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-
-      const data = await response.json();
-
-      if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response');
-      }
-
-      const generatedName = data.choices[0].message.content.trim();
+      const generatedName = await aiService.generateToolName({
+        description: hasDescription ? formData.description : undefined,
+        existingName: formData.name.trim() || undefined,
+      });
 
       // Update the form data with the generated name
       setFormData((prev) => ({
@@ -1093,13 +847,33 @@ export const QuickToolFormSimplified = ({
       }));
 
       toast.success(
-        existingContent
+        formData.name.trim()
           ? 'Name enhanced successfully!'
           : 'Name generated successfully!'
       );
     } catch (error) {
       console.error('Error generating name:', error);
-      toast.error(`Failed to generate name: ${error.message}`);
+
+      // Handle specific AI service errors
+      let userMessage = `Failed to generate name: ${error.message}`;
+
+      if (error instanceof (await import('@/lib/ai-service')).AIServiceError) {
+        switch (error.code) {
+          case 'RATE_LIMIT_EXCEEDED':
+            userMessage =
+              'Too many requests. Please wait a moment and try again.';
+            break;
+          case 'MISSING_API_KEY':
+            userMessage =
+              'Service configuration error. Please contact support.';
+            break;
+          default:
+            userMessage = `Failed to generate name: ${error.message}`;
+            break;
+        }
+      }
+
+      toast.error(userMessage);
     } finally {
       setIsGeneratingName(false);
     }

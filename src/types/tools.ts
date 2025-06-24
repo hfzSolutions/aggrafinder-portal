@@ -10,6 +10,7 @@ export interface AITool {
   featured: boolean;
   pricing: 'Free' | 'Freemium' | 'Paid' | 'Free Trial';
   tags: string[];
+  country?: string; // Country where the tool originates/is based
   userId?: string;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
   popularity?: number;
