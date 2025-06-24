@@ -52,6 +52,7 @@ const Tools = () => {
   const searchParams = new URLSearchParams(location.search);
   const initialCategory = searchParams.get('category') || 'All';
   const initialSearch = searchParams.get('search') || '';
+  // Country filtering is now automatic when tools are submitted - no URL param needed
   const initialToolType =
     (searchParams.get('type') as 'quick' | 'external') || 'quick'; // Default to 'quick' tab
   const isMobile = useIsMobile();
@@ -59,6 +60,7 @@ const Tools = () => {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [selectedPricing, setSelectedPricing] = useState('All');
+  // Country filter is now automatic - removed UI state
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>(() => {
     const storedView = localStorage.getItem('preferred_view') as
@@ -117,6 +119,7 @@ const Tools = () => {
     category: activeCategory !== 'All' ? activeCategory : undefined,
     search: searchTerm,
     pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
+    // Country filtering removed from UI - handled automatically when tools are submitted
     loadMore: true,
     toolType: 'quick', // Specifically fetch quick tools
     ...(showFavorites &&
@@ -144,6 +147,7 @@ const Tools = () => {
     category: activeCategory !== 'All' ? activeCategory : undefined,
     search: searchTerm,
     pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
+    // Country filtering removed from UI - handled automatically when tools are submitted
     loadMore: true,
     toolType: 'external', // Specifically fetch external tools
     ...(showFavorites &&
@@ -179,6 +183,7 @@ const Tools = () => {
     if (searchTerm) params.set('search', searchTerm);
     if (activeCategory !== 'All') params.set('category', activeCategory);
     if (selectedPricing !== 'All') params.set('pricing', selectedPricing);
+    // Country filtering removed from URL - handled automatically
     if (toolType !== 'quick') params.set('type', toolType); // Default to 'quick' tab
 
     const newUrl = `${location.pathname}${
@@ -189,6 +194,7 @@ const Tools = () => {
     searchTerm,
     activeCategory,
     selectedPricing,
+    // Country dependency removed
     toolType,
     navigate,
     location.pathname,
@@ -200,6 +206,7 @@ const Tools = () => {
     const categoryParam = params.get('category');
     const searchParam = params.get('search');
     const pricingParam = params.get('pricing');
+    // Country param handling removed - no longer used in UI
     const typeParam = params.get('type') as 'quick' | 'external';
 
     if (categoryParam && categoryParam !== activeCategory) {
@@ -213,6 +220,8 @@ const Tools = () => {
     if (pricingParam && pricingParam !== selectedPricing) {
       setSelectedPricing(pricingParam);
     }
+
+    // Country param handling removed
 
     if (typeParam && typeParam !== toolType) {
       setToolType(typeParam);
@@ -250,6 +259,8 @@ const Tools = () => {
   const handlePricingChange = (pricing: string) => {
     setSelectedPricing(pricing);
   };
+
+  // Country change handler removed - country is now automatic
 
   const handleFavoriteToggle = (toolId: string, isFavorite: boolean) => {
     if (isFavorite) {
@@ -467,6 +478,7 @@ const Tools = () => {
                           className="w-full"
                         />
 
+                        {/* Country filter removed - it's now automatically detected when tools are submitted */}
                         {/* Favorites filter removed as per requirement */}
 
                         <Button
@@ -476,6 +488,7 @@ const Tools = () => {
                           onClick={() => {
                             setActiveCategory('All');
                             setSelectedPricing('All');
+                            // Country reset removed - handled automatically
                             setSearchTerm('');
                             setShowFavorites(false);
                             setSortOption('random');
@@ -823,6 +836,7 @@ const Tools = () => {
                                     setSearchTerm('');
                                     setActiveCategory('All');
                                     setSelectedPricing('All');
+                                    // Country reset removed - handled automatically
                                   }}
                                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                                 >

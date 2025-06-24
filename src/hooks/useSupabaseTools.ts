@@ -7,6 +7,7 @@ interface UseSupabaseToolsOptions {
   category?: string;
   search?: string;
   pricing?: string;
+  country?: string; // Add country filter option
   limit?: number;
   page?: number;
   loadMore?: boolean;
@@ -24,6 +25,7 @@ const fetchToolsFromSupabase = async ({
   category,
   search,
   pricing,
+  country, // Add country parameter
   limit,
   pageToFetch,
   excludeId,
@@ -47,6 +49,10 @@ const fetchToolsFromSupabase = async ({
 
     if (pricing && pricing !== 'All') {
       query = query.eq('pricing', pricing);
+    }
+
+    if (country && country !== 'All') {
+      query = query.eq('country', country);
     }
 
     if (excludeId) {
@@ -109,6 +115,7 @@ export const useSupabaseTools = ({
   category,
   search,
   pricing,
+  country, // Add country parameter
   limit = 25,
   page = 0,
   loadMore = false,
@@ -166,6 +173,7 @@ export const useSupabaseTools = ({
     category,
     search,
     pricing,
+    country, // Add country to filters tracking
     excludeId,
     userId,
     includeUnapproved,
@@ -180,6 +188,7 @@ export const useSupabaseTools = ({
       prevFiltersRef.current.category !== category ||
       prevFiltersRef.current.search !== search ||
       prevFiltersRef.current.pricing !== pricing ||
+      prevFiltersRef.current.country !== country || // Add country check
       prevFiltersRef.current.excludeId !== excludeId ||
       prevFiltersRef.current.userId !== userId ||
       prevFiltersRef.current.includeUnapproved !== includeUnapproved ||
@@ -202,6 +211,7 @@ export const useSupabaseTools = ({
       category,
       search,
       pricing,
+      country, // Add country
       excludeId,
       userId,
       includeUnapproved,
@@ -227,6 +237,7 @@ export const useSupabaseTools = ({
           category,
           search,
           pricing,
+          country, // Add country parameter
           limit,
           pageToFetch,
           excludeId,
@@ -338,6 +349,7 @@ export const useSupabaseTools = ({
           category,
           search,
           pricing,
+          country, // Add country parameter
           limit,
           pageToFetch,
           excludeId,
