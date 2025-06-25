@@ -605,21 +605,33 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
 
       // Process tools in batches
       for (let i = 0; i < newTools.length; i += batchSize) {
-        const batch = newTools.slice(i, i + batchSize).map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          tagline: tool.tagline, // Include tagline
-          url: tool.url,
-          youtube_url: tool.youtube_url, // Include YouTube URL
-          image_url: tool.image_url,
-          category: tool.category,
-          pricing: tool.pricing,
-          featured: tool.featured || false,
-          tags: tool.tags || [],
-          user_id: tool.user_id || null,
-          approval_status: 'approved', // Auto-approve bulk uploads
-          is_admin_added: true, // Mark all bulk uploaded tools as admin-added
-        }));
+        const batch = newTools.slice(i, i + batchSize).map((tool) => {
+          // Ensure tags always include 'Global'
+          const finalTags = ['Global'];
+          if (tool.tags && tool.tags.length > 0) {
+            tool.tags.forEach((tag) => {
+              if (!finalTags.includes(tag)) {
+                finalTags.push(tag);
+              }
+            });
+          }
+
+          return {
+            name: tool.name,
+            description: tool.description,
+            tagline: tool.tagline, // Include tagline
+            url: tool.url,
+            youtube_url: tool.youtube_url, // Include YouTube URL
+            image_url: tool.image_url,
+            category: tool.category,
+            pricing: tool.pricing,
+            featured: tool.featured || false,
+            tags: finalTags,
+            user_id: tool.user_id || null,
+            approval_status: 'approved', // Auto-approve bulk uploads
+            is_admin_added: true, // Mark all bulk uploaded tools as admin-added
+          };
+        });
 
         // Insert the batch of tools
         const { error } = await supabase.from('ai_tools').insert(batch);
@@ -659,6 +671,7 @@ export const useSupabaseAdmin = (): UseSupabaseAdminReturn => {
           toolUrl: `${baseUrl}/admin`,
           siteUrl: baseUrl,
           adminDashboardUrl,
+          toolType: 'bulk upload',
         });
 
         // Send the email to admin

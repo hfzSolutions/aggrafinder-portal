@@ -47,7 +47,6 @@ const fetchToolsFromSupabase = async ({
     if (country && country !== 'Global') {
       // PostgreSQL array overlap operator - matches if ANY tag overlaps
       // This will match tools with ['Global'], ['Malaysia'], or ['Global', 'Malaysia']
-      console.log('Filtering tools for country:', country);
       query = query.overlaps('tags', ['Global', country]);
     } else {
       // If no specific country or is Global, don't filter by country
