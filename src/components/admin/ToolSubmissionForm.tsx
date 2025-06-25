@@ -268,6 +268,20 @@ export function ToolSubmissionForm({
 
       let result;
 
+      // Prepare tags: Always include 'Global', and add detected country if not 'Global'
+      const finalTags = ['Global'];
+      if (detectedCountry && detectedCountry !== 'Global') {
+        finalTags.push(detectedCountry);
+      }
+      // Add any additional tags from the form
+      if (values.tags && values.tags.length > 0) {
+        values.tags.forEach((tag) => {
+          if (!finalTags.includes(tag)) {
+            finalTags.push(tag);
+          }
+        });
+      }
+
       const toolData = {
         name: values.name,
         tagline: values.tagline,
@@ -278,8 +292,7 @@ export function ToolSubmissionForm({
         category: values.category,
         pricing: values.pricing,
         featured: values.featured,
-        tags: values.tags,
-        country: detectedCountry, // Add automatically detected country
+        tags: finalTags,
         user_id: userId,
         is_admin_added: false,
         tool_type: 'external',

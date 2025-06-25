@@ -534,8 +534,11 @@ export const QuickToolFormSimplified = ({
         category: formData.selectedCategories,
         pricing: 'Free', // Quick tools are always free
         featured: false,
-        tags: [],
-        country: detectedCountry, // Add automatically detected country
+        // Smart tags generation: Always include 'Global', plus user's country if detected
+        tags:
+          detectedCountry && detectedCountry !== 'Global'
+            ? ['Global', detectedCountry]
+            : ['Global'],
         user_id: userId,
         is_admin_added: false,
       };
