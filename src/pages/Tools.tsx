@@ -115,13 +115,15 @@ const Tools = () => {
     hasMore: hasMoreQuickTools,
     loadNextQuickToolsPage,
     quickTools,
+    detectedCountry,
+    countryDetected,
   } = useSupabaseTools({
     category: activeCategory !== 'All' ? activeCategory : undefined,
     search: searchTerm,
     pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
-    // Country filtering removed from UI - handled automatically when tools are submitted
     loadMore: true,
     toolType: 'quick', // Specifically fetch quick tools
+    autoDetectCountry: true, // Enable automatic country detection
     ...(showFavorites &&
       favoriteTools.length > 0 && {
         customQuery: (query) => query.in('id', favoriteTools),
@@ -147,9 +149,9 @@ const Tools = () => {
     category: activeCategory !== 'All' ? activeCategory : undefined,
     search: searchTerm,
     pricing: selectedPricing !== 'All' ? selectedPricing : undefined,
-    // Country filtering removed from UI - handled automatically when tools are submitted
     loadMore: true,
     toolType: 'external', // Specifically fetch external tools
+    autoDetectCountry: true, // Enable automatic country detection
     ...(showFavorites &&
       favoriteTools.length > 0 && {
         customQuery: (query) => query.in('id', favoriteTools),
@@ -480,6 +482,23 @@ const Tools = () => {
 
                         {/* Country filter removed - it's now automatically detected when tools are submitted */}
                         {/* Favorites filter removed as per requirement */}
+
+                        {/* Country Detection Indicator */}
+                        {countryDetected &&
+                          detectedCountry &&
+                          detectedCountry !== 'Global' && (
+                            <div className="p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                              <div className="flex items-center text-xs text-blue-700 dark:text-blue-300">
+                                <Globe className="h-3 w-3 mr-1.5" />
+                                <span>
+                                  Showing tools for:{' '}
+                                  <span className="font-medium">
+                                    {detectedCountry}
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          )}
 
                         <Button
                           variant="outline"
