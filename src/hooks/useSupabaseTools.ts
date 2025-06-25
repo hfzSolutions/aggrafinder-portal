@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AITool } from '@/types/tools';
+import { detectUserCountryWithFallback } from '@/utils/countryDetection';
 
 interface UseSupabaseToolsOptions {
   featured?: boolean;
@@ -17,6 +18,7 @@ interface UseSupabaseToolsOptions {
   sortBy?: 'created_at' | 'popularity' | 'random';
   customQuery?: (query: any) => any; // Allow custom query modifications
   toolType?: 'all' | 'quick' | 'external'; // Add this to filter by tool type
+  autoDetectCountry?: boolean; // Add option to enable/disable automatic country detection
 }
 
 // Helper function to fetch tools with common filtering logic
@@ -37,7 +39,8 @@ const fetchToolsFromSupabase = async ({
   tableName = 'ai_tools_random', // Default to random view
 }: UseSupabaseToolsOptions & { pageToFetch: number; tableName?: string }) => {
   try {
-    let query = supabase.from(tableName).select('*');
+    // Use any to bypass the strict typing temporarily
+    let query = (supabase as any).from(tableName).select('*');
 
     if (featured !== undefined) {
       query = query.eq('featured', featured);
@@ -51,7 +54,7 @@ const fetchToolsFromSupabase = async ({
       query = query.eq('pricing', pricing);
     }
 
-    if (country && country !== 'All') {
+    if (country && country !== 'All' && country !== 'Global') {
       query = query.eq('country', country);
     }
 
@@ -88,8 +91,6 @@ const fetchToolsFromSupabase = async ({
     // Apply sorting
     if (sortBy === 'popularity') {
       query = query.order('created_at', { ascending: false });
-    } else if (sortBy === 'name') {
-      query = query.order('name', { ascending: true });
     } else if (sortBy === 'created_at') {
       query = query.order('created_at', { ascending: false });
     }
@@ -125,7 +126,12 @@ export const useSupabaseTools = ({
   sortBy,
   customQuery,
   toolType = 'all',
+  autoDetectCountry = true, // Enable automatic country detection by default
 }: UseSupabaseToolsOptions = {}) => {
+  // State for detected user country
+  const [detectedCountry, setDetectedCountry] = useState<string>('Global');
+  const [countryDetected, setCountryDetected] = useState(false);
+
   // Separate states for quick tools and external tools
   const [quickTools, setQuickTools] = useState<AITool[]>([]);
   const [externalTools, setExternalTools] = useState<AITool[]>([]);
@@ -180,7 +186,30 @@ export const useSupabaseTools = ({
     sortBy,
     customQuery,
     toolType,
+    detectedCountry, // Add detected country to filters tracking
   });
+
+  // Effect to detect user's country
+  useEffect(() => {
+    if (autoDetectCountry && !countryDetected) {
+      const detectCountry = async () => {
+        try {
+          const userCountry = await detectUserCountryWithFallback();
+          setDetectedCountry(userCountry);
+          setCountryDetected(true);
+          console.log('Detected user country:', userCountry);
+        } catch (error) {
+          console.error('Error detecting country:', error);
+          setDetectedCountry('Global');
+          setCountryDetected(true);
+        }
+      };
+
+      detectCountry();
+    } else if (!autoDetectCountry) {
+      setCountryDetected(true);
+    }
+  }, [autoDetectCountry, countryDetected]);
 
   useEffect(() => {
     const filtersChanged =
@@ -194,7 +223,8 @@ export const useSupabaseTools = ({
       prevFiltersRef.current.includeUnapproved !== includeUnapproved ||
       prevFiltersRef.current.sortBy !== sortBy ||
       prevFiltersRef.current.customQuery !== customQuery ||
-      prevFiltersRef.current.toolType !== toolType;
+      prevFiltersRef.current.toolType !== toolType ||
+      prevFiltersRef.current.detectedCountry !== detectedCountry; // Add detected country check
 
     if (filtersChanged && loadMore) {
       // Reset states when filters change
@@ -218,9 +248,19 @@ export const useSupabaseTools = ({
       sortBy,
       customQuery,
       toolType,
+      detectedCountry, // Add detected country
     };
 
+    // Only fetch tools after country detection is complete (or if auto-detection is disabled)
+    if (!countryDetected) {
+      return;
+    }
+
     const fetchTools = async () => {
+      // Determine which country to use for filtering
+      const effectiveCountry =
+        country || (autoDetectCountry ? detectedCountry : undefined);
+
       // Always fetch both quick tools and external tools regardless of toolType
       // This ensures we have both types of tools available when needed
 
@@ -237,7 +277,7 @@ export const useSupabaseTools = ({
           category,
           search,
           pricing,
-          country, // Add country parameter
+          country: effectiveCountry, // Use effective country
           limit,
           pageToFetch,
           excludeId,
@@ -349,7 +389,7 @@ export const useSupabaseTools = ({
           category,
           search,
           pricing,
-          country, // Add country parameter
+          country: effectiveCountry, // Use effective country
           limit,
           pageToFetch,
           excludeId,
@@ -464,6 +504,7 @@ export const useSupabaseTools = ({
     category,
     search,
     pricing,
+    country,
     limit,
     currentQuickToolsPage,
     currentExternalToolsPage,
@@ -475,18 +516,19 @@ export const useSupabaseTools = ({
     sortBy,
     customQuery,
     toolType,
+    detectedCountry,
+    countryDetected,
+    autoDetectCountry,
   ]);
 
   // Separate load more functions for each tool type
   const loadNextQuickToolsPage = () => {
-    console.log('hihi');
     if (!quickToolsLoading && hasMoreQuickTools) {
       setCurrentQuickToolsPage((prev) => prev + 1);
     }
   };
 
   const loadNextExternalToolsPage = () => {
-    console.log('haha');
     if (!externalToolsLoading && hasMoreExternalTools) {
       setCurrentExternalToolsPage((prev) => prev + 1);
     }
@@ -514,5 +556,8 @@ export const useSupabaseTools = ({
     hasMoreExternalTools,
     loadNextQuickToolsPage,
     loadNextExternalToolsPage,
+    // Country detection properties
+    detectedCountry,
+    countryDetected,
   };
 };
