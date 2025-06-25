@@ -21,13 +21,13 @@ interface UseSupabaseToolsOptions {
   autoDetectCountry?: boolean; // Add option to enable/disable automatic country detection
 }
 
-// Helper function to fetch tools with common filtering logic
+// Helper function to fetch tools with smart country-based prioritization
 const fetchToolsFromSupabase = async ({
   featured,
   category,
   search,
   pricing,
-  country, // Add country parameter
+  country, // This will be the user's detected country
   limit,
   pageToFetch,
   excludeId,
@@ -39,8 +39,20 @@ const fetchToolsFromSupabase = async ({
   tableName = 'ai_tools_random', // Default to random view
 }: UseSupabaseToolsOptions & { pageToFetch: number; tableName?: string }) => {
   try {
-    // Use any to bypass the strict typing temporarily
+    // Build the query with smart country filtering
     let query = (supabase as any).from(tableName).select('*');
+
+    // Smart country filtering: Always include Global + user's country
+    // This ensures users never get empty results
+    if (country && country !== 'Global') {
+      // PostgreSQL array overlap operator - matches if ANY tag overlaps
+      // This will match tools with ['Global'], ['Malaysia'], or ['Global', 'Malaysia']
+      console.log('Filtering tools for country:', country);
+      query = query.overlaps('tags', ['Global', country]);
+    } else {
+      // If no specific country or is Global, don't filter by country
+      // This shows all tools
+    }
 
     if (featured !== undefined) {
       query = query.eq('featured', featured);
@@ -52,10 +64,6 @@ const fetchToolsFromSupabase = async ({
 
     if (pricing && pricing !== 'All') {
       query = query.eq('pricing', pricing);
-    }
-
-    if (country && country !== 'All' && country !== 'Global') {
-      query = query.eq('country', country);
     }
 
     if (excludeId) {
@@ -88,13 +96,24 @@ const fetchToolsFromSupabase = async ({
       query = customQuery(query);
     }
 
-    // Apply sorting
-    if (sortBy === 'popularity') {
-      query = query.order('created_at', { ascending: false });
-    } else if (sortBy === 'created_at') {
-      query = query.order('created_at', { ascending: false });
+    // Smart sorting: Prioritize user's country tools, then by specified sort
+    if (country && country !== 'Global') {
+      // First sort by country relevance (user's country tools first)
+      // Then by the requested sort criteria
+      if (sortBy === 'popularity') {
+        query = query.order('created_at', { ascending: false });
+      } else if (sortBy === 'created_at') {
+        query = query.order('created_at', { ascending: false });
+      }
+      // Note: We'll do client-side sorting for country priority + popularity
+    } else {
+      // Apply normal sorting when no country preference
+      if (sortBy === 'popularity') {
+        query = query.order('created_at', { ascending: false });
+      } else if (sortBy === 'created_at') {
+        query = query.order('created_at', { ascending: false });
+      }
     }
-    // For random sorting, we rely on the randomized view
 
     query = query.range(pageToFetch * limit, pageToFetch * limit + limit - 1);
 
@@ -351,11 +370,33 @@ export const useSupabaseTools = ({
             prompt: item.prompt || '',
           }));
 
-          // Apply client-side sorting for quick tools
-          if (sortBy === 'popularity') {
-            transformedQuickTools = transformedQuickTools.sort(
-              (a, b) => (b.upvotes || 0) - (a.upvotes || 0)
-            );
+          // Apply smart sorting: Country priority + popularity/date
+          if (effectiveCountry && effectiveCountry !== 'Global') {
+            // Sort by country relevance first, then by popularity/date
+            transformedQuickTools = transformedQuickTools.sort((a, b) => {
+              const aHasUserCountry =
+                a.tags?.includes(effectiveCountry) || false;
+              const bHasUserCountry =
+                b.tags?.includes(effectiveCountry) || false;
+
+              // Prioritize tools with user's country tag
+              if (aHasUserCountry && !bHasUserCountry) return -1;
+              if (!aHasUserCountry && bHasUserCountry) return 1;
+
+              // If both have same country priority, sort by specified criteria
+              if (sortBy === 'popularity') {
+                return (b.upvotes || 0) - (a.upvotes || 0);
+              }
+              // For other sorts, maintain order
+              return 0;
+            });
+          } else {
+            // Apply traditional sorting when no country preference
+            if (sortBy === 'popularity') {
+              transformedQuickTools = transformedQuickTools.sort(
+                (a, b) => (b.upvotes || 0) - (a.upvotes || 0)
+              );
+            }
           }
 
           setHasMoreQuickTools(transformedQuickTools.length === limit);
@@ -470,11 +511,33 @@ export const useSupabaseTools = ({
             })
           );
 
-          // Apply client-side sorting for external tools
-          if (sortBy === 'popularity') {
-            transformedExternalTools = transformedExternalTools.sort(
-              (a, b) => (b.upvotes || 0) - (a.upvotes || 0)
-            );
+          // Apply smart sorting: Country priority + popularity/date
+          if (effectiveCountry && effectiveCountry !== 'Global') {
+            // Sort by country relevance first, then by popularity/date
+            transformedExternalTools = transformedExternalTools.sort((a, b) => {
+              const aHasUserCountry =
+                a.tags?.includes(effectiveCountry) || false;
+              const bHasUserCountry =
+                b.tags?.includes(effectiveCountry) || false;
+
+              // Prioritize tools with user's country tag
+              if (aHasUserCountry && !bHasUserCountry) return -1;
+              if (!aHasUserCountry && bHasUserCountry) return 1;
+
+              // If both have same country priority, sort by specified criteria
+              if (sortBy === 'popularity') {
+                return (b.upvotes || 0) - (a.upvotes || 0);
+              }
+              // For other sorts, maintain order
+              return 0;
+            });
+          } else {
+            // Apply traditional sorting when no country preference
+            if (sortBy === 'popularity') {
+              transformedExternalTools = transformedExternalTools.sort(
+                (a, b) => (b.upvotes || 0) - (a.upvotes || 0)
+              );
+            }
           }
 
           setHasMoreExternalTools(transformedExternalTools.length === limit);
