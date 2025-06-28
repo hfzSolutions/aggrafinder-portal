@@ -267,7 +267,6 @@ const QuickToolDetails = () => {
   // Enhanced manifest update for better mobile support
   useEffect(() => {
     const updateManifest = () => {
-      console.log('Setting PWA manifest for Quick Tool:', tool);
       const manifestElement = document.getElementById('manifest');
 
       if (!manifestElement) {
