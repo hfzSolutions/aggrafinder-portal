@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar } from '@/components/ui/avatar';
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { CustomMarkdownRenderer } from '@/components/ui/custom-markdown-renderer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface QuickToolFormSimplifiedProps {
@@ -1393,8 +1393,9 @@ export const QuickToolFormSimplified = ({
                         </p>
                       ) : (
                         <div className="markdown-content">
-                          <MarkdownRenderer
+                          <CustomMarkdownRenderer
                             content={message.displayContent || message.content}
+                            enableAnimations={false}
                           />
                           {message.isTyping && (
                             <span className="animate-pulse">▋</span>

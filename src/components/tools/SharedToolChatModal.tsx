@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { useSharedChat } from '@/contexts/SharedChatContext';
 import { Badge } from '@/components/ui/badge';
 import { ComparisonToolCards } from '@/components/tools/ComparisonToolCards';
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { CustomMarkdownRenderer } from '@/components/ui/custom-markdown-renderer';
 
 const SharedToolChatModal = () => {
   const {
@@ -257,9 +257,10 @@ const SharedToolChatModal = () => {
                       </p>
                     ) : (
                       <div className="text-sm leading-relaxed">
-                        <MarkdownRenderer
+                        <CustomMarkdownRenderer
                           content={message.displayContent || message.content}
                           className="markdown-chat"
+                          enableAnimations={false}
                         />
                         {message.isTyping && (
                           <span className="animate-pulse ml-0.5">▋</span>

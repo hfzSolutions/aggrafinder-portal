@@ -25,7 +25,7 @@ import { useQuickToolUsage } from '@/hooks/useQuickToolUsage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { CustomMarkdownRenderer } from '@/components/ui/custom-markdown-renderer';
 import { AddToDesktopButton } from '@/components/ui/add-to-desktop-button';
 import {
   AlertDialog,
@@ -199,7 +199,7 @@ export const QuickToolChat = ({
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className="flex items-start gap-2 justify-start my-6"
       >
-        <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center animate-pulse-glow">
+        <div className="flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center animate-pulse-glow">
           <Sparkles className="h-4 w-4 text-primary" />
         </div>
         <motion.div
@@ -1151,7 +1151,7 @@ export const QuickToolChat = ({
                 }
               >
                 {message.role !== 'user' && (
-                  <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
+                  <div className="flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -1176,10 +1176,10 @@ export const QuickToolChat = ({
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.2 }}
                   className={cn(
-                    'max-w-[85%] rounded-2xl p-3.5 shadow-sm relative',
+                    'max-w-[85%] relative',
                     message.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                      : 'bg-muted/80 rounded-tl-sm'
+                      ? 'bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3.5 shadow-sm'
+                      : ''
                   )}
                 >
                   <div className="text-base whitespace-pre-wrap leading-relaxed break-words">
@@ -1198,7 +1198,7 @@ export const QuickToolChat = ({
                         {containsMarkdown(
                           message.displayContent || message.content
                         ) ? (
-                          <MarkdownRenderer
+                          <CustomMarkdownRenderer
                             content={message.displayContent || message.content}
                             className="inline-block"
                           />
@@ -1236,7 +1236,7 @@ export const QuickToolChat = ({
                 className="flex items-start gap-2 justify-start"
               >
                 {/* Empty space for avatar alignment - hidden on mobile, padding on desktop */}
-                <div className="hidden sm:flex flex-shrink-0 w-8 h-8"></div>
+                <div className="flex flex-shrink-0 w-8 h-8"></div>
 
                 {/* Suggested replies container */}
                 <div className="max-w-[85%] space-y-2">
@@ -1279,7 +1279,7 @@ export const QuickToolChat = ({
               transition={{ duration: 0.2 }}
               className="flex items-center gap-3 justify-start"
             >
-              <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
+              <div className="flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
                 {imageUrl ? (
                   <img
                     src={imageUrl}
@@ -1296,7 +1296,7 @@ export const QuickToolChat = ({
                   <ArrowUp className="h-4 w-4" />
                 )}
               </div>
-              <div className="max-w-[85%] rounded-2xl rounded-tl-sm p-3.5 bg-muted/80 shadow-sm">
+              <div className="max-w-[85%] relative">
                 <div className="flex space-x-2 items-center h-5">
                   <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse"></div>
                   <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-150"></div>
