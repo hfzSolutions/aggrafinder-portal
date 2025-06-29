@@ -89,6 +89,7 @@ interface QuickTool {
   tags?: string[];
   url?: string;
   youtube_url?: string;
+  suggested_replies?: boolean;
 }
 
 const QuickToolDetails = () => {
@@ -605,12 +606,18 @@ const QuickToolDetails = () => {
                       <div className="px-3">
                         <div className="flex items-center gap-3 mt-3">
                           {tool.image_url && (
-                            <div className="w-10 h-10 rounded-md overflow-hidden border border-border/20 shrink-0">
-                              <img
-                                src={tool.image_url}
-                                alt={tool.name}
-                                className="w-full h-full object-cover"
-                              />
+                            <div className="relative">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 p-0.5 overflow-hidden border border-border/20 shrink-0 shadow-sm">
+                                <img
+                                  src={tool.image_url}
+                                  alt={tool.name}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              </div>
+                              {/* Green online status indicator */}
+                              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-[1.5px] border-white dark:border-gray-900 rounded-full shadow-sm">
+                                <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-40"></div>
+                              </div>
                             </div>
                           )}
                           <h1 className="text-lg font-semibold tracking-tight leading-tight truncate">
@@ -977,23 +984,39 @@ const QuickToolDetails = () => {
                                   handleRelatedToolClick(relatedTool.id)
                                 }
                               >
-                                {relatedTool.image_url ? (
-                                  <img
-                                    src={relatedTool.image_url}
-                                    alt={relatedTool.name}
-                                    className="w-8 h-8 object-cover rounded-md flex-shrink-0"
-                                    onError={(e) => {
-                                      e.currentTarget.onerror = null;
-                                      e.currentTarget.style.display = 'none';
-                                      e.currentTarget.parentElement.innerHTML =
-                                        '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary flex-shrink-0">
-                                    <Bot className="h-4 w-4" />
+                                <div className="relative flex-shrink-0">
+                                  {relatedTool.image_url ? (
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 p-0.5 overflow-hidden shadow-sm">
+                                      <img
+                                        src={relatedTool.image_url}
+                                        alt={relatedTool.name}
+                                        className="w-full h-full object-cover rounded-full"
+                                        onError={(e) => {
+                                          e.currentTarget.onerror = null;
+                                          e.currentTarget.style.display =
+                                            'none';
+                                          const fallbackDiv =
+                                            document.createElement('div');
+                                          fallbackDiv.className =
+                                            'w-full h-full rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary';
+                                          fallbackDiv.innerHTML =
+                                            '<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+                                          e.currentTarget.parentElement?.appendChild(
+                                            fallbackDiv
+                                          );
+                                        }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary shadow-sm">
+                                      <Bot className="h-3 w-3" />
+                                    </div>
+                                  )}
+                                  {/* Green online status indicator for related tools */}
+                                  <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border border-white dark:border-gray-900 rounded-full shadow-sm">
+                                    <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-40"></div>
                                   </div>
-                                )}
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <h4 className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                                     {relatedTool.name}
