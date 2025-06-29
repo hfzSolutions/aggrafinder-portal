@@ -1111,9 +1111,9 @@ export const QuickToolChat = ({
 
       {/* Removed Login Prompt Dialog - direct redirect to auth page instead */}
 
-      {/* Messages Area - Add extra bottom padding when PWA prompt might be visible */}
+      {/* Messages Area - Enhanced with modern iOS-like background */}
       <div
-        className="flex-1 overflow-y-auto p-0 sm:p-4 space-y-4 relative bg-transparent pb-[240px] sm:pb-[160px]"
+        className="flex-1 overflow-y-auto p-0 sm:p-4 relative bg-gradient-to-b from-gray-50/30 via-white/20 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-950/20 dark:to-gray-900/30 pb-[240px] sm:pb-[160px]"
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
@@ -1140,7 +1140,7 @@ export const QuickToolChat = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
                 className={cn(
-                  'flex items-start gap-2',
+                  'flex items-start gap-3 px-4 sm:px-2 mb-4',
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                 )}
                 ref={
@@ -1151,49 +1151,80 @@ export const QuickToolChat = ({
                 }
               >
                 {message.role !== 'user' && (
-                  <div className="flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt="Bot"
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          // Fallback to Bot icon if image fails to load
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.parentElement?.classList.add('flex');
-                          e.currentTarget.parentElement?.classList.remove(
-                            'block'
-                          );
-                        }}
-                      />
-                    ) : (
-                      <Bot className="h-4 w-4 text-primary" />
-                    )}
+                  <div className="flex flex-shrink-0 relative">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt="Bot"
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            // Fallback to Bot icon if image fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.classList.add(
+                              'flex'
+                            );
+                            e.currentTarget.parentElement?.classList.remove(
+                              'block'
+                            );
+                          }}
+                        />
+                      ) : (
+                        <Bot className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
+                    {/* Green online status indicator */}
+                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-[1.5px] border-white dark:border-gray-900 rounded-full shadow-sm">
+                      <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-40"></div>
+                    </div>
                   </div>
                 )}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
                   className={cn(
-                    'max-w-[85%] relative',
+                    'max-w-[90%] sm:max-w-[75%] md:max-w-[70%] relative group',
                     message.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3.5 shadow-sm'
-                      : ''
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-[18px] rounded-br-[4px] px-4 py-3'
+                      : 'bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-750 text-gray-900 dark:text-gray-100 rounded-[18px] rounded-tl-[4px] px-4 py-3 border border-gray-200/50 dark:border-gray-700/50'
                   )}
                 >
-                  <div className="text-base whitespace-pre-wrap leading-relaxed break-words">
+                  {/* Message timestamp on hover */}
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                    <div className="bg-black/75 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                      {new Date().toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  </div>
+
+                  <div
+                    className={cn(
+                      'text-[15px] leading-[1.4] whitespace-pre-wrap break-words font-normal',
+                      message.role === 'user'
+                        ? 'text-white'
+                        : 'text-gray-900 dark:text-gray-100'
+                    )}
+                  >
                     {message.role === 'user' ? (
                       message.content
                     ) : !message.displayContent && message.isTyping ? (
-                      // Only show typing dots if typing and no content has started showing
-                      <div className="flex space-x-2 items-center h-5">
-                        <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse"></div>
-                        <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-150"></div>
-                        <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse delay-300"></div>
+                      // Enhanced typing indicator
+                      <div className="flex space-x-1.5 items-center h-6 py-1">
+                        <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"></div>
+                        <div
+                          className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"
+                          style={{ animationDelay: '0.15s' }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"
+                          style={{ animationDelay: '0.3s' }}
+                        ></div>
                       </div>
                     ) : (
-                      // Once content is showing, intelligently render it with markdown support if needed
+                      // Enhanced content rendering
                       <>
                         {containsMarkdown(
                           message.displayContent || message.content
@@ -1207,17 +1238,19 @@ export const QuickToolChat = ({
                         )}
                         {message.isTyping &&
                           (message.displayContent || message.content) && (
-                            <span className="animate-pulse ml-0.5">▋</span>
+                            <span className="animate-pulse ml-1 text-gray-400 dark:text-gray-500 font-mono">
+                              |
+                            </span>
                           )}
                       </>
                     )}
                   </div>
                 </motion.div>
-                {message.role === 'user' && (
+                {/* {message.role === 'user' && (
                   <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 items-center justify-center text-primary-foreground">
                     <span className="text-xs font-medium">You</span>
                   </div>
-                )}
+                )} */}
               </motion.div>
             );
           })}
@@ -1233,32 +1266,34 @@ export const QuickToolChat = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="flex items-start gap-2 justify-start"
+                className="flex items-start gap-3 justify-start px-4 sm:px-2 mb-4"
               >
                 {/* Empty space for avatar alignment - hidden on mobile, padding on desktop */}
                 <div className="flex flex-shrink-0 w-8 h-8"></div>
 
                 {/* Suggested replies container */}
-                <div className="max-w-[85%] space-y-2">
-                  <div className="text-xs text-muted-foreground mb-2 px-1">
-                    Suggested replies:
+                <div className="max-w-[90%] sm:max-w-[75%] md:max-w-[70%] space-y-3">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 px-1 font-medium">
+                    Quick replies
                   </div>
                   <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                     {suggestedReplies.slice(0, 3).map((reply, index) => (
                       <motion.div
                         key={index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{
-                          duration: 0.2,
+                          duration: 0.25,
                           delay: index * 0.1,
                           ease: 'easeOut',
                         }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         <Button
                           variant="outline"
                           size="sm"
-                          className="rounded-full text-sm py-2 px-4 bg-muted/30 hover:bg-muted/60 transition-all duration-200 border-primary/20 hover:border-primary/40 whitespace-nowrap text-left justify-start h-auto min-h-[32px] w-full sm:w-auto"
+                          className="rounded-[18px] text-[14px] py-2.5 px-4 bg-white/80 dark:bg-gray-800/80 hover:bg-blue-50 dark:hover:bg-gray-700/80 transition-all duration-200 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-gray-500 whitespace-nowrap text-left justify-start h-auto min-h-[36px] w-full sm:w-auto shadow-sm hover:shadow-md text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-normal backdrop-blur-sm"
                           onClick={() => handleSuggestedReplyClick(reply)}
                           disabled={isLoading || isBotTyping}
                         >
@@ -1324,10 +1359,10 @@ export const QuickToolChat = ({
         </div>
       )}
 
-      {/* Input Area - Adjust z-index to be below PWA prompt */}
+      {/* Input Area - Enhanced modern iOS-style design */}
       <div
         data-input-area
-        className="p-4 border border-primary/90 rounded-2xl bg-background/95 shadow-md mx-0 sm:mx-4 backdrop-blur-sm fixed bottom-7 left-2 right-2 sm:sticky sm:bottom-10 z-[45] hover:border-primary/40 transition-all duration-300 hover:shadow-lg"
+        className="p-3 sm:p-4 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl bg-white/95 dark:bg-gray-900/95 shadow-lg mx-0 sm:mx-4 backdrop-blur-md fixed bottom-7 left-2 right-2 sm:sticky sm:bottom-10 z-[45] hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-300 hover:shadow-xl"
       >
         <div className="flex items-center gap-3 w-full">
           <div className="flex flex-col gap-2">
@@ -1396,9 +1431,10 @@ export const QuickToolChat = ({
                 placeholder="Ask your question here..."
                 disabled={isLoading || isBotTyping || isShowingAd} // Removed login check
                 className={cn(
-                  'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-4 py-2.5 min-h-[40px] resize-none bg-background/50 text-foreground placeholder:text-muted-foreground/70 text-base placeholder:text-base',
+                  'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-4 py-3 min-h-[42px] resize-none bg-gray-50/80 dark:bg-gray-800/80 text-foreground placeholder:text-gray-500 dark:placeholder:text-gray-400 text-[15px] placeholder:text-[15px] font-normal leading-[1.4]',
                   (isLoading || isBotTyping || isShowingAd) && 'opacity-60', // Removed login check
-                  isMessageTooLong && 'border-red-500 focus:border-red-500'
+                  isMessageTooLong &&
+                    'border-red-500 focus:border-red-500 bg-red-50/80 dark:bg-red-900/20'
                 )}
                 rows={1}
               />
@@ -1422,34 +1458,34 @@ export const QuickToolChat = ({
               </Button>
             )}
 
-            {/* Only show send button when user has started typing */}
-            {input.trim().length > 0 && (
-              <motion.div
-                whileTap={{ scale: 0.95 }}
-                className="flex-shrink-0"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.2 }}
+            {/* Send button - always visible */}
+            <motion.div
+              whileTap={{ scale: 0.95 }}
+              className="flex-shrink-0"
+              initial={{ opacity: 1, scale: 1 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button
+                size="icon"
+                onClick={handleSendMessage} // Always use handleSendMessage
+                disabled={!input.trim() || isLoading || isMessageTooLong} // Disable when message is too long
+                className={cn(
+                  'h-10 w-10 rounded-full transition-all duration-300 shadow-md hover:shadow-lg text-white flex items-center justify-center transform hover:scale-105 active:scale-95',
+                  isMessageTooLong
+                    ? 'bg-red-500 hover:bg-red-600 cursor-not-allowed'
+                    : !input.trim()
+                    ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed opacity-50'
+                    : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
+                )}
               >
-                <Button
-                  size="icon"
-                  onClick={handleSendMessage} // Always use handleSendMessage
-                  disabled={!input.trim() || isLoading || isMessageTooLong} // Disable when message is too long
-                  className={cn(
-                    'h-10 w-10 transition-all duration-300 shadow-sm text-primary-foreground flex items-center justify-center',
-                    isMessageTooLong
-                      ? 'bg-red-500 hover:bg-red-600 cursor-not-allowed'
-                      : 'bg-primary hover:bg-primary/90'
-                  )}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowUp className="h-4 w-4" />
-                  )}
-                </Button>
-              </motion.div>
-            )}
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowUp className="h-4 w-4" />
+                )}
+              </Button>
+            </motion.div>
           </motion.div>
         </div>
         <div className="flex items-center justify-center mt-2">

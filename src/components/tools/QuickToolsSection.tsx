@@ -205,123 +205,225 @@ const QuickToolsSection = ({
           className={
             view === 'grid'
               ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 md:gap-6'
-              : 'grid grid-cols-1 gap-3 md:gap-4'
+              : 'grid grid-cols-1 gap-2 md:gap-3'
           }
         >
           {paginatedTools.map((tool) => (
             <div key={tool.id} className="w-full">
               {isMobile || view === 'list' ? (
-                // Mobile view or List view - horizontal card layout
+                // Mobile view or List view - Ultra compact chat contact style
                 <div
-                  className="group relative rounded-xl overflow-hidden bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:border-primary/40 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-row items-center cursor-pointer p-4 touch-manipulation"
+                  className="group relative rounded-xl bg-white dark:bg-gray-900 border border-gray-200/40 dark:border-gray-700/40 hover:border-primary/30 hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-all duration-300 cursor-pointer p-3 touch-manipulation overflow-hidden active:scale-[0.99]"
                   onClick={() => handleQuickToolClick(tool.id)}
                 >
-                  <div className="flex-shrink-0">
-                    {tool.imageUrl ? (
-                      <img
-                        src={tool.imageUrl}
-                        alt={tool.name}
-                        className="h-12 w-12 object-cover rounded-lg mr-4 shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mr-4 text-primary shadow-sm">
-                        <Bot className="h-6 w-6" />
+                  {/* Subtle active state background */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                  <div className="relative flex items-center space-x-3">
+                    {/* Compact Avatar Section */}
+                    <div className="flex-shrink-0">
+                      {tool.imageUrl ? (
+                        <div className="relative">
+                          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 p-0.5 shadow-sm">
+                            <img
+                              src={tool.imageUrl}
+                              alt={tool.name}
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          </div>
+                          {/* Compact status dot */}
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-[1.5px] border-white dark:border-gray-900 rounded-full">
+                            <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-40"></div>
+                          </div>
+                          {/* Compact typing indicator on hover */}
+                          <div className="absolute -top-1 -left-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="bg-white dark:bg-gray-800 rounded-md px-1.5 py-0.5 shadow-md border border-gray-200 dark:border-gray-700">
+                              <div className="flex space-x-0.5">
+                                <div className="w-0.5 h-0.5 bg-gray-400 rounded-full animate-bounce"></div>
+                                <div
+                                  className="w-0.5 h-0.5 bg-gray-400 rounded-full animate-bounce"
+                                  style={{ animationDelay: '0.1s' }}
+                                ></div>
+                                <div
+                                  className="w-0.5 h-0.5 bg-gray-400 rounded-full animate-bounce"
+                                  style={{ animationDelay: '0.2s' }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary/25 via-primary/15 to-primary/10 border-[1.5px] border-white dark:border-gray-800 flex items-center justify-center text-primary shadow-sm">
+                            <Bot className="h-5 w-5" />
+                          </div>
+                          {/* Compact status dot */}
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-[1.5px] border-white dark:border-gray-900 rounded-full">
+                            <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-40"></div>
+                          </div>
+                          {/* Compact typing indicator on hover */}
+                          <div className="absolute -top-1 -left-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="bg-white dark:bg-gray-800 rounded-md px-1.5 py-0.5 shadow-md border border-gray-200 dark:border-gray-700">
+                              <div className="flex space-x-0.5">
+                                <div className="w-0.5 h-0.5 bg-gray-400 rounded-full animate-bounce"></div>
+                                <div
+                                  className="w-0.5 h-0.5 bg-gray-400 rounded-full animate-bounce"
+                                  style={{ animationDelay: '0.1s' }}
+                                ></div>
+                                <div
+                                  className="w-0.5 h-0.5 bg-gray-400 rounded-full animate-bounce"
+                                  style={{ animationDelay: '0.2s' }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content Section - Single line compact layout */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-sm font-semibold truncate group-hover:text-primary transition-colors duration-200">
+                              {tool.name}
+                            </h3>
+                            {tool.usageCount > 0 && (
+                              <span className="text-[9px] text-muted-foreground/50 font-normal">
+                                {tool.usageCount > 999
+                                  ? `${Math.floor(tool.usageCount / 1000)}k`
+                                  : tool.usageCount}
+                                +
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5 pr-2">
+                            {tool.description}
+                          </p>
+                        </div>
+
+                        {/* Minimal action button */}
+                        <div className="flex-shrink-0 ml-3">
+                          <button
+                            className="text-[9px] text-primary/60 group-hover:text-white font-medium px-2 py-1 bg-transparent group-hover:bg-primary/90 rounded-md transition-all duration-300 border border-primary/20 group-hover:border-primary/0 shadow-none group-hover:shadow-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuickToolClick(tool.id);
+                            }}
+                          >
+                            Chat
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold truncate group-hover:text-primary transition-colors duration-200 mb-1">
-                      {tool.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground truncate mb-2">
-                      {tool.description}
-                    </p>
-                    {tool.usageCount > 0 && (
-                      <div className="flex items-center">
-                        <span className="text-[10px] text-primary/70 font-medium px-2 py-0.5 bg-primary/10 rounded-full">
-                          {tool.usageCount.toLocaleString()}+ uses
-                        </span>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               ) : (
-                // Desktop grid view - vertical card layout with larger image
+                // Desktop grid view - Premium chat contact card
                 <div
-                  className="group bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-primary/40 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer touch-manipulation h-full flex flex-col overflow-hidden"
+                  className="group bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-3xl hover:border-primary/40 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-pointer touch-manipulation h-full flex flex-col overflow-hidden relative"
                   onClick={() => handleQuickToolClick(tool.id)}
                 >
-                  {/* Image Section - Compact and balanced */}
-                  <div className="relative w-full h-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
-                    {tool.imageUrl ? (
-                      <img
-                        src={tool.imageUrl}
-                        alt={tool.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary">
-                        <Bot className="h-4 w-4" />
-                      </div>
-                    )}
-                    {/* Overlay gradient for better text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-                  </div>
+                  {/* Animated background gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-primary/[0.01] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-                  {/* Content Section */}
-                  <div className="p-4 flex flex-col flex-grow">
-                    <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors duration-200 mb-1">
-                      {tool.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-3 flex-grow mb-3 leading-relaxed">
-                      {tool.description}
-                    </p>
-
-                    {/* Footer Section */}
-                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
-                      <div className="flex items-center overflow-hidden max-w-[60%]">
-                        {tool.category.length > 0 && (
-                          <div className="flex flex-wrap gap-1 overflow-hidden">
-                            <Badge
-                              variant="secondary"
-                              className="text-[10px] px-2 py-0.5 h-5 bg-primary/10 text-primary border-primary/20 truncate max-w-[80px] font-medium"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {tool.category[0]}
-                            </Badge>
-                            {tool.category.length > 1 && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge
-                                      variant="outline"
-                                      className="text-[10px] px-1.5 py-0.5 h-5 cursor-help hover:bg-primary/5"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      +{tool.category.length - 1}
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent
-                                    side="bottom"
-                                    className="max-w-xs"
-                                  >
-                                    <div className="text-xs">
-                                      {tool.category.slice(1).join(', ')}
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
+                  {/* Header */}
+                  <div className="relative p-4 pb-3">
+                    {/* Enhanced Avatar Section */}
+                    <div className="flex flex-col items-center">
+                      <div className="relative mb-4">
+                        {tool.imageUrl ? (
+                          <div className="relative">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 p-1 shadow-xl">
+                              <img
+                                src={tool.imageUrl}
+                                alt={tool.name}
+                                className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-500"
+                              />
+                            </div>
+                            <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-[2.5px] border-white dark:border-gray-900 rounded-full shadow-lg">
+                              <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-30"></div>
+                            </div>
+                            {/* Typing indicator on hover */}
+                            <div className="absolute -top-3 -left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <div className="bg-white dark:bg-gray-800 rounded-lg px-3 py-2 shadow-xl border border-gray-200 dark:border-gray-700">
+                                <div className="flex space-x-1">
+                                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                                  <div
+                                    className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                    style={{ animationDelay: '0.1s' }}
+                                  ></div>
+                                  <div
+                                    className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                    style={{ animationDelay: '0.2s' }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 border-3 border-white dark:border-gray-800 flex items-center justify-center text-primary shadow-xl group-hover:scale-105 transition-transform duration-500">
+                              <Bot className="h-9 w-9" />
+                            </div>
+                            <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-[2.5px] border-white dark:border-gray-900 rounded-full shadow-lg">
+                              <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-30"></div>
+                            </div>
+                            {/* Typing indicator on hover */}
+                            <div className="absolute -top-3 -left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <div className="bg-white dark:bg-gray-800 rounded-lg px-3 py-2 shadow-xl border border-gray-200 dark:border-gray-700">
+                                <div className="flex space-x-1">
+                                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                                  <div
+                                    className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                    style={{ animationDelay: '0.1s' }}
+                                  ></div>
+                                  <div
+                                    className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                    style={{ animationDelay: '0.2s' }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
-                      {tool.usageCount > 0 && (
-                        <div className="flex items-center">
-                          <span className="text-[10px] text-primary/70 font-medium px-2 py-0.5 bg-primary/5 rounded-full">
-                            {tool.usageCount.toLocaleString()}+ uses
-                          </span>
+
+                      <div className="text-center mb-4">
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors duration-300 mb-1">
+                          {tool.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed px-2 mb-2">
+                          {tool.description}
+                        </p>
+
+                        {/* Quick stats */}
+                        <div className="flex items-center justify-center space-x-3 text-[10px] text-muted-foreground/70 mb-3">
+                          {tool.category.length > 0 && (
+                            <span>{tool.category[0]}</span>
+                          )}
+                          {tool.usageCount > 0 && (
+                            <span>
+                              {tool.usageCount.toLocaleString()}+ chats
+                            </span>
+                          )}
                         </div>
-                      )}
+                      </div>
+
+                      {/* Action button - transforms on card hover */}
+                      <button
+                        className="w-full py-2 px-4 bg-primary/10 group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-primary/80 text-primary group-hover:text-white text-sm font-medium group-hover:font-semibold rounded-xl border border-primary/20 group-hover:border-primary/0 group-hover:shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.99]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickToolClick(tool.id);
+                        }}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <span>Chat now</span>
+                          <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
+                        </div>
+                      </button>
                     </div>
                   </div>
                 </div>
