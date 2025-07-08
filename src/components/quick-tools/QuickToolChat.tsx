@@ -26,7 +26,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { CustomMarkdownRenderer } from '@/components/ui/custom-markdown-renderer';
-import { AddToDesktopButton } from '@/components/ui/add-to-desktop-button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -347,6 +346,10 @@ export const QuickToolChat = ({
     null
   );
 
+  // Remove auto-scroll related state variables
+  // const [userHasScrolled, setUserHasScrolled] = useState(false);
+  // const [lastAutoScrollPosition, setLastAutoScrollPosition] = useState(0);
+
   // Function to generate suggested replies based on the latest bot message
   const generateSuggestedReplies = async (botMessage: string) => {
     if (!suggested_replies) return;
@@ -376,17 +379,17 @@ export const QuickToolChat = ({
       // Update state with the generated replies
       setSuggestedReplies(suggestions.length > 0 ? suggestions : []);
 
-      // Scroll to show suggested replies after they are set
-      if (suggestions.length > 0) {
-        setTimeout(() => {
-          if (suggestedRepliesRef.current) {
-            suggestedRepliesRef.current.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest',
-            });
-          }
-        }, 200);
-      }
+      // Remove auto-scroll for suggested replies
+      // if (suggestions.length > 0) {
+      //   setTimeout(() => {
+      //     if (suggestedRepliesRef.current) {
+      //       suggestedRepliesRef.current.scrollIntoView({
+      //         behavior: 'smooth',
+      //         block: 'nearest',
+      //       });
+      //     }
+      //   }, 200);
+      // }
     } catch (error) {
       console.warn('Failed to generate suggested replies:', error);
       // Provide fallback suggestions
@@ -494,19 +497,14 @@ export const QuickToolChat = ({
   // Function to animate typing effect for a message with realistic timing
   const animateTyping = (messageId: string, content: string) => {
     let index = 0;
-    setIsBotTyping(true); // Set bot typing state to true
-    setLatestBotMessageId(messageId); // Set the latest bot message ID
+    setIsBotTyping(true);
+    setLatestBotMessageId(messageId);
 
     // Clear any existing suggested replies when bot starts typing
     setSuggestedReplies([]);
 
-    // Scroll to bottom once at the beginning of typing
-    scrollToBottom();
-
-    // Track if we need to scroll on next meaningful content
-    let lastScrollPosition = 0;
-    let lastScrollTime = Date.now();
-    let lastPunctuationIndex = -1;
+    // Remove auto-scroll related code
+    // setUserHasScrolled(false);
 
     const typeNextChunk = () => {
       if (index >= content.length) {
@@ -516,28 +514,17 @@ export const QuickToolChat = ({
             msg.id === messageId ? { ...msg, isTyping: false } : msg
           )
         );
-        setIsBotTyping(false); // Set bot typing state to false when complete
+        setIsBotTyping(false);
 
-        // Final scroll to ensure the complete message is visible
-        setTimeout(() => {
-          if (messagesContainerRef.current) {
-            const container = messagesContainerRef.current;
-            const messageElement = document.getElementById(
-              `message-${messageId}`
-            );
-            if (messageElement) {
-              messageElement.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest',
-              });
-            }
-          }
-        }, 100);
+        // Remove auto-scroll code
+        // setTimeout(() => {
+        //   scrollToCurrentBotMessage(messageId);
+        // }, 100);
         return;
       }
 
       // Add characters in chunks for more natural typing
-      const chunkSize = Math.floor(Math.random() * 3) + 1; // 1-3 characters at a time
+      const chunkSize = Math.floor(Math.random() * 3) + 1;
       const nextChunk = content.substring(
         index,
         Math.min(index + chunkSize, content.length)
@@ -557,88 +544,65 @@ export const QuickToolChat = ({
       index += nextChunk.length;
 
       // Determine the delay before the next chunk
-      let delay = 15 + Math.random() * 30; // Base typing speed
+      let delay = 15 + Math.random() * 30;
 
-      // Check if we've reached a meaningful point to scroll (end of sentence or paragraph)
-      const isPunctuation = ['.', '!', '?', '\n'].some((p) =>
-        nextChunk.includes(p)
-      );
-
-      // Only scroll at meaningful points (punctuation) and limit frequency
-      const currentTime = Date.now();
-      const timeSinceLastScroll = currentTime - lastScrollTime;
-
-      if (
-        isPunctuation &&
-        timeSinceLastScroll > 500 &&
-        lastPunctuationIndex !== index
-      ) {
-        lastPunctuationIndex = index;
-        lastScrollTime = currentTime;
-
-        // Use a timeout to allow the message to render before scrolling
-        setTimeout(() => {
-          if (messagesContainerRef.current) {
-            const container = messagesContainerRef.current;
-            const currentScrollPosition = container.scrollTop;
-
-            // Only scroll if user hasn't manually scrolled away
-            const userHasScrolled =
-              Math.abs(currentScrollPosition - lastScrollPosition) > 50 &&
-              lastScrollPosition !== 0;
-
-            if (!userHasScrolled) {
-              const messageElement = document.getElementById(
-                `message-${messageId}`
-              );
-              if (messageElement) {
-                messageElement.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'nearest',
-                });
-              }
-            }
-
-            lastScrollPosition = container.scrollTop;
-          }
-        }, 50);
-      }
+      // Remove auto-scroll during typing
+      // const isPunctuation = ['.', '!', '?', '\n'].some((p) =>
+      //   nextChunk.includes(p)
+      // );
+      // if (isPunctuation) {
+      //   setTimeout(() => {
+      //     scrollToCurrentBotMessage(messageId);
+      //   }, 50);
+      // }
 
       // Add random pauses at punctuation for more natural rhythm
       if (['.', '!', '?'].includes(nextChunk.charAt(nextChunk.length - 1))) {
-        delay = 300 + Math.random() * 400; // Longer pause at end of sentences
+        delay = 300 + Math.random() * 400;
       } else if (
         [',', ':', ';'].includes(nextChunk.charAt(nextChunk.length - 1))
       ) {
-        delay = 150 + Math.random() * 200; // Medium pause at commas and other punctuation
+        delay = 150 + Math.random() * 200;
       }
 
-      // Schedule the next chunk
       typingTimeoutRef.current = setTimeout(typeNextChunk, delay);
     };
 
-    // Start the typing animation immediately
     typeNextChunk();
   };
 
-  // Effect to scroll to the latest bot message when it appears or changes
-  useEffect(() => {
-    if (latestBotMessageId) {
-      // Only scroll to message when typing is complete or at meaningful points
-      const botMessageElement = document.getElementById(
-        `message-${latestBotMessageId}`
-      );
-      if (botMessageElement && !isBotTyping) {
-        // Use a small delay to ensure the DOM has updated
-        setTimeout(() => {
-          botMessageElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-          });
-        }, 100);
-      }
+  // Remove auto-scroll functions
+  // const scrollToCurrentBotMessage = (messageId: string) => { ... };
+
+  // Enhanced scroll handler to detect user scrolling
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+
+    const container = messagesContainerRef.current;
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      100;
+
+    // Remove auto-scroll detection code
+    // const currentScrollTop = container.scrollTop;
+    // if (
+    //   Math.abs(currentScrollTop - lastAutoScrollPosition) > 50 &&
+    //   lastAutoScrollPosition !== 0
+    // ) {
+    //   setUserHasScrolled(true);
+    // }
+
+    // If user scrolls back to bottom, reset new message indicator
+    if (isNearBottom) {
+      setHasNewMessage(false);
     }
-  }, [latestBotMessageId, messages, isBotTyping]);
+
+    // Show new message indicator for user messages when not at bottom
+    const lastMessage = messages[messages.length - 1];
+    if (!isNearBottom && lastMessage && lastMessage.role === 'user') {
+      setHasNewMessage(true);
+    }
+  };
 
   const scrollToBottom = () => {
     if (!messagesContainerRef.current) return;
@@ -647,19 +611,20 @@ export const QuickToolChat = ({
     const inputArea = document.querySelector(
       '[data-input-area]'
     ) as HTMLElement;
-    const inputHeight = inputArea ? inputArea.offsetHeight : 120; // Fallback height
+    const inputHeight = inputArea ? inputArea.offsetHeight : 120;
 
-    // Calculate the target scroll position to ensure content is visible above input
     const targetScrollTop =
-      container.scrollHeight - container.clientHeight + inputHeight + 40;
+      container.scrollHeight - container.scrollHeight + inputHeight + 40;
 
-    // Use smooth scrolling with a small delay to ensure DOM has updated
     setTimeout(() => {
       container.scrollTo({
         top: Math.max(0, targetScrollTop),
         behavior: 'smooth',
       });
       setHasNewMessage(false);
+      // Remove auto-scroll state reset
+      // setUserHasScrolled(false);
+      // setLastAutoScrollPosition(Math.max(0, targetScrollTop));
     }, 50);
   };
 
@@ -685,35 +650,6 @@ export const QuickToolChat = ({
     setIsBotTyping(false);
     setIsLoading(false);
   };
-
-  // Handle scroll event
-  const handleScroll = () => {
-    if (!messagesContainerRef.current) return;
-
-    const container = messagesContainerRef.current;
-    const isNearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight <
-      100;
-
-    if (isNearBottom) {
-      setHasNewMessage(false);
-    }
-  };
-
-  // Effect to scroll to the latest bot message when it appears or changes
-  useEffect(() => {
-    if (latestBotMessageId) {
-      const botMessageElement = document.getElementById(
-        `message-${latestBotMessageId}`
-      );
-      if (botMessageElement) {
-        botMessageElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      }
-    }
-  }, [latestBotMessageId, messages]);
 
   // Auto-scroll for all new messages and check for new messages
   useEffect(() => {
@@ -1206,16 +1142,6 @@ export const QuickToolChat = ({
                       : 'bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-750 text-gray-900 dark:text-gray-100 rounded-[18px] rounded-tl-[4px] px-4 py-3 border border-gray-200/50 dark:border-gray-700/50'
                   )}
                 >
-                  {/* Message timestamp on hover */}
-                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                    <div className="bg-black/75 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
-                      {new Date().toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  </div>
-
                   <div
                     className={cn(
                       'text-[15px] leading-[1.4] whitespace-pre-wrap break-words font-normal',

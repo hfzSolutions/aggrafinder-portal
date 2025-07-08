@@ -78,7 +78,7 @@ export const CORE_SYSTEM_PROMPT = `You are an expert AI assistant specialized in
 ## Response Guidelines:
 - Keep responses under 150 words unless specifically asked for details
 - Structure information logically but briefly
-- Use bullet points sparingly (max 3 points)
+- If using bullet points, limit to max 3 points
 - Include ONE relevant example when helpful
 - End with a clear summary or next step when appropriate
 
@@ -110,7 +110,7 @@ export const QUICK_TOOL_SYSTEM_PROMPT = `You are a specialized AI assistant for 
 ## Response Guidelines:
 - KEEP IT SHORT: Aim for 50-150 words maximum unless specifically asked for details
 - Lead with the most important information immediately
-- Use bullet points only when absolutely necessary (max 3 points)
+- If using bullet points, limit to max 3 points
 - Include ONE specific example if helpful, not multiple
 - End with a brief next step or simple follow-up question
 
