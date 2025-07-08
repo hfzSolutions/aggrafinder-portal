@@ -66,10 +66,10 @@ export const MessageItem = ({
         clearTimeout(scrollTimeoutRef.current);
       }
 
-      // Reset after 3 seconds of no scrolling
+      // Reset after 1 second of no scrolling
       scrollTimeoutRef.current = setTimeout(() => {
         setHasUserScrolled(false);
-      }, 3000);
+      }, 1000);
     };
 
     const container =
