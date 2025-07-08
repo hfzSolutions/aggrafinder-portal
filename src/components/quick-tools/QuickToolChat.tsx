@@ -764,6 +764,22 @@ export const QuickToolChat = ({
     };
   }, [toolId, trackChatEvent, incrementUsageCount, messages.length]);
 
+  // Generate suggested replies for the initial message
+  useEffect(() => {
+    const generateInitialSuggestions = async () => {
+      if (!suggested_replies || messages.length !== 1) return;
+
+      const initialMessage = messages[0];
+      if (initialMessage.role === 'assistant') {
+        await generateSuggestedReplies(initialMessage.content);
+      }
+    };
+
+    // Add a small delay to ensure the component is fully mounted
+    const timer = setTimeout(generateInitialSuggestions, 500);
+    return () => clearTimeout(timer);
+  }, [suggested_replies, toolName]); // Only run when component mounts or suggested_replies changes
+
   // Count user messages (excluding initial assistant message) - use persistent count to prevent reset cheating
   const getUserMessageCount = () => {
     return persistentUserMessageCount;
@@ -1259,7 +1275,8 @@ export const QuickToolChat = ({
           {suggested_replies &&
             suggestedReplies.length > 0 &&
             !isBotTyping &&
-            !isLoading && (
+            !isLoading &&
+            !isShowingAd && (
               <motion.div
                 ref={suggestedRepliesRef}
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
