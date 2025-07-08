@@ -1,31 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import {
-  Send,
-  Loader2,
-  MessageSquare,
-  Sparkles,
-  RotateCcw,
-  Bot,
-  ExternalLink,
-  LogIn,
-  Lock,
-  ArrowUp,
-  ChevronUp,
-  ChevronDown,
-  Plus,
-} from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { containsMarkdown, processText } from '@/lib/markdown';
 import { useAIChatAnalytics } from '@/hooks/useAIChatAnalytics';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useQuickToolUsage } from '@/hooks/useQuickToolUsage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { Badge } from '@/components/ui/badge';
-import { CustomMarkdownRenderer } from '@/components/ui/custom-markdown-renderer';
+import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +19,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ChatSponsorAd, checkForSponsorAds } from './ChatSponsorAd';
+import { MessageItem } from './MessageItem';
+import { ChatInput } from './ChatInput';
 
 type Message = {
   id: string;
@@ -63,9 +48,9 @@ interface QuickToolChatProps {
   toolName: string;
   toolPrompt: string;
   className?: string;
-  imageUrl?: string; // Add imageUrl prop
-  initialMessage?: string; // Add initialMessage prop
-  suggested_replies?: boolean; // Add suggested_replies prop
+  imageUrl?: string;
+  initialMessage?: string;
+  suggested_replies?: boolean;
 }
 
 export const QuickToolChat = ({
@@ -73,229 +58,13 @@ export const QuickToolChat = ({
   toolName,
   toolPrompt,
   className,
-  imageUrl, // Add imageUrl to destructuring
-  initialMessage, // Add initialMessage to destructuring
-  suggested_replies, // Add suggested_replies prop
+  imageUrl,
+  initialMessage,
+  suggested_replies,
 }: QuickToolChatProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const { trackEvent } = useAnalytics();
-
-  // Move checkForSponsorAds function inside QuickToolChat
-  const checkForSponsorAds = async () => {
-    try {
-      const now = new Date().toISOString();
-      const { data, error } = await supabase
-        .from('sponsor_ads')
-        .select('*')
-        .lte('start_date', now)
-        .gte('end_date', now)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        if (error.code !== 'PGRST116') {
-          console.error('Error checking sponsor ads:', error);
-        }
-        return { available: false, data: null };
-      }
-
-      return {
-        available: data && data.length > 0,
-        data: data && data.length > 0 ? data[0] : null,
-      };
-    } catch (error) {
-      console.error('Error checking sponsor ads:', error);
-      return { available: false, data: null };
-    }
-  };
-
-  // Move ChatSponsorAd component inside QuickToolChat
-  const ChatSponsorAd = ({
-    messageCount,
-    onAdComplete,
-    isComplete = false,
-  }: {
-    messageCount: number;
-    onAdComplete?: () => void;
-    isComplete?: boolean;
-  }) => {
-    const [sponsorAd, setSponsorAd] = useState<SponsorAd | null>(null);
-    const [isImageLoaded, setIsImageLoaded] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(10); // 10 seconds timer
-    const [isAdComplete, setIsAdComplete] = useState(isComplete);
-    const adRef = useRef<HTMLDivElement>(null);
-
-    // Timer effect
-    useEffect(() => {
-      if (isComplete) {
-        setIsAdComplete(true);
-        return;
-      }
-
-      if (timeLeft > 0) {
-        const timer = setTimeout(() => {
-          setTimeLeft(timeLeft - 1);
-        }, 1000);
-        return () => clearTimeout(timer);
-      } else if (!isAdComplete) {
-        setIsAdComplete(true);
-        onAdComplete?.();
-      }
-    }, [timeLeft, isAdComplete, onAdComplete, isComplete]);
-
-    // Scroll to ad when it appears
-    useEffect(() => {
-      if (adRef.current && sponsorAd) {
-        adRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, [sponsorAd]);
-
-    useEffect(() => {
-      // Only fetch ad when the component mounts
-      const fetchActiveSponsorAd = async () => {
-        try {
-          // Use the shared function to check for ads and get the data in one call
-          const { available, data } = await checkForSponsorAds();
-
-          if (!available || !data) {
-            return;
-          }
-
-          // Set the sponsor ad directly from the returned data
-          setSponsorAd(data);
-        } catch (error) {
-          console.error('Error fetching sponsor ad:', error);
-        }
-      };
-
-      fetchActiveSponsorAd();
-    }, []);
-
-    // If no sponsor ad is available, don't render anything
-    if (!sponsorAd) {
-      return null;
-    }
-
-    const handleAdClick = () => {
-      window.open(sponsorAd.link, '_blank');
-      trackEvent('sponsor_ad', 'click_url', {
-        ad_id: sponsorAd.id,
-        ad_title: sponsorAd.title,
-        ad_link: sponsorAd.link,
-        view_type: 'chat',
-        click_type: 'card',
-      });
-    };
-
-    return (
-      <motion.div
-        ref={adRef}
-        initial={{ opacity: 0, y: 10, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="flex items-start gap-2 justify-start my-6"
-      >
-        <div className="flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 items-center justify-center animate-pulse-glow">
-          <Sparkles className="h-4 w-4 text-primary" />
-        </div>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.2 }}
-          className="max-w-[95%] rounded-2xl rounded-tl-sm p-0.5 ml-1 shadow-md overflow-hidden relative animate-pulse-glow"
-          onClick={handleAdClick}
-          style={{ cursor: 'pointer' }}
-          whileHover={{ scale: 1.01 }}
-        >
-          {/* Moving gradient border */}
-          <div className="absolute inset-0 animate-moving-gradient rounded-2xl rounded-tl-sm opacity-80"></div>
-
-          {/* Shine effect overlay */}
-          <div className="absolute inset-0 animate-shine rounded-2xl rounded-tl-sm z-10 opacity-40"></div>
-
-          {/* Content container */}
-          <div className="relative bg-background/95 dark:bg-background/95 rounded-2xl rounded-tl-sm px-5 py-3 z-20">
-            <div className="flex items-center gap-3">
-              <div className="relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 shadow-md">
-                {!isImageLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-muted/30 animate-pulse">
-                    <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-                  </div>
-                )}
-
-                <img
-                  src={sponsorAd.image_url}
-                  alt="Sponsored"
-                  className={cn(
-                    'h-full w-full object-cover transition-all duration-500 transform group-hover:scale-105',
-                    isImageLoaded ? 'opacity-100' : 'opacity-0'
-                  )}
-                  onLoad={() => setIsImageLoaded(true)}
-                />
-
-                <div className="absolute top-2 left-2">
-                  <Badge
-                    variant="secondary"
-                    className="flex items-center gap-1 bg-primary/20 text-primary border border-primary/30 text-xs px-2 py-0.5 font-medium shadow-sm"
-                  >
-                    <Sparkles className="h-2.5 w-2.5 text-primary" /> Ad
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="flex-grow">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-base text-foreground/90">
-                    {sponsorAd.title}
-                  </h3>
-                </div>
-
-                <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                  {sponsorAd.description}
-                </p>
-
-                <div className="flex items-center justify-between mt-2">
-                  <Button
-                    size="sm"
-                    variant={isAdComplete ? 'default' : 'outline'}
-                    className={cn(
-                      'h-8 px-3 text-xs rounded-full transition-all duration-300',
-                      isAdComplete
-                        ? 'bg-primary hover:bg-primary/90'
-                        : 'opacity-70'
-                    )}
-                    disabled={!isAdComplete}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isAdComplete) {
-                        window.open(sponsorAd.link, '_blank');
-                        trackEvent('sponsor_ad', 'click_url', {
-                          ad_id: sponsorAd.id,
-                          ad_title: sponsorAd.title,
-                          ad_link: sponsorAd.link,
-                          view_type: 'chat',
-                          click_type: 'button',
-                        });
-                      }
-                    }}
-                  >
-                    {sponsorAd.link_text}{' '}
-                    <ExternalLink className="ml-1 h-3 w-3" />
-                  </Button>
-                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-muted/50">
-                    {isAdComplete ? 'Sponsored' : `Ad ends in ${timeLeft}s`}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  };
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -310,65 +79,53 @@ export const QuickToolChat = ({
     useState(0);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [typingIndicator, setTypingIndicator] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(true);
-  const [isBotTyping, setIsBotTyping] = useState(false); // Track if bot is currently typing
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false); // State for reset confirmation dialog
+  const [isBotTyping, setIsBotTyping] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  // Add state for message length limit
   const [isMessageTooLong, setIsMessageTooLong] = useState(false);
-  const MAX_MESSAGE_LENGTH = 1000; // Set maximum character limit
-  // Add state for expanded input
-  const [isInputExpanded, setIsInputExpanded] = useState(false);
-  const [shouldShowExpandButton, setShouldShowExpandButton] = useState(false);
-  // Add state for suggested replies
+  const MAX_MESSAGE_LENGTH = 1000;
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
 
   const { trackChatEvent } = useAIChatAnalytics();
   const { incrementUsageCount } = useQuickToolUsage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Reference to store typing timeout
-  const botMessageRef = useRef<HTMLDivElement>(null); // New ref for bot messages
-  const suggestedRepliesRef = useRef<HTMLDivElement>(null); // New ref for suggested replies
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const botMessageRef = useRef<HTMLDivElement>(null);
+  const suggestedRepliesRef = useRef<HTMLDivElement>(null);
 
-  // Add state to control ad display
   const [pendingMessage, setPendingMessage] = useState<Message | null>(null);
   const [isShowingAd, setIsShowingAd] = useState(false);
   const [pendingUserInput, setPendingUserInput] = useState<string>('');
-  // Add state to track if ads are available
   const [isAdAvailable, setIsAdAvailable] = useState<boolean>(false);
-  // Add state to track the latest bot message ID
   const [latestBotMessageId, setLatestBotMessageId] = useState<string | null>(
     null
   );
 
-  // Remove auto-scroll related state variables
-  // const [userHasScrolled, setUserHasScrolled] = useState(false);
-  // const [lastAutoScrollPosition, setLastAutoScrollPosition] = useState(0);
+  // Update message too long state when input changes
+  useEffect(() => {
+    setIsMessageTooLong(input.length > MAX_MESSAGE_LENGTH);
+  }, [input]);
 
   // Function to generate suggested replies based on the latest bot message
   const generateSuggestedReplies = async (botMessage: string) => {
     if (!suggested_replies) return;
 
     try {
-      // Import AI service dynamically
       const { aiService } = await import('@/lib/ai-service');
 
-      // Prepare conversation history for context
       const conversationHistory = messages
         .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
         .filter((msg) => msg.content.trim() !== '')
-        .slice(-3) // Only use last 3 messages for context
+        .slice(-3)
         .map((msg) => ({
           role: msg.role as 'user' | 'assistant',
           content: msg.content,
         }));
 
-      // Generate suggestions using the professional AI service
       const suggestions = await aiService.generateSuggestions({
         toolName,
         lastAssistantMessage: botMessage,
@@ -376,82 +133,20 @@ export const QuickToolChat = ({
         count: 3,
       });
 
-      // Update state with the generated replies
       setSuggestedReplies(suggestions.length > 0 ? suggestions : []);
-
-      // Remove auto-scroll for suggested replies
-      // if (suggestions.length > 0) {
-      //   setTimeout(() => {
-      //     if (suggestedRepliesRef.current) {
-      //       suggestedRepliesRef.current.scrollIntoView({
-      //         behavior: 'smooth',
-      //         block: 'nearest',
-      //       });
-      //     }
-      //   }, 200);
-      // }
     } catch (error) {
       console.warn('Failed to generate suggested replies:', error);
-      // Provide fallback suggestions
       setSuggestedReplies(['Tell me more', 'How do I start?', 'What else?']);
     }
   };
 
-  // Function to handle textarea input and auto-resize
-  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    setInput(newValue);
-    setIsMessageTooLong(newValue.length > MAX_MESSAGE_LENGTH);
-
-    const textarea = e.target;
-
-    // Check if content exceeds default max height to show expand button
-    textarea.style.height = 'auto'; // Reset height to recalculate
-    const scrollHeight = textarea.scrollHeight;
-    setShouldShowExpandButton(scrollHeight > 120);
-
-    // Only auto-resize if not in expanded mode
-    if (!isInputExpanded) {
-      // Set the height based on content with a maximum of 120px
-      textarea.style.height = `${Math.min(scrollHeight, 120)}px`;
-    } else {
-      // In expanded mode, maintain the 70vh height
-      textarea.style.height = '70vh';
-    }
-  };
-
-  // Function to toggle expanded state
-  const toggleInputExpand = () => {
-    const newExpandedState = !isInputExpanded;
-    setIsInputExpanded(newExpandedState);
-
-    // After toggling, resize the textarea and adjust the card
-    setTimeout(() => {
-      if (inputRef.current) {
-        const textarea = inputRef.current;
-
-        // When expanded, set to 70% of viewport height
-        if (newExpandedState) {
-          // Force the height to 70vh when expanded
-          textarea.style.height = '70vh';
-        } else {
-          // When collapsed, auto-resize with max height of 120px
-          textarea.style.height = 'auto';
-          textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
-        }
-      }
-    }, 0);
-  };
-
   // Function to handle suggested reply click - auto send message
   const handleSuggestedReplyClick = async (reply: string) => {
-    // Clear suggested replies immediately
     setSuggestedReplies([]);
 
     try {
       setIsLoading(true);
 
-      // Auto-send the message without setting it in input
       const userMessage: Message = {
         id: Date.now().toString() + '-user',
         role: 'user',
@@ -461,7 +156,6 @@ export const QuickToolChat = ({
       setMessages((prev) => [...prev, userMessage]);
       setPersistentUserMessageCount((prev) => prev + 1);
 
-      // Check for ads and process message
       const { available } = await checkForSponsorAds();
       setIsAdAvailable(available);
 
@@ -499,31 +193,19 @@ export const QuickToolChat = ({
     let index = 0;
     setIsBotTyping(true);
     setLatestBotMessageId(messageId);
-
-    // Clear any existing suggested replies when bot starts typing
     setSuggestedReplies([]);
-
-    // Remove auto-scroll related code
-    // setUserHasScrolled(false);
 
     const typeNextChunk = () => {
       if (index >= content.length) {
-        // Typing complete
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === messageId ? { ...msg, isTyping: false } : msg
           )
         );
         setIsBotTyping(false);
-
-        // Remove auto-scroll code
-        // setTimeout(() => {
-        //   scrollToCurrentBotMessage(messageId);
-        // }, 100);
         return;
       }
 
-      // Add characters in chunks for more natural typing
       const chunkSize = Math.floor(Math.random() * 3) + 1;
       const nextChunk = content.substring(
         index,
@@ -533,30 +215,14 @@ export const QuickToolChat = ({
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === messageId
-            ? {
-                ...msg,
-                displayContent: (msg.displayContent || '') + nextChunk,
-              }
+            ? { ...msg, displayContent: (msg.displayContent || '') + nextChunk }
             : msg
         )
       );
 
       index += nextChunk.length;
-
-      // Determine the delay before the next chunk
       let delay = 15 + Math.random() * 30;
 
-      // Remove auto-scroll during typing
-      // const isPunctuation = ['.', '!', '?', '\n'].some((p) =>
-      //   nextChunk.includes(p)
-      // );
-      // if (isPunctuation) {
-      //   setTimeout(() => {
-      //     scrollToCurrentBotMessage(messageId);
-      //   }, 50);
-      // }
-
-      // Add random pauses at punctuation for more natural rhythm
       if (['.', '!', '?'].includes(nextChunk.charAt(nextChunk.length - 1))) {
         delay = 300 + Math.random() * 400;
       } else if (
@@ -571,9 +237,6 @@ export const QuickToolChat = ({
     typeNextChunk();
   };
 
-  // Remove auto-scroll functions
-  // const scrollToCurrentBotMessage = (messageId: string) => { ... };
-
   // Enhanced scroll handler to detect user scrolling
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;
@@ -583,21 +246,10 @@ export const QuickToolChat = ({
       container.scrollHeight - container.scrollTop - container.clientHeight <
       100;
 
-    // Remove auto-scroll detection code
-    // const currentScrollTop = container.scrollTop;
-    // if (
-    //   Math.abs(currentScrollTop - lastAutoScrollPosition) > 50 &&
-    //   lastAutoScrollPosition !== 0
-    // ) {
-    //   setUserHasScrolled(true);
-    // }
-
-    // If user scrolls back to bottom, reset new message indicator
     if (isNearBottom) {
       setHasNewMessage(false);
     }
 
-    // Show new message indicator for user messages when not at bottom
     const lastMessage = messages[messages.length - 1];
     if (!isNearBottom && lastMessage && lastMessage.role === 'user') {
       setHasNewMessage(true);
@@ -622,21 +274,16 @@ export const QuickToolChat = ({
         behavior: 'smooth',
       });
       setHasNewMessage(false);
-      // Remove auto-scroll state reset
-      // setUserHasScrolled(false);
-      // setLastAutoScrollPosition(Math.max(0, targetScrollTop));
     }, 50);
   };
 
   // Function to stop the typing animation
   const stopTypingAnimation = () => {
-    // Clear any pending typing timeouts
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = null;
     }
 
-    // Find the currently typing message and complete it immediately
     setMessages((prev) =>
       prev.map((msg) => {
         if (msg.isTyping) {
@@ -646,34 +293,9 @@ export const QuickToolChat = ({
       })
     );
 
-    // Reset typing state
     setIsBotTyping(false);
     setIsLoading(false);
   };
-
-  // Auto-scroll for all new messages and check for new messages
-  useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-
-    // Check if we should show the new message indicator for user messages
-    const shouldShowNewMessageIndicator = () => {
-      if (!messagesEndRef.current || !messagesContainerRef.current) return;
-
-      const container = messagesContainerRef.current;
-      if (!container) return;
-
-      // Check if user is not near the bottom
-      const isNearBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight <
-        100;
-
-      if (!isNearBottom && lastMessage && lastMessage.role === 'user') {
-        setHasNewMessage(true);
-      }
-    };
-
-    shouldShowNewMessageIndicator();
-  }, [messages.length]); // Only trigger when message count changes, not content
 
   // Authentication state management
   useEffect(() => {
@@ -690,12 +312,9 @@ export const QuickToolChat = ({
   // Track when chat is opened
   useEffect(() => {
     trackChatEvent(toolId, 'open');
-    // Increment usage count when a conversation starts
     incrementUsageCount(toolId);
-    // No auto-focus on input
 
     return () => {
-      // Track when chat is closed with message count
       trackChatEvent(toolId, 'close', messages.length);
     };
   }, [toolId, trackChatEvent, incrementUsageCount, messages.length]);
@@ -711,22 +330,9 @@ export const QuickToolChat = ({
       }
     };
 
-    // Add a small delay to ensure the component is fully mounted
     const timer = setTimeout(generateInitialSuggestions, 500);
     return () => clearTimeout(timer);
-  }, [suggested_replies, toolName]); // Only run when component mounts or suggested_replies changes
-
-  // Count user messages (excluding initial assistant message) - use persistent count to prevent reset cheating
-  const getUserMessageCount = () => {
-    return persistentUserMessageCount;
-  };
-
-  // Handle login redirect
-  const handleLoginRedirect = () => {
-    // Save current page URL to return after login
-    localStorage.setItem('returnUrl', location.pathname + location.search);
-    navigate('/auth');
-  };
+  }, [suggested_replies, toolName]);
 
   // Add useEffect to check for ad availability on component mount
   useEffect(() => {
@@ -741,38 +347,21 @@ export const QuickToolChat = ({
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading || isMessageTooLong) return;
 
-    // Store the input value and clear it immediately
     const userInputText = input.trim();
-    setInput(''); // Clear input immediately
-
-    // Reset textarea height to default
-    if (inputRef.current) {
-      inputRef.current.style.height = '40px';
-    }
-
-    // Auto-collapse the expanded text area after sending
-    if (isInputExpanded) {
-      setIsInputExpanded(false);
-    }
+    setInput('');
 
     try {
-      // Set loading state immediately to prevent multiple clicks
       setIsLoading(true);
 
-      // Removed login check to allow unlimited messages without login
-
-      // Set isFirstVisit to false when user sends their first message
       if (isFirstVisit) {
         setIsFirstVisit(false);
       }
 
-      // Validate prompt first
       if (!toolPrompt.trim()) {
         toast.error('This tool does not have a valid prompt configured.');
         return;
       }
 
-      // Add user message
       const userMessage: Message = {
         id: Date.now().toString() + '-user',
         role: 'user',
@@ -780,15 +369,11 @@ export const QuickToolChat = ({
       };
 
       setMessages((prev) => [...prev, userMessage]);
-
-      // Increment persistent user message count
       setPersistentUserMessageCount((prev) => prev + 1);
 
-      // Check for ads availability before deciding whether to show an ad
       const { available } = await checkForSponsorAds();
       setIsAdAvailable(available);
 
-      // Check if we should show an ad first (70% probability after first message)
       const shouldShowAd =
         messages.length >= 1 && Math.random() < 0.7 && available;
 
@@ -824,14 +409,10 @@ export const QuickToolChat = ({
   ) => {
     setIsLoading(true);
     setIsBotTyping(true);
-
-    // Clear suggested replies when processing new message
     setSuggestedReplies([]);
 
-    // Track when user sends a message for analytics
     trackChatEvent(toolId, 'message_sent');
 
-    // Use existing typing message or create new one
     const assistantMessage: Message = {
       id: existingTypingId || Date.now().toString() + '-assistant',
       role: 'assistant',
@@ -840,27 +421,23 @@ export const QuickToolChat = ({
       displayContent: '',
     };
 
-    // Only add new message if we don't have existing typing message
     if (!existingTypingId) {
       setMessages((prev) => [...prev, assistantMessage]);
       setLatestBotMessageId(assistantMessage.id);
     }
 
     try {
-      // Import AI service dynamically to avoid dependency issues
       const { aiService, AIServiceError } = await import('@/lib/ai-service');
 
-      // Prepare conversation history in the format expected by AI service
       const conversationHistory = messages
         .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
         .filter((msg) => msg.content.trim() !== '')
-        .slice(-10) // Keep last 10 messages for context
+        .slice(-10)
         .map((msg) => ({
           role: msg.role as 'user' | 'assistant',
           content: msg.content,
         }));
 
-      // Call the professional AI service
       const response = await aiService.chat(userInput, {
         toolName,
         toolPrompt,
@@ -871,7 +448,6 @@ export const QuickToolChat = ({
 
       const responseContent = response.content;
 
-      // Update the existing assistant message with the response content
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantMessage.id
@@ -880,14 +456,12 @@ export const QuickToolChat = ({
         )
       );
 
-      // Generate suggested replies if feature is enabled
       if (suggested_replies) {
         generateSuggestedReplies(responseContent);
       } else {
         setSuggestedReplies([]);
       }
 
-      // Only start typing animation if we're not using an existing typing message
       if (!existingTypingId) {
         animateTyping(assistantMessage.id, responseContent);
       } else {
@@ -899,7 +473,6 @@ export const QuickToolChat = ({
           )
         );
         setIsBotTyping(false);
-        // Generate suggested replies for existing message
         if (suggested_replies) {
           setTimeout(() => {
             generateSuggestedReplies(responseContent);
@@ -907,7 +480,6 @@ export const QuickToolChat = ({
         }
       }
     } catch (error) {
-      // Handle specific AI service errors
       let userMessage =
         "Sorry, I'm having trouble responding right now. Please try again in a moment.";
       let duration = 4000;
@@ -932,23 +504,17 @@ export const QuickToolChat = ({
               'Service configuration error. Please contact support.';
             break;
           default:
-            // Use default message
             break;
         }
       }
 
-      // Log the detailed error for developers
       console.error('Error in chat process:', error);
-
-      // Show user-friendly error message
       toast.error(userMessage, { duration });
 
-      // Remove the assistant message if there was an error
       setMessages((prev) =>
         prev.filter((msg) => msg.id !== assistantMessage.id)
       );
 
-      // Reset all states
       setIsBotTyping(false);
       setIsShowingAd(false);
       setPendingMessage(null);
@@ -962,14 +528,11 @@ export const QuickToolChat = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Check if the device is likely a mobile device
     const isMobileDevice =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
 
-    // On desktop: Enter sends message, Shift+Enter creates new line
-    // On mobile: Enter creates new line, explicit send button click required
     if (e.key === 'Enter' && !e.shiftKey && !isMobileDevice) {
       e.preventDefault();
       handleSendMessage();
@@ -1002,43 +565,26 @@ export const QuickToolChat = ({
   const handleAdComplete = async (adId: string) => {
     setIsShowingAd(false);
 
-    // Mark the ad as complete
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === adId ? { ...msg, isAdComplete: true } : msg
       )
     );
 
-    // Process the pending user input after ad completes
     if (pendingUserInput) {
-      // Remove the ad message immediately
       setMessages((prev) => prev.filter((msg) => msg.id !== adId));
-
-      // Process the user input that was waiting immediately
       await processUserMessage(pendingUserInput);
       setPendingUserInput('');
-
-      // Auto-collapse the expanded text area after processing pending input
-      if (isInputExpanded) {
-        setIsInputExpanded(false);
-        if (inputRef.current) {
-          inputRef.current.style.height = 'auto';
-        }
-      }
     }
 
-    // Handle legacy pending message (for backward compatibility)
     if (pendingMessage) {
-      // Remove the ad message and add the pending message immediately
       setMessages((prev) => [
-        ...prev.filter((msg) => msg.id !== adId), // Remove the ad message
+        ...prev.filter((msg) => msg.id !== adId),
         pendingMessage,
       ]);
       setPendingMessage(null);
     }
   };
-
-  // Note: Conversation history optimization is now handled by the AI service
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
@@ -1061,9 +607,7 @@ export const QuickToolChat = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Removed Login Prompt Dialog - direct redirect to auth page instead */}
-
-      {/* Messages Area - Enhanced with modern iOS-like background */}
+      {/* Messages Area */}
       <div
         className="flex-1 overflow-y-auto p-0 sm:p-4 relative bg-gradient-to-b from-gray-50/30 via-white/20 to-gray-50/30 dark:from-gray-900/30 dark:via-gray-950/20 dark:to-gray-900/30 pb-[240px] sm:pb-[160px]"
         ref={messagesContainerRef}
@@ -1071,7 +615,6 @@ export const QuickToolChat = ({
       >
         <AnimatePresence initial={false}>
           {messages.map((message) => {
-            // Render ad messages differently
             if (message.role === 'ad') {
               return (
                 <ChatSponsorAd
@@ -1083,117 +626,17 @@ export const QuickToolChat = ({
               );
             }
 
-            // Render regular messages
             return (
-              <motion.div
+              <MessageItem
                 key={message.id}
-                id={`message-${message.id}`} // Add ID for scrolling
-                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className={cn(
-                  'flex items-start gap-3 px-4 sm:px-2 mb-4',
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                )}
-                ref={
+                message={message}
+                imageUrl={imageUrl}
+                isLatestBotMessage={
                   message.role === 'assistant' &&
                   message.id === latestBotMessageId
-                    ? botMessageRef
-                    : undefined
                 }
-              >
-                {message.role !== 'user' && (
-                  <div className="flex flex-shrink-0 relative">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt="Bot"
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            // Fallback to Bot icon if image fails to load
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement?.classList.add(
-                              'flex'
-                            );
-                            e.currentTarget.parentElement?.classList.remove(
-                              'block'
-                            );
-                          }}
-                        />
-                      ) : (
-                        <Bot className="h-4 w-4 text-primary" />
-                      )}
-                    </div>
-                    {/* Green online status indicator */}
-                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-[1.5px] border-white dark:border-gray-900 rounded-full shadow-sm">
-                      <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-40"></div>
-                    </div>
-                  </div>
-                )}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className={cn(
-                    'max-w-[90%] sm:max-w-[75%] md:max-w-[70%] relative group',
-                    message.role === 'user'
-                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-[18px] rounded-br-[4px] px-4 py-3'
-                      : 'bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-750 text-gray-900 dark:text-gray-100 rounded-[18px] rounded-tl-[4px] px-4 py-3 border border-gray-200/50 dark:border-gray-700/50'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'text-[15px] leading-[1.4] whitespace-pre-wrap break-words font-normal',
-                      message.role === 'user'
-                        ? 'text-white'
-                        : 'text-gray-900 dark:text-gray-100'
-                    )}
-                  >
-                    {message.role === 'user' ? (
-                      message.content
-                    ) : !message.displayContent && message.isTyping ? (
-                      // Enhanced typing indicator
-                      <div className="flex space-x-1.5 items-center h-6 py-1">
-                        <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"
-                          style={{ animationDelay: '0.15s' }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"
-                          style={{ animationDelay: '0.3s' }}
-                        ></div>
-                      </div>
-                    ) : (
-                      // Enhanced content rendering
-                      <>
-                        {containsMarkdown(
-                          message.displayContent || message.content
-                        ) ? (
-                          <CustomMarkdownRenderer
-                            content={message.displayContent || message.content}
-                            className="inline-block"
-                          />
-                        ) : (
-                          processText(message.displayContent || message.content)
-                        )}
-                        {message.isTyping &&
-                          (message.displayContent || message.content) && (
-                            <span className="animate-pulse ml-1 text-gray-400 dark:text-gray-500 font-mono">
-                              |
-                            </span>
-                          )}
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-                {/* {message.role === 'user' && (
-                  <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/80 items-center justify-center text-primary-foreground">
-                    <span className="text-xs font-medium">You</span>
-                  </div>
-                )} */}
-              </motion.div>
+                botMessageRef={botMessageRef}
+              />
             );
           })}
 
@@ -1211,10 +654,7 @@ export const QuickToolChat = ({
                 transition={{ duration: 0.3, ease: 'easeOut' }}
                 className="flex items-start gap-3 justify-start px-4 sm:px-2 mb-4"
               >
-                {/* Empty space for avatar alignment - hidden on mobile, padding on desktop */}
                 <div className="flex flex-shrink-0 w-8 h-8"></div>
-
-                {/* Suggested replies container */}
                 <div className="max-w-[90%] sm:max-w-[75%] md:max-w-[70%] space-y-3">
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 px-1 font-medium">
                     Quick replies
@@ -1302,147 +742,21 @@ export const QuickToolChat = ({
         </div>
       )}
 
-      {/* Input Area - Enhanced modern iOS-style design */}
-      <div
-        data-input-area
-        className="p-3 sm:p-4 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl bg-white/95 dark:bg-gray-900/95 shadow-lg mx-0 sm:mx-4 backdrop-blur-md fixed bottom-7 left-2 right-2 sm:sticky sm:bottom-10 z-[45] hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-300 hover:shadow-xl"
-      >
-        <div className="flex items-center gap-3 w-full">
-          <div className="flex flex-col gap-2">
-            {isBotTyping ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={stopTypingAnimation}
-                className="h-8 w-8 rounded-full flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
-                title="Stop response"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect width="16" height="16" x="4" y="4" rx="2" />
-                </svg>
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsResetDialogOpen(true)} // Open confirmation dialog instead of direct reset
-                disabled={messages.length <= 1}
-                className="h-8 w-8 rounded-full flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-300"
-                title="Reset conversation"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-
-          <motion.div
-            className="flex flex-row items-center w-full gap-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div
-              className={`flex-grow relative w-full transition-all duration-300 ease-in-out ${
-                isInputExpanded ? 'h-[70vh]' : 'h-auto'
-              }`}
-              style={{
-                maxHeight: isInputExpanded ? '70vh' : 'auto',
-              }}
-            >
-              <Textarea
-                ref={inputRef}
-                value={input}
-                onChange={handleTextareaInput}
-                style={{
-                  minHeight: '40px',
-                  height: isInputExpanded ? '70vh' : 'auto',
-                  maxHeight: isInputExpanded ? '70vh' : '120px',
-                  transition: 'all 0.3s ease-in-out',
-                  overflow: 'auto',
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask your question here..."
-                disabled={isLoading || isBotTyping || isShowingAd} // Removed login check
-                className={cn(
-                  'w-full transition-all duration-300 focus-visible:ring-0 focus-visible:outline-none focus:border-transparent border-transparent rounded-xl pl-4 pr-4 py-3 min-h-[42px] resize-none bg-gray-50/80 dark:bg-gray-800/80 text-foreground placeholder:text-gray-500 dark:placeholder:text-gray-400 text-[15px] placeholder:text-[15px] font-normal leading-[1.4]',
-                  (isLoading || isBotTyping || isShowingAd) && 'opacity-60', // Removed login check
-                  isMessageTooLong &&
-                    'border-red-500 focus:border-red-500 bg-red-50/80 dark:bg-red-900/20'
-                )}
-                rows={1}
-              />
-            </div>
-
-            {/* Show expand button only when content exceeds max height or when there's content and it's expanded */}
-            {((shouldShowExpandButton && input.trim().length > 0) ||
-              (isInputExpanded && input.trim().length > 0)) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleInputExpand}
-                className="absolute top-2 right-2 h-6 w-6 p-0 rounded-full bg-background/80 hover:bg-background/90 text-muted-foreground z-10"
-                title={isInputExpanded ? 'Collapse' : 'Expand'}
-              >
-                {isInputExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronUp className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-
-            {/* Send button - always visible */}
-            <motion.div
-              whileTap={{ scale: 0.95 }}
-              className="flex-shrink-0"
-              initial={{ opacity: 1, scale: 1 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Button
-                size="icon"
-                onClick={handleSendMessage} // Always use handleSendMessage
-                disabled={!input.trim() || isLoading || isMessageTooLong} // Disable when message is too long
-                className={cn(
-                  'h-10 w-10 rounded-full transition-all duration-300 shadow-md hover:shadow-lg text-white flex items-center justify-center transform hover:scale-105 active:scale-95',
-                  isMessageTooLong
-                    ? 'bg-red-500 hover:bg-red-600 cursor-not-allowed'
-                    : !input.trim()
-                    ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed opacity-50'
-                    : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
-                )}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowUp className="h-4 w-4" />
-                )}
-              </Button>
-            </motion.div>
-          </motion.div>
-        </div>
-        <div className="flex items-center justify-center mt-2">
-          {isMessageTooLong ? (
-            <p className="text-xs text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/20 inline-flex items-center">
-              Message too long ({input.length}/{MAX_MESSAGE_LENGTH} characters)
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground/30 px-2 py-0.5 rounded-full bg-muted/20 inline-flex items-center">
-              AI may make mistakes. Please verify results.
-            </p>
-          )}
-        </div>
-      </div>
+      {/* Input Area */}
+      <ChatInput
+        input={input}
+        setInput={setInput}
+        isLoading={isLoading}
+        isBotTyping={isBotTyping}
+        isShowingAd={isShowingAd}
+        isMessageTooLong={isMessageTooLong}
+        maxMessageLength={MAX_MESSAGE_LENGTH}
+        messagesLength={messages.length}
+        onSendMessage={handleSendMessage}
+        onResetChat={() => setIsResetDialogOpen(true)}
+        onStopTyping={stopTypingAnimation}
+        onKeyDown={handleKeyDown}
+      />
     </div>
   );
 };
